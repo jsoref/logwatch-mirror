@@ -1,0 +1,490 @@
+##########################################################################
+# $Id: http,v 1.16 2005/02/24 17:08:04 kirk Exp $
+##########################################################################
+# $Log: http,v $
+# Revision 1.16  2005/02/24 17:08:04  kirk
+# Applying consolidated patches from Mike Tremaine
+#
+# Revision 1.8  2005/02/21 19:09:52  mgt
+# Bump to 5.2.8 removed some cvs logs -mgt
+#
+# Revision 1.7  2005/02/16 00:43:28  mgt
+# Added #vi tag to everything, updated ignore.conf with comments, added emerge and netopia to the tree from Laurent -mgt
+#
+# Revision 1.6  2005/02/13 23:50:42  mgt
+# Tons of patches from Pawel and PLD Linux folks...Thanks! -mgt
+#
+# Revision 1.5  2004/10/11 18:37:15  mgt
+# patches from Pawel -mgt
+#
+# Revision 1.4  2004/07/29 19:33:29  mgt
+# Chmod and removed perl call -mgt
+#
+# Revision 1.3  2004/07/10 01:54:34  mgt
+# sync with kirk -mgt
+#
+##########################################################################
+
+########################################################
+# This was written and is maintained by:
+#    Michael Romeo <michaelromeo@mromeo.com>
+########################################################
+
+#####################################################
+## Copyright (c) 2008 Kirk Bauer
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@logwatch.org.
+#########################################################
+
+use strict;
+# use re "debug";
+#
+#  parse httpd access_log
+#
+#  Get the detail level and
+#  Build tables of the log format to parse it and determine whats what
+#
+
+my $detail = 10;
+my @log_fields =();
+my @log_format =();
+my $ignore_error_hacks = 0;
+$detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+@log_fields = split(" ", $ENV{'http_fields'});
+@log_format = split(" ", $ENV{'http_format'});
+$ignore_error_hacks = $ENV{'http_ignore_error_hacks'};
+
+#
+# Initialization etc.
+#
+
+my $byte_summary = 0;
+my $failed_requests = 0;
+my %field = ();
+my %hacks =();
+my %hack_success =();
+my %needs_exam =();
+my %ban_ip =();
+my %robots =();
+my $pattern = "";
+my $flag = 0;
+my $isahack = 0;
+my $a5xx_resp = 0;
+my $a4xx_resp = 0;
+my $a3xx_resp = 0;
+my $a2xx_resp = 0;
+my $a1xx_resp = 0;
+my $image_count = 0;
+my $image_bytes = 0;
+my $docs_count = 0;
+my $docs_bytes = 0;
+my $archive_count = 0;
+my $archive_bytes = 0;
+my $sound_count = 0;
+my $sound_bytes = 0;
+my $movie_count = 0;
+my $movie_bytes = 0;
+my $winexec_count = 0;
+my $winexec_bytes = 0;
+my $content_count = 0;
+my $content_bytes = 0;
+my $redirect_count = 0;
+my $redirect_bytes = 0;
+my $other_count = 0;
+my $other_bytes = 0;
+my $total_hack_count = 0;
+my $wpad_count =     0;
+my $wpad_bytes =     0;
+my $src_count =      0;
+my $src_bytes =      0;
+my $logs_count =     0;
+my $logs_bytes =     0;
+my $images_count =   0;
+my $images_bytes =   0;
+my $fonts_count =    0;
+my $fonts_bytes =    0;
+my $config_count =   0;
+my $config_bytes =   0;
+my $proxy_count =    0;
+my $proxy_bytes =    0;
+my %proxy_host =     ();
+my $host =           "";
+
+######################
+my $image_types =    '(\.bmp|\.cdr|\.emz|\.gif|\.ico|\.jpeg|\.jpg|\.png|\.svg|\.sxd|\.tif|\.tiff|\.wbmp|\.wmf|\.wmz|\.xdm)';
+my $content_types =  '(';
+   $content_types =  $content_types.'\/server-status|\/server-info';
+   $content_types =  $content_types.'|\.htm|\.html|\.jhtml|\.phtml|\.shtml|\/';
+   $content_types =  $content_types.'|\.inc|\.php|\.php3|\.asmx|\.asp|\.pl|\.wml|\/';
+   $content_types =  $content_types.'|\.css|\.js|\.cgi|\/';
+   $content_types =  $content_types.'|\.fla|\.swf|\/';
+   $content_types =  $content_types.'|\.class|\.jsp|\.jar|\.java|\/';
+   $content_types =  $content_types.'|COPYRIGHT|readme|README|FAQ|INSTALL|\.txt)';
+my $docs_types =     '(\.asc|\.djvu|\.doc|\.dot|\.dvi|\.gnumeric|\.mcd|\.mso|\.pdf|\.pps|\.ppt|\.ps|\.rtf|\.sxi|\.tex|\.text|\.tm|\.xls|\.xml)';
+my $archive_types =  '(\.ace|\.bz2|\.cab|\.deb|\.dsc|\.ed2k|\.gz|\.hqx|\.md5|\.rar|\.rpm|\.sig|\.sign|\.tar|\.tbz2|\.tgz|\.Z|\.zip)';
+my $sound_types =    '(\.au|\.mid|\.mp3|\.ogg|\.pls|\.ram|\.raw|\.rm|\.wav|\.wma|\.wmv|\.xsm)';
+my $movie_types =    '(\.asf|\.ass|\.avi|\.idx|\.mid|\.mpg|\.mpeg|\.mov|\.qt|\.psb|\.srt|\.ssa|\.smi|\.sub)';
+my $winexec_types =  '(\.bat|\.com|\.exe|\.dll)';
+my $wpad_files =     '(wpad\.dat|wspad\.dat|proxy\.pac)';
+my $program_src =    '(';
+   $program_src =    $program_src.'\.bas|\.c|\.cpp|\.diff|\.f|\.h|\.init|\.m|\.pas|\.patch|\.spec';
+   $program_src =    $program_src.'|Makefile|Makefile_c|Makefile_f77)';
+my $images_types =   '(\.bin|\.cue|\.img|\.iso|\.run)';
+my $logs_types =     '(\.log|_log|-log|\.logs|\.out|\.wyniki)';
+my $fonts_types =    '(\.aft|\.ttf)';
+my $config_types =   '(\.cfg|\.conf|\.config|\.ini)';
+
+#
+#   what to look for as an attack  USE LOWER CASE!!!!!!
+#
+my @exploits = (
+   '/../../../',
+   '../../config.sys',
+   '/../../../autoexec.bat',
+   '/../../windows/user.dat',
+   '\\\x02\\\xb1',
+   '\\\x04\\\x01',
+   '\\\x05\\\x01',
+   '\\\x90\\\x02\\\xb1\\\x02\\\xb1',
+   '\\\x90\\\x90\\\x90\\\x90',
+   '\\\xff\\\xff\\\xff\\\xff',
+   '\/c\+dir',
+   '\/c\+dir\+c',
+   '\.htpasswd',
+   'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+   'author.exe',
+   'boot.ini',
+   'cmd.exe',
+   'cltreq.asp',
+   'c%20dir%20C',
+   'default.ida',
+   'httpodbc.dll',
+   'nsiislog.dll',
+   'owssvr.dll',
+   'passwd',
+   'phpmyadmin',
+   'root.exe',
+   'shtml.exe',
+   'win.ini',
+   'XXXXXXXXXXXXXXXXXXXXXX'
+);
+
+#
+#  Define some usefull RE paterns
+#
+
+my %re_pattern = (space => '(.*)',
+   brace => '\[(.*)\]',
+   quote => '\"(.*)\"');
+
+#
+#  Build the regex to parse the line
+#
+
+for (my $i = 0; $i < @log_format; $i++) {
+   # print "$i $log_format[$i] $re_pattern{$log_format[$i]} \n";
+   $pattern = $pattern.$re_pattern{$log_format[$i]}.'\\s';
+}
+
+# this is easier than coding last element logic in the loop
+
+
+chop($pattern);
+chop($pattern);
+
+#################   print "RE pattern     = $pattern \n";
+
+#
+#  Process log file on stdin
+#
+
+while (my $line = <STDIN>) {
+   chomp($line);
+   
+   ##################  print "Line = $line \n";
+   
+   #
+   # parse the line per the input spec
+   #
+   
+   my @parsed_line = $line =~ /$pattern/o;
+   
+   # hash the results so we can identify the fields
+   # 
+   for (my $i = 0; $i < @log_fields; $i++) {
+      #		print "$i $log_fields[$i] $parsed_line[$i] \n";
+      $field{$log_fields[$i]} = $parsed_line[$i];
+   }
+
+   ##
+   ## Do the default stuff
+   ## 
+
+   #
+   # Break up the request into method, url and protocol
+   #
+
+   ($field{method},$field{url},$field{protocol}) = split(/ /,$field{"request"});
+   $field{lc_url} = lc $field{url};
+   
+   #
+   # Bytes sent Summary
+   # Apache uses "-" to represent 0 bytes transfered
+   #
+	
+   if ($field{bytes_transfered} eq "-") {$field{bytes_transfered} = 0};
+
+	$byte_summary += $field{bytes_transfered};
+   #
+   #  loop to check for typical exploit attempts
+   #
+	
+   $isahack = 0;
+	for (my $i = 0; $i < @exploits; $i++) {
+      # print "$i $exploits[$i] $field{lc_url} \n";
+      if ($field{lc_url} =~ /$exploits[$i]/) {
+         $hacks{$exploits[$i]} {$field{client_ip}} += 1;
+         $total_hack_count += 1;
+         $ban_ip{$field{client_ip}} = " ";
+         if ($field{http_rc} < 400) {
+            $hack_success{$field{url}} = $field{http_rc};
+         }
+         $isahack = 1;
+      }
+   }
+   
+   #
+   #  Count types and bytes
+   #
+   #	this is only printed if detail > 4 but it also looks 
+   #	for 'strange' stuff so it needs to run always
+   #
+
+   ($field{base_url},$field{url_parms}) = split(/\?/,$field{"lc_url"});
+   
+   if ($field{base_url} =~ /$image_types$/) {
+      $image_count += 1;
+      $image_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$docs_types$/) {
+      $docs_count += 1;
+      $docs_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$archive_types$/) {
+      $archive_count += 1;
+      $archive_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$sound_types$/) {
+      $sound_count += 1;
+      $sound_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$movie_types$/) {
+      $movie_count += 1;
+      $movie_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$winexec_types$/) {
+      $winexec_count += 1;
+      $winexec_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$content_types$/) {
+      $content_count += 1;
+      $content_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$wpad_files$/) {
+      $wpad_count += 1;
+      $wpad_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$program_src$/) {
+      $src_count += 1;
+      $src_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$images_types$/) {
+      $images_count += 1;
+      $images_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$logs_types$/) {
+      $logs_count += 1;
+      $logs_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$fonts_types$/) {
+      $fonts_count += 1;
+      $fonts_bytes += $field{bytes_transfered};
+   } elsif ($field{base_url} =~ /$config_types$/) {
+      $config_count += 1;
+      $config_bytes += $field{bytes_transfered};
+   } elsif ($field{http_rc} =~ /3\d\d/) {
+      $redirect_count += 1;
+      $redirect_bytes += $field{bytes_transfered};
+   } elsif ($field{method} =~ /CONNECT/) {
+      $proxy_count += 1;
+      $proxy_bytes += $field{bytes_transfered};
+      $proxy_host{"$field{client_ip} -> $field{base_url}"}++;
+   } else {
+      $other_count += 1;
+      $other_bytes += $field{bytes_transfered};
+      if (!$isahack ) {
+         if ( !$ignore_error_hacks ) {
+            $needs_exam{$field{request}} .= $field{http_rc}." ";
+         } elsif ( $field{http_rc} < 400 ) {
+            $needs_exam{$field{request}} .= $field{http_rc}." ";
+         }
+      }
+   }
+
+   ##
+   ## Do the > 4 stuff
+   ## 
+   #
+   #  Response Summary
+   #
+   
+   if ($field{http_rc} > 499 ) {
+      $a5xx_resp += 1;
+   } elsif ($field{http_rc} > 399 ) {
+      $a4xx_resp += 1;
+   } elsif($field{http_rc} > 299 ) {
+      $a3xx_resp += 1;
+   } elsif($field{http_rc} > 199 ) {
+      $a2xx_resp += 1;
+   } else {
+      $a1xx_resp += 1;
+   }
+
+   #
+   #  Count the robots who actually ask for the robots.txt file
+   #
+   
+   if ($field{lc_url} =~ /^\/robots.txt$/) {
+      $robots{$field{agent}} +=1;
+   }
+   
+} ## End of while loop
+
+#############################################
+##   output the results 
+##
+
+if ($detail >4) {
+   printf "%.2f MB transfered " , $byte_summary/(1024*1024);
+   print  "in ";
+   print ($a1xx_resp + $a2xx_resp + $a3xx_resp + $a4xx_resp + $a5xx_resp);
+   print " responses ";
+   print " (1xx $a1xx_resp, 2xx $a2xx_resp, 3xx $a3xx_resp,";
+   print " 4xx $a4xx_resp, 5xx $a5xx_resp) \n";
+   if ($image_count > 0)      { printf " $image_count Images (%.2f MB),\n" , $image_bytes/(1024*1024); }
+   if ($docs_count > 0)       { printf " $docs_count Documents (%.2f MB),\n" , $docs_bytes/(1024*1024); }
+   if ($archive_count > 0)    { printf " $archive_count Archives (%.2f MB),\n" , $archive_bytes/(1024*1024); }
+   if ($sound_count > 0)      { printf " $sound_count Sound files (%.2f MB),\n" , $sound_bytes/(1024*1024); }
+   if ($movie_count > 0)      { printf " $movie_count Movies files (%.2f MB),\n" , $movie_bytes/(1024*1024); }
+   if ($winexec_count > 0)    { printf " $winexec_count Windows executable files (%.2f MB),\n" , $winexec_bytes/(1024*1024); }
+   if ($content_count > 0)    { printf " $content_count Content pages (%.2f MB),\n" , $content_bytes/(1024*1024); }
+   if ($redirect_count > 0)   { printf " $redirect_count Redirects (%.2f MB),\n" , $redirect_bytes/(1024*1024); }
+   if ($wpad_count > 0)       { printf " $wpad_count Proxy Configuration Files (%.2f MB),\n" , $wpad_bytes/(1024*1024); }
+   if ($src_count > 0)        { printf " $src_count Program source files (%.2f MB),\n" , $src_bytes/(1024*1024); }
+   if ($images_count > 0)     { printf " $images_count CD Images (%.2f MB),\n" , $images_bytes/(1024*1024); }
+   if ($logs_count > 0)       { printf " $logs_count various Logs (%.2f MB),\n" , $logs_bytes/(1024*1024); }
+   if ($fonts_count > 0)      { printf " $fonts_count Fonts (%.2f MB),\n" , $fonts_bytes/(1024*1024); }
+   if ($config_count > 0)     { printf " $config_count Configs (%.2f MB),\n" , $config_bytes/(1024*1024); }
+   if ($proxy_count > 0)      { printf " $proxy_count mod_proxy connection attempts (%.2f MB),\n" , $proxy_bytes/(1024*1024); }
+   if ($other_count > 0)      { printf " $other_count Other (%.2f MB) \n" , $other_bytes/(1024*1024); }
+}
+
+#
+#  List attempted exploits
+#
+
+if ($detail >4) {
+   $flag = 1;
+   foreach my $i (keys %hacks) {
+      if ($flag) {
+         print "\nAttempts to use ".scalar(keys %hacks)." known hacks were logged $total_hack_count time(s)\n";
+         $flag = 0;
+      }
+      print "  $i  ";
+      if ($detail > 9) {
+         print " by \n";
+         foreach my $j ( keys %{$hacks{$i}} ) {
+            print "          $j $hacks{$i}{$j} time(s) \n";
+         }
+      } else {
+         print "\n";
+      }
+   }	
+}
+
+if (keys %proxy_host) {
+   print "\nConnection attempts using mod_proxy:\n";
+   foreach $host (sort {$a cmp $b} keys %proxy_host) {
+      print "   $host : $proxy_host{$host} Time(s)\n";
+   }
+}
+#
+#  List (wannabe) blackhat sites
+#
+
+$flag = 1;
+foreach my $i (keys %ban_ip) {
+   if ($flag) {
+      print "\nA total of ".scalar(keys %ban_ip)." sites probed the server \n";
+      $flag = 0;
+   }
+   #if ($detail > 4) {
+      print "  $i  \n";
+   #}
+}
+
+#
+#  List possible successful probes
+#
+
+$flag = 1;
+foreach my $i (keys %hack_success) {
+   if ($flag) {
+      print "\n!!!! ".scalar(keys %hack_success)." possible successful probes \n";
+      $flag = 0;
+   }
+   print " $i HTTP Response $hack_success{$i} \n";
+}
+
+#
+#  List 'others' that are not known attacks 
+#
+
+$flag = 1;
+foreach my $i (keys %needs_exam) {
+   if ($flag) {
+      print "\nA total of ".scalar(keys %needs_exam)." unidentified \'other\' records logged\n";
+      $flag = 0;
+   }
+# $needs_exam{$i} is massive
+   my %codes;
+   for my $code ( sort split / /, $needs_exam{$i} ) {
+      $codes{ $code }++;
+   }
+   my @code_summaries ;
+   for my $code ( sort keys %codes ) {
+      push @code_summaries, "$codes{ $code } $code responses";
+   }
+   print "  $i with response code(s) " . join(', ', @code_summaries) . "\n";
+}
+
+#
+#  List robots that identified themselves
+#
+
+if ($detail > 4) {
+   $flag = 1;
+   foreach my $i (keys %robots) {
+      if ($flag) {
+         print "\nA total of ".scalar(keys %robots)." ROBOTS were logged \n";
+         $flag = 0;
+      }
+      if ($detail > 9) {
+         print "      $i $robots{$i} time(s) \n";
+      }
+   }
+}
+
+exit (0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+

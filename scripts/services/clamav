@@ -1,0 +1,103 @@
+##################################################################
+#
+# clamav script ver. 0.85.1 for Logwatch.
+#
+# Written by S. Schimkat <www.schimkat.dk>.
+#
+# Find latest version here: www.schimkat.dk/clamav
+#
+##################################################################
+
+########################################################
+## Copyright (c) 2008 S. Schimkat
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@logwatch.org.
+#########################################################
+
+$Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+my $IgnoreUnmatched = $ENV{'clamav_ignoreunmatched'} || 0;
+
+while (defined($ThisLine = <STDIN>)) {
+   if (( $ThisLine =~ /^Setting connection queue length to \d+/ ) or
+       ( $ThisLine =~ /^clamd daemon/ ) or
+       ( $ThisLine =~ /^Log file size limited to \d+ bytes\./ ) or
+       ( $ThisLine =~ /^Exiting \(clean\)/ ) or
+       ( $ThisLine =~ /^Self checking every \d+ seconds\./ ) or
+       ( $ThisLine =~ /^Unix socket file/ ) or
+       ( $ThisLine =~ /^Protecting against \d+ viruses\./ ) or
+       ( $ThisLine =~ /^Reading databases from/ ) or
+       ( $ThisLine =~ /file removed\./ ) or
+       ( $ThisLine =~ /support enabled\./ ) or
+       ( $ThisLine =~ /support disabled\./ ) or
+       ( $ThisLine =~ /^Archive/ ) or
+       ( $ThisLine =~ /^Running as user/ ) or
+       ( $ThisLine =~ /^Log file size limit/ ) or
+       ( $ThisLine =~ /^Bound to.*port \d*/ ) or
+       ( $ThisLine =~ /^Detection of broken executables enabled./ ) or
+       ( $ThisLine =~ /^SIGHUP caught: re-opening log file./ ) or
+       ( $ThisLine =~ /^Loaded \d+ signatures/ ) or
+       ( $ThisLine =~ /^Algorithmic detection enabled/ ) or
+       ( $ThisLine =~ /^Mail: Recursion level limit set to \d+/ ) or
+       ( $ThisLine =~ /clamd shutdown\s+succeeded/ ) or
+       ( $ThisLine =~ /clamd startup\s+succeeded/ ) or
+       ( $ThisLine =~ /^No stats for Database check/ )) {
+       # We do not care about these.
+   } elsif (($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {
+      $SelfCheck{$Check}++;
+   } elsif (($Virus) = ($ThisLine =~ /^.+?: (.*?) FOUND/i )) {
+      $VirusList{$Virus}++;
+   } elsif (($Viruses) = ($ThisLine =~ /^Database correctly reloaded \((\d+) (signatures|viruses)\)/i )) {
+      $DatabaseReloads++;
+      $DatabaseViruses = $Viruses;
+   } elsif (($ThisLine =~ /Stopped at/)) {
+      $DaemonStop++;
+   } elsif (($ThisLine =~ /Daemon started/)) {
+      $DaemonStart++;
+   } else {
+      push @OtherList,$ThisLine;
+   }
+}
+
+if (($DaemonStop) and ($Detail >= 5)) {
+   print "\nDaemon stopped: ". $DaemonStop." Time(s)\n";
+}
+
+if (($DaemonStart) and ($Detail >= 5)) {
+   print "\nDaemon started: ". $DaemonStart." Time(s)\n";
+}
+
+if (keys %VirusList) {
+   print "\nViruses detected:\n";
+   foreach $Virus (sort {$a cmp $b} keys %VirusList) {
+      print '   ' . $Virus . ": ". $VirusList{$Virus} . " Time(s)\n";
+   }
+}
+
+if ((keys %SelfCheck) and ($Detail >=5)) {
+   print "\nDaemon check list:\n";
+   foreach $Check (sort {$a cmp $b} keys %SelfCheck) {
+      print '   ' . $Check . ": ". $SelfCheck{$Check} . " Time(s)\n";
+   }
+}
+
+if ($DatabaseReloads) {
+   print "\nVirus database reloaded $DatabaseReloads time(s) (last time with $DatabaseViruses viruses)\n";
+}
+
+if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
+   print "\n**Unmatched Entries**\n";
+   print @OtherList;
+}
+
+exit(0);
+# vi: shiftwidth=3 tabstop=3 syntax=perl et

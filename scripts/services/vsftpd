@@ -1,0 +1,151 @@
+#######################################################
+## Copyright (c) 2008 Kirk Bauer
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@logwatch.org.
+#########################################################
+
+# added $SearchDate to deal with xferlog format - see below
+use Logwatch ':dates';
+my $SearchDate = TimeFilter('%a %b %e %H:%M:%S %Y');
+
+$Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+$IgnoreUnmatched = $ENV{'vsftpd_ignore_unmatched'};
+$TotalBytesOut = 0;
+$TotalBytesIn = 0;
+
+while (defined($ThisLine = <STDIN>)) {
+   if ( ( $ThisLine =~ /CONNECT/ ) or
+        ( $ThisLine =~ /[OK|FAIL] RMDIR/ ) or
+        ( $ThisLine =~ /[OK|FAIL] CHMOD/ ) or
+        ( $ThisLine =~ /[OK|FAIL] DELETE/ ) or
+        ( $ThisLine =~ /MKDIR/ ) ) 
+   { # We don't care about these
+   } elsif ( ($IP,$Email) = ( $ThisLine =~ /OK LOGIN: Client \"(.*)\", anon password \"(.*)\"$/ ) ) {
+      $Temp = "    (" . $IP . "): " . $Email . " - ";
+      $AnonLogins{$Temp}++;
+   } elsif ( ($PID, $User,$IP) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] OK LOGIN: Client \"(.*)\"$/ ) ) {
+      $Temp = "    (" . $IP . "): " . $User . " - ";
+      $UserLogins{$Temp}++;
+   } elsif ( ($PID,$User,$IP) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] FAIL LOGIN: Client \"(.*)\"$/ ) ) {
+      $Temp = " (" . $IP . "): " . $User . " - ";
+      $FailedLogins{$Temp}++;
+   } elsif ( ($PID,$User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] OK UPLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+      $Temp = "   " . $FileName . " <- " . $IP . " (User: " . $User . ")\n";
+      $TotalBytesIn+= $FileSize;
+      push @UploadedFiles,$Temp;
+   } elsif ( ($PID,$User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] FAIL UPLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+      $Temp = "   " . $FileName . " <- " . $IP . " (User: " . $User . ")\n";
+      $TotalBytesIn+= $FileSize;
+      push @FailedUploadedFiles,$Temp;
+   } elsif ( ($PID,$User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] OK DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+      $Temp = "   " . $FileName . " -> " . $IP . " (User: " . $User . ")\n";
+      $TotalBytesOut+= $FileSize;
+      push @DownloadedFiles,$Temp;
+   } elsif ( ($PID,$User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /\[(.*)\] \[(.*)\] FAIL DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+      $Temp = "   " . $FileName . " -> " . $IP . " (User: " . $User . ")\n";
+      $TotalBytesOut+= $FileSize;
+      push @FailedDownloadedFiles,$Temp;
+   } elsif ( ($Date, $IP,$FileSize,$FileName,$Direction,$AccessMode,$User) = 
+         ( $ThisLine =~ /^(... ... .. ..:..:.. ....) \d+ ([^ ]+) (\d+) (.*) . . (.) (.) (.*) ftp . .*$/ ) ) {
+      # Handle xferlog format entries too...
+      # It appears that older versions of vsftpd would write to vsftpd.log with the xferlog format.
+      # Current versions appear to write xferlog format to xferlog.log file, which is handled by
+      # the ftp-xferlog service of logwatch.  So here is some code to deal with the older vsftpd.
+      if ($Date =~ /$SearchDate/) {
+         if ( $Direction eq 'o' ) {
+            # File was outgoing
+               $TotalBytesOut += $FileSize;
+            $Temp = "   " . $FileName . ' -> ' . $IP . ' (User: ' . $User . ")\n";
+            push @DownloadedFiles, $Temp;
+         } elsif ( $Direction eq 'd' ) {
+            $Temp = '   ' . $FileName . ' Deleted ' . $IP . ' (User: ' . $User . ")\n";
+            push @DeletedFiles, $Temp;
+         } else {
+            # File was incoming
+            $TotalBytesIn += $FileSize;
+            $Temp = "   " . $FileName . ' <- ' . $IP . ' (User: ' . $User . ")\n";
+            push @UploadedFiles, $Temp;
+         }
+      }
+   } else {
+      # Report any unmatched entries...
+      push @OtherList,$ThisLine;
+   }
+}
+
+if ( (keys %AnonLogins) and ($Detail >= 5) ) {
+   print "\nAnonymous FTP Logins:\n";
+   foreach $ThisOne (keys %AnonLogins) {
+      print $ThisOne . $AnonLogins{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (keys %UserLogins) {
+   print "\nUser FTP Logins:\n";
+   foreach $ThisOne (keys %UserLogins) {
+      print $ThisOne . $UserLogins{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (keys %FailedLogins) {
+   print "\nFailed FTP Logins:\n";
+   foreach $ThisOne (keys %FailedLogins) {
+      print $ThisOne . $FailedLogins{$ThisOne} . " Time(s)\n";
+   }
+}
+
+$TotalKBytesOut = int $TotalBytesOut/1024;
+$TotalKBytesIn = int $TotalBytesIn/1024;
+$TotalMBytesOut = int $TotalKBytesOut/1024;
+$TotalMBytesIn = int $TotalKBytesIn/1024;
+
+if ( ( $#UploadedFiles >= 0 ) or
+   ( $#FailedUploadedFiles >= 0 ) ) {
+   if ( $#UploadedFiles >= 0) {
+      print "\nIncoming FTP Files:\n";
+      print @UploadedFiles;
+   }
+   if ( $#FailedUploadedFiles >= 0) {
+      print "\nFailed Uploads\n";
+      print @FailedUploadedFiles;
+   }
+   print "\nTOTAL KB IN: " . $TotalKBytesIn . "KB (" . $TotalMBytesIn . "MB)\n";
+}
+
+if ( ( $#DownloadedFiles >= 0 ) or
+   ( $#FailedDownloadedFiles >=0 ) ) {
+   if ( $#DownloadedFiles >= 0) {
+      print "\nOutgoing FTP Files:\n";
+      print @DownloadedFiles;
+   }
+   if ( $#FailedDownloadedFiles >= 0) {
+      print "\nFailed Downloads\n";
+      print @FailedDownloadedFiles;
+   }
+   print "\nTOTAL KB OUT: " . $TotalKBytesOut . "KB (" . $TotalMBytesOut . "MB)\n";
+}
+
+if ( (@DeletedFiles) ) {
+   print "\nDeleted Files:\n";
+   print @DeletedFiles;
+}
+
+if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
+   print "\n**Unmatched Entries**\n";
+   print @OtherList;
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+
