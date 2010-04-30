@@ -80,6 +80,7 @@
 #########################################################
 
 use Logwatch ':dates';
+use warnings;
 
 $Detail       = $ENV{'LOGWATCH_DETAIL_LEVEL'}  || 0;
 
@@ -291,7 +292,7 @@ if ($Detail >= $LvlBadFormat) {
 }
 
 # Print server Stops/Starts
-if ($Detail >= $LvlRestart) {
+if ($Detail >= $LvlRestarts) {
    if (@Restart) {
       print "\n--- Exim Restarted ---\n";
       foreach $ThisOne (sort @Restart) {
@@ -300,7 +301,7 @@ if ($Detail >= $LvlRestart) {
    }
 }
 
-if ($Detail >= $LvlRestart) {
+if ($Detail >= $LvlRuns) {
    if (($StartQueue >0 ) or ($EndQueue > 0)) {
       print "\n--- Queue Runners ---\n";
       # Start Queue
