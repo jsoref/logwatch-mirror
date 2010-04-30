@@ -201,8 +201,8 @@ $Undeliverable          = 0;
 $Deliverable            = 0;
 
 while (defined($ThisLine = <STDIN>)) {
-   if ( 
-      ( $ThisLine =~ m/^$re_MsgID: client=([^ ]*\[[^ ]*\])\s*$/ ) or 
+   if (
+      ( $ThisLine =~ m/^$re_MsgID: client=([^ ]*\[[^ ]*\])\s*$/ ) or
       ( $ThisLine =~ m/^$re_MsgID: message-id/ ) or
       ( $ThisLine =~ m/^$re_MsgID: skipped, still being delivered/ ) or
       ( $ThisLine =~ m/^$re_MsgID: to=\<.*>, relay=.*, delay=[\d.]+,(?: delays=[\d\/.]+, dsn=[\d.]+,)? status=(?:sent|deferred)/ ) or
@@ -216,14 +216,14 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/^SSL_accept error from/ ) or
       ( $ThisLine =~ m/^Verified: / ) or
       ( $ThisLine =~ m/^cert has expired/ ) or
-      ( $ThisLine =~ m/^connect/ ) or 
+      ( $ThisLine =~ m/^connect/ ) or
       ( $ThisLine =~ m/^daemon started$/ ) or
       ( $ThisLine =~ m/^daemon started -- version / ) or
       ( $ThisLine =~ m/^dict_eval_action:/ ) or
-      ( $ThisLine =~ m/^disconnect/ ) or 
+      ( $ThisLine =~ m/^disconnect/ ) or
       ( $ThisLine =~ m/^mynetworks:/ ) or
       ( $ThisLine =~ m/^name_mask:/ ) or
-      ( $ThisLine =~ m/^reload configuration/ ) or 
+      ( $ThisLine =~ m/^reload configuration/ ) or
       ( $ThisLine =~ m/^setting up TLS connection (from|to)/ ) or
       ( $ThisLine =~ m/^starting TLS engine$/ ) or
       ( $ThisLine =~ m/^terminating on signal 15$/ ) or
@@ -271,7 +271,7 @@ while (defined($ThisLine = <STDIN>)) {
       # print "bounce message from " . $Dest . " msg : " . $Relay . "\n";
       if ($Relay =~ m/^(none|local|avcheck|127\.0\.0\.1)/) {
          $Temp = "To " . $Dest . " Msg=\"" . $Msg . "\"";
-         $LocalBounce{$Temp}++;				
+         $LocalBounce{$Temp}++;
       } else {
          $Temp = "To " . $Dest . " Msg=\"" . $Msg . "\"";
          $ForeignBounce{$Temp}++;
@@ -374,11 +374,11 @@ while (defined($ThisLine = <STDIN>)) {
       chomp($User);
       $SaslAuth{$Host}{$User}++;
    } elsif ( ($Host) = ($ThisLine =~ /TLS connection established from ([^ ]*\[[^ ]*\]):/)) {
-      $TLSconnectFrom{$Host}++; 
+      $TLSconnectFrom{$Host}++;
    } elsif ( ($Host) = ($ThisLine =~ /TLS connection established to ([^ ]*):/)) {
-      $TLSconnectTo{$Host}++; 
+      $TLSconnectTo{$Host}++;
    } elsif ( ($Cert) = ($ThisLine =~ /^Unverified: (.*)/)) {
-      $TLSunverified{$Cert}++; 
+      $TLSunverified{$Cert}++;
    } elsif ( ($Domain) = ($ThisLine =~ /warning: malformed domain name in resource data of MX record (.*)$/)) {
       $MxError{$Domain}++;
    } elsif ( ($Host,$Command) = ($ThisLine =~ /warning: ([^ ]*\[[^ ]*\]) sent .* header instead of ([^ ]*) command: /)) {
@@ -1192,8 +1192,12 @@ if ($#OtherList >= 0) {
    print "\n\n**Unmatched Entries**\n\n";
    print @OtherList;
 }
-	
+
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

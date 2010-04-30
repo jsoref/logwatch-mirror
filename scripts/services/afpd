@@ -28,11 +28,11 @@ while (defined($ThisLine = <STDIN>)) {
          ( $ThisLine =~ /^PAM\(.*\): Authentication failure/ ) or
          ( $ThisLine =~ /^data_sendfile/ ) or
          ( $ThisLine =~ /^FTP no transfer timeout, disconnected\./ ) or
-         ( $ThisLine =~ /^FTP login timed out, disconnected\./ ) or 
-         ( $ThisLine =~ /done/ ) or 
-         ( $ThisLine =~ /server_child/ ) or 
-         ( $ThisLine =~ /session from/ ) or 
-         ( $ThisLine =~ /ASIP session/ ) or 
+         ( $ThisLine =~ /^FTP login timed out, disconnected\./ ) or
+         ( $ThisLine =~ /done/ ) or
+         ( $ThisLine =~ /server_child/ ) or
+         ( $ThisLine =~ /session from/ ) or
+         ( $ThisLine =~ /ASIP session/ ) or
          ( $ThisLine =~ /logout/ )
       ) {
       # We don't care about these
@@ -61,4 +61,8 @@ if (($#OtherList >= 0) and (not $IgnoreUnmatched)) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

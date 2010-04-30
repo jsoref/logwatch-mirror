@@ -129,7 +129,7 @@ while ($line = <STDIN>) {
    # for fedora and others
 	if ($line =~ s/^... .. ..:..:.. .+ .+\(pam_unix\)\[\d+\]: //) {
 		$service =~ s/^... .. ..:..:.. .+ (.+)\(pam_unix\)\[\d+\]: .*$/$1/;
-   # new fedora (fc5) version 
+   # new fedora (fc5) version
    } elsif ( $line =~ s/^... .. ..:..:.. .+ pam_unix\(.+:.+\): //  ) {
       $service =~ s/^... .. ..:..:.. .+ pam_unix\((.+):.+\): .*$/$1/;
    # for debian sarge - "normal" lines
@@ -147,9 +147,9 @@ while ($line = <STDIN>) {
 	} else {
 		next;
 	}
-   #lowercase the service 
-   $service = lc($service); 
-	if (($service =~ /ssh(|d)/) or ($service eq 'login') or ($service eq 'ftp') or ($service eq 'rsh') or 
+   #lowercase the service
+   $service = lc($service);
+	if (($service =~ /ssh(|d)/) or ($service eq 'login') or ($service eq 'ftp') or ($service eq 'rsh') or
 	    ($service eq 'remote') or ($service eq 'rlogin') or ($service eq 'rexec')) {
 		if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
 			($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
@@ -205,12 +205,14 @@ while ($line = <STDIN>) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^authentication failure;.* user=(.+)$/$1/) {
          $data{$service}{'Authentication Failures'}{$line}++;
+      } elsif ($line =~ /check pass; user unknown/) {
+         $data{$service}{'Invalid Users'}{'Unknown Account'}++;
       } elsif ($line =~ /session closed for user/) {
          # ignore this line
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-     
+
    } elsif ($service eq 'spop3d' || $service eq 'pop') {
 	   if ($line =~ s/^session opened for user (.+)/$1/) {
 		   $data{$service}{'Sessions Opened'}{$line}++;
@@ -229,11 +231,13 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif ($service eq 'pure-ftpd') {
+   } elsif (($service eq 'pure-ftpd') || ($service eq 'vsftpd')){
       if ($line =~ s/^session opened for user (.+)/$1/) {
          $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^check pass; (.+)/$1/) {
          $data{$service}{'Password Failures'}{$line}++;
+      } elsif ($line =~ s/^authentication failure; .*user=(.+)$/$1/) {
+         $data{$service}{'Authentication Failures'}{$line}++;
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
@@ -260,7 +264,7 @@ while ($line = <STDIN>) {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
    } elsif (($service eq 'samba') or ($service eq 'smbd')) {
-      if ($line =~ s/^session opened for user ([a-zA-Z\d]+) by (.+)/$1/) {
+      if ($line =~ s/^session opened for user (\S+) by (.+)/$1/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session closed for user (.+)/$1/) {
          ($Detail >= 8) && $data{$service}{'Sessions Closed'}{$line}++;
@@ -274,18 +278,28 @@ while ($line = <STDIN>) {
      }
    } elsif ($service eq 'atd') {
      if ($line =~/^session (opened)?(\/)?(closed)? for user [a-zA-Z\d]+/) {
-     } elsif ($line =~ /^account root has password changed in future/) { 
+     } elsif ($line =~ /^account root has password changed in future/) {
        #I'm not sure whether this info could not be reported
      } else {
          $data{$service}{'Unknown Entries'}{$line}++;
      }
    } elsif ($service eq 'system-config-date') {
-     if ($line =~ s/auth could not identify password for \[(.*)\]/$1/) {
+      if ($line =~ s/auth could not identify password for \[(.*)\]/$1/) {
          $data{$service}{'Not Identify Password For'}{$line}++;
-     } else {
+      } else {
          $data{$service}{'Unknown Entries'}{$line}++;
-     }
-   } else {      
+      }
+   } elsif ($service eq 'smtp') {
+      if ($line =~ s/^authentication failure; logname=(\S*) uid=(\d+).*user=(\S*)$/$1($2) -> $3/) {
+         $data{$service}{'Authentication Failures'}{$line}++;
+      } elsif ($line =~ /authentication failure; logname= uid=0 euid=0 tty= ruser= rhost=/) {
+         # ignore this line
+      } elsif ($line =~ /check pass; user unknown/) {
+         $data{$service}{'Invalid Users'}{'Unknown Account'}++;
+      } else  {
+         $data{$service}{'Unknown Entries'}{$line}++;
+      }
+   } else {
       $data{$service}{'Unknown Entries'}{$line}++;
    }
 }
@@ -305,4 +319,8 @@ foreach my $service (sort {$a cmp $b} keys %data) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

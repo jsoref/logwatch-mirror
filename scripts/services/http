@@ -141,7 +141,7 @@ my $logformat = "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"|%h
 if (defined $ENV{'logformat'}) {
    $logformat = $ENV{'logformat'};
 }
-   
+
 my @log_fields = ();
 my @log_format = ();
 if ((defined $ENV{'http_fields'}) and (defined $ENV{'http_format'})) {
@@ -221,7 +221,7 @@ my $content_types =  '(';
    $content_types =  $content_types.'|\.html\.[a-z]{2,3}(_[A-Z]{2,3})?';
    $content_types =  $content_types.'|\.inc|\.php|\.php3|\.asmx|\.asp|\.pl|\.wml';
    $content_types =  $content_types.'|^\/mailman\/.*';
-   $content_types =  $content_types.'|\/sqwebmail.*';   
+   $content_types =  $content_types.'|\/sqwebmail.*';
    $content_types =  $content_types.'|^\/announce|^\/scrape'; # BitTorrent tracker mod_bt
    $content_types =  $content_types.'|\.torrent';
    $content_types =  $content_types.'|\.css|\.js|\.cgi';
@@ -439,9 +439,9 @@ while ($end_loop) {
 
 while (my $line = <STDIN>) {
    chomp($line);
-   
+
    ##################  print "Line = $line \n";
-   
+
    #
    # parse the line per the input spec
    #
@@ -452,7 +452,7 @@ while (my $line = <STDIN>) {
          last;
       }
    }
-   
+
    if (not @parsed_line) {
       $notparsed_count++;
       if ($notparsed_count <= 10) {
@@ -460,9 +460,9 @@ while (my $line = <STDIN>) {
       }
       next;
    }
-   
+
    # hash the results so we can identify the fields
-   # 
+   #
    for my $i (0..$#log_fields) {
       #		print "$i $log_fields[$i] $parsed_line[$i] \n";
       $field{$log_fields[$i]} = $parsed_line[$i];
@@ -470,7 +470,7 @@ while (my $line = <STDIN>) {
 
    ##
    ## Do the default stuff
-   ## 
+   ##
 
    #
    # Break up the request into method, url and protocol
@@ -481,19 +481,19 @@ while (my $line = <STDIN>) {
       $field{url}='null';
    }
    $field{lc_url} = lc $field{url};
-   
+
    #
    # Bytes sent Summary
    # Apache uses "-" to represent 0 bytes transferred
    #
-	
+
    if ($field{bytes_transfered} eq "-") {$field{bytes_transfered} = 0};
    $byte_summary += $field{bytes_transfered};
 
    #
    #  loop to check for typical exploit attempts
    #
-	
+
    if (!$ignore_error_hacks) {
       for (my $i = 0; $i < @exploits; $i++) {
          # print "$i $exploits[$i] $field{lc_url} \n";
@@ -507,16 +507,16 @@ while (my $line = <STDIN>) {
          }
       }
    }
-   
+
    #
    #  Count types and bytes
    #
-   #	this is only printed if detail > 4 but it also looks 
+   #	this is only printed if detail > 4 but it also looks
    #	for 'strange' stuff so it needs to run always
    #
 
    ($field{base_url},$field{url_parms}) = split(/\?/,$field{"lc_url"});
-   
+
    if ($field{base_url} =~ /$image_types$/oi) {
       $image_count += 1;
       $image_bytes += $field{bytes_transfered};
@@ -580,7 +580,7 @@ while (my $line = <STDIN>) {
       if (length($field{url}) > 60) {
          $fmt_url = substr($field{url},0,42) . " ... " .
                     substr($field{url},-15,15);
-      }	
+      }
       $needs_exam{$field{http_rc}}{$fmt_url}++;
    }
    if (defined $field{userid} && $field{userid} ne "-" &&
@@ -592,11 +592,11 @@ while (my $line = <STDIN>) {
 
    ##
    ## Do the > 4 stuff
-   ## 
+   ##
    #
    #  Response Summary
    #
-   
+
    if ($field{http_rc} > 499 ) {
       $a5xx_resp += 1;
    } elsif ($field{http_rc} > 399 ) {
@@ -612,17 +612,17 @@ while (my $line = <STDIN>) {
    #
    #  Count the robots who actually ask for the robots.txt file
    #
-   
+
    if ($field{lc_url} =~ /^\/robots.txt$/) {
       if (defined $field{agent}) {
          $robots{$field{agent}} +=1;
       }
    }
-   
+
 } ## End of while loop
 
 #############################################
-##   output the results 
+##   output the results
 ##
 
 if ($detail >4) {
@@ -674,7 +674,7 @@ if (($detail >4) and $total_hack_count) {
       } else {
          print "\n";
       }
-   }	
+   }
 }
 
 if (keys %proxy_host) {
@@ -792,4 +792,8 @@ if ($notparsed) {
 exit (0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

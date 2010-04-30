@@ -63,7 +63,7 @@ use Logwatch ':ip';
 $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 $MinFilter = $ENV{'iptables_host_min_count'} || 0;
 $DoLookup = $ENV{'iptables_ip_lookup'}; $DoLookup = $DoLookup; # keep -w happy
-$ListByHost = $ENV{'iptables_list_by_host'} || 0; 
+$ListByHost = $ENV{'iptables_list_by_host'} || 0;
 $ListByService = $ENV{'iptables_list_by_service'} || 0;
 # Keep old behaviour if nothing is configured
 $ListByHost = 1 unless ($ListByService);
@@ -114,7 +114,7 @@ sub lookupAction {
 
 # SORT COMPARISONS
 sub compStr {
-   return $a cmp $b; 
+   return $a cmp $b;
 }
 
 sub compNum {
@@ -130,19 +130,19 @@ while (defined($ThisLine = <STDIN>)) {
    # doesn't work.  Therefore, we extract it here:
    $ThisLine =~ s/^... .. ..:..:.. ([^ ]*) (kernel: )?(\[\d+\.\d+\] )?//;
 
-   # IPCHAINS 
+   # IPCHAINS
    if( ($TU,$from,$port,$on) = ( $ThisLine =~ /IP fw-in deny \w+ (\w+) ([^:]+):\d+ ([^:]+):(\d+) / ) ){
       if($MaxNum < ++$TCPscan{$TU}{$from}) {
          $MaxNum = $TCPscan{$TU}{$from}
       }
       $port=0;
    } elsif ( ($chain,$action,$if,$proto,$fromip,$toip,$toport) = ( $ThisLine =~ /^Packet log: ([^ ]+) (\w+) (\w+) PROTO=(\d+) ([\d|\.]+):\d+ ([\d|\.]+):(\d+)/ ) ) {
-      $actionType = lookupAction($action); 
-      $ipt{$actionType}{$if}{$fromip}{$toip}{$toport}{$proto}{"$chain,$if"}++;   
-      $ipt2{$actionType}{$if}{$toport}{$proto}{$fromip}{$toip}{"$chain,$if"}++;   
+      $actionType = lookupAction($action);
+      $ipt{$actionType}{$if}{$fromip}{$toip}{$toport}{$proto}{"$chain,$if"}++;
+      $ipt2{$actionType}{$if}{$toport}{$proto}{$fromip}{$toip}{"$chain,$if"}++;
    }
    # IPTABLES
-   elsif (($chain,$ifin,$ifout,$fromip,$toip,$proto,$rest) = ($ThisLine =~ /^(.*?)\s*IN=(\w*).*?OUT=(\w*).*?SRC=([\w\.:]+).*?DST=([\w\.:]+).*?PROTO=(\w+)(.*)/ )) {
+   elsif (($chain,$ifin,$ifout,$fromip,$toip,$proto,$rest) = ($ThisLine =~ /^(.*?)\s*IN=([\w\.]*).*?OUT=([\w\.]*).*?SRC=([\w\.:]+).*?DST=([\w\.:]+).*?PROTO=(\w+)(.*)/ )) {
 
       # get a destination port number  (or icmp type) if there is one
       if (! ( ($toport) = ( $rest =~ /TYPE=(\w+)/ ) ) ) {
@@ -154,12 +154,12 @@ while (defined($ThisLine = <STDIN>)) {
       # get the action type
       $actionType = lookupAction($chain);
 
-      # determine the dominant interface 
+      # determine the dominant interface
       if ($ifin  =~ /\w+/ && $ifout  =~ /\w+/) {
          $interface = $ifin;
       } elsif ($ifin =~ /\w+/) {
          $interface = $ifin;
-         $ifout = "none"; 
+         $ifout = "none";
       } else {
          $interface = $ifout;
          $ifin = "none";
@@ -172,10 +172,10 @@ while (defined($ThisLine = <STDIN>)) {
       }
 
       # add the packet
-#      $ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}{$proto}{"$chain,$ifin,$ifout"}++;   
-      $ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}{$proto}{$chain_info}++;   
-      $ipt2{$actionType}{$interface}{$toport}{$proto}{$fromip}{$toip}{$chain_info}++;   
-   }   
+#      $ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}{$proto}{"$chain,$ifin,$ifout"}++;
+      $ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}{$proto}{$chain_info}++;
+      $ipt2{$actionType}{$interface}{$toport}{$proto}{$fromip}{$toip}{$chain_info}++;
+   }
    # IPF
    elsif (($repcnt,$if,$chain,$fromip,$fromport,$toip,$toport,$proto,$rest,$inout) = ($ThisLine =~ /^.*\d{2,2}:\d{2,2}:\d{2,2}\.\d{6,6}\s*(?:(\d{1,})x)*\s*(\w*)\s*@[-]*\d{1,}:[-]*\d{1,}\s*(\w*)\s*([\w\.:]+\w),*(\d*)\s*->\s*([\w\.:]+\w),*(\d*)\s*PR\s*(\w*)\s*(.*((IN|OUT)).*)/)) {
       if ($chain eq 'b') {
@@ -187,8 +187,8 @@ while (defined($ThisLine = <STDIN>)) {
          $repcnt = 1;
       }
       while ($repcnt >= 1) {
-        $ipt{$actionType}{$if}{$fromip}{$toip}{$toport}{$proto}{"$actionType,$if"}++;   
-        $ipt2{$actionType}{$if}{$toport}{$proto}{$fromip}{$toip}{"$actionType,$if"}++;   
+        $ipt{$actionType}{$if}{$fromip}{$toip}{$toport}{$proto}{"$actionType,$if"}++;
+        $ipt2{$actionType}{$if}{$toport}{$proto}{$fromip}{$toip}{"$actionType,$if"}++;
         $repcnt = $repcnt - 1;
       }
    }
@@ -203,7 +203,7 @@ if (keys %TCPscan and $MaxNum>$MaxFlood) {
          $TCPscan{$ThisOne}{$Next}>$MaxFlood &&
             print "      " . LookupIP($Next). ": $TCPscan{$ThisOne}{$Next} Time(s)\n";
       }
-   }       
+   }
 }
 
 
@@ -225,11 +225,11 @@ if ((keys %ipt2) and $ListByService) {
                   $protocol = lookupProtocol($proto);
                } else {
                   $protocol = lc($proto);
-               } 
+               }
 
                # determine the name of the service
                my $service = lookupService($toport,$protocol);
-                
+
                foreach my $fromip (sort SortIP keys %{$ipt2{$actionType}{$interface}{$toport}{$proto}}) {
                   my $fromHostCount = 0;
                   my $from = LookupIP($fromip);
@@ -247,10 +247,10 @@ if ((keys %ipt2) and $ListByService) {
                      }
                      $fromHostCount += $toHostCount;
                   }
-                     if ( $Detail > 9 ) { 
+                     if ( $Detail > 9 ) {
                         chop $outputDetails;
                         chop $outputDetails;
-                        push @{$hostList{"$fromHostCount"}}, $from . 
+                        push @{$hostList{"$fromHostCount"}}, $from .
                              " " . $outputDetails;
                      } else {
                         push @{$hostList{"$fromHostCount"}}, $from;
@@ -258,19 +258,19 @@ if ((keys %ipt2) and $ListByService) {
                   $portCount += $fromHostCount;
                   $hostCount++;
                }
-               
+
                $interfaceCount += $portCount;
                if ($Detail > 5 ) {
                   $outputMain .= sprintf("   To port %d/%s (%s) - ".
-                                         "%d packet%s from %d host%s\n", 
-                                   $toport, $protocol, 
-                                   ( $service =~ /^\d+$/ ) ? "?" : $service, 
-                                   $portCount, ( $portCount > 1 ) ? "s" : " ", 
+                                         "%d packet%s from %d host%s\n",
+                                   $toport, $protocol,
+                                   ( $service =~ /^\d+$/ ) ? "?" : $service,
+                                   $portCount, ( $portCount > 1 ) ? "s" : " ",
                                    $hostCount, ( $hostCount > 1 ) ? "s" : " "
                                  );
                   foreach my $hc (sort { $b <=> $a } keys %hostList) {
                      foreach my $h (@{$hostList{"$hc"}}) {
-                        $outputMain .= sprintf("    %6d packet%s from %s\n", 
+                        $outputMain .= sprintf("    %6d packet%s from %s\n",
                                        $hc, ( $hc > 1 ) ? "s" : " ", $h);
                      }
                   }
@@ -279,26 +279,26 @@ if ((keys %ipt2) and $ListByService) {
                   ($topHostCount, undef) = sort { $b <=> $a } keys %hostList;
                   my $topHost = ${$hostList{"$topHostCount"}}[0];
                   $outputMain .= sprintf( "   To port %5d/%s - %5d packet%s ".
-                                         "from %4d host%s (%d from %s)\n", 
-                                   $toport, $protocol, $portCount, 
-                                   ( $portCount > 1 ) ? "s" : " ", $hostCount, 
-                                   ( $hostCount > 1 ) ? "s" : " ",  
-                                   $topHostCount, $topHost 
-                                 ); 
+                                         "from %4d host%s (%d from %s)\n",
+                                   $toport, $protocol, $portCount,
+                                   ( $portCount > 1 ) ? "s" : " ", $hostCount,
+                                   ( $hostCount > 1 ) ? "s" : " ",
+                                   $topHostCount, $topHost
+                                 );
                } else {
                   $outputMain .= sprintf("   To port %5d/%s - %5d packet%s ".
-                                         "from %4d host%s\n", 
-                                   $toport, $protocol, $portCount, 
-                                   ( $portCount > 1 ) ? "s" : " ", $hostCount, 
-                                   ( $hostCount > 1 ) ? "s" : " " 
-                                 ); 
+                                         "from %4d host%s\n",
+                                   $toport, $protocol, $portCount,
+                                   ( $portCount > 1 ) ? "s" : " ", $hostCount,
+                                   ( $hostCount > 1 ) ? "s" : " "
+                                 );
                }
             }
          }
          print "Listed by target ports:";
-         print "\n$actionType $interfaceCount " . 
-               ( ( $interfaceCount > 1 ) ? "packets" : "packet" ) . 
-               " on interface $interface\n"; 
+         print "\n$actionType $interfaceCount " .
+               ( ( $interfaceCount > 1 ) ? "packets" : "packet" ) .
+               " on interface $interface\n";
          print $outputMain;
       }
    }
@@ -321,13 +321,13 @@ if ((keys %ipt) and $ListByHost) {
                $to = LookupIP($toip);
                $outputServices = '';
                foreach $toport (sort compNum keys %{$ipt{$actionType}{$interface}{$fromip}{$toip}}) {
-                  foreach $proto (sort compStr keys %{$ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}}) {                                     
+                  foreach $proto (sort compStr keys %{$ipt{$actionType}{$interface}{$fromip}{$toip}{$toport}}) {
                      # determine the protocol
                      if ( $proto =~ /^\d+$/ ) {
                         $protocol = lookupProtocol($proto);
                      } else {
                         $protocol = lc($proto);
-                     } 
+                     }
 
                      # determine the name of the service
                      $service = lookupService($toport,$protocol);
@@ -366,7 +366,7 @@ if ((keys %ipt) and $ListByHost) {
             $outputMain .= $outputSection;
          }
          print "\nListed by source hosts:";
-         print "\n$actionType $interfaceCount " . ( ( $interfaceCount > 1 ) ? "packets" : "packet" ) . " on interface $interface\n"; 
+         print "\n$actionType $interfaceCount " . ( ( $interfaceCount > 1 ) ? "packets" : "packet" ) . " on interface $interface\n";
          print $outputMain;
       }
    }
@@ -376,4 +376,8 @@ if ((keys %ipt) and $ListByHost) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

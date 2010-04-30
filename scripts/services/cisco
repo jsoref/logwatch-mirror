@@ -72,9 +72,9 @@ while (defined($ThisLine = <STDIN>)) {
 ($month,$day,$time,$host,$process,$conn,$msg)=split(/ +/,$ThisLine,7);
 
    if ( ($ThisLine =~ /(ISDN-6-.+)/ ) or
-         ($ThisLine =~ /Copyright/ ) or 
-         ($ThisLine =~ /Cisco Internetwork Operating System Software/ ) or 
-         ($ThisLine =~ /IOS \(tm\)/ ) or 
+         ($ThisLine =~ /Copyright/ ) or
+         ($ThisLine =~ /Cisco Internetwork Operating System Software/ ) or
+         ($ThisLine =~ /IOS \(tm\)/ ) or
          ($ThisLine =~ /Cisco IOS/ ) or
          ($ThisLine =~ /Technical Support/ ) or
          ($ThisLine =~ /self test passed/ ) or
@@ -124,7 +124,7 @@ while (defined($ThisLine = <STDIN>)) {
       } else {
          $count = 0;
       }
-       
+
       $ACL{$accesslist} += $count;
       $ACTION{$action} += $count;
       $packets += $count;
@@ -168,7 +168,7 @@ while (defined($ThisLine = <STDIN>)) {
       } else {
          $count = 0;
       }
-       
+
       $ACL{$accesslist} += $count;
       $ACTION{$action} += $count;
       $IPV6_packets += $count;
@@ -308,7 +308,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Flapping{$host}{$interface}++;
    }
    elsif ( ($interface) = ($ThisLine =~ /LOGIN_FAIL:User (.*)/) ) {
-      $LoginFail{$host}{$interface}++; 
+      $LoginFail{$host}{$interface}++;
    }
    elsif ( ($interface) = ($ThisLine =~ /RSHPORTATTEMPT: (.*)/) ) {
       $RSHELLFail{$host}{$interface}++;
@@ -1254,3 +1254,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -83,7 +83,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Logout{$User}{$Host}++;
       $Logout2{$User}++;
       $KilledSession{$User}{$Reason}++;
-   } elsif ( 
+   } elsif (
       (($User,$Host) = ( $ThisLine =~ /^Broken pipe, while reading line user=(.*) host=(.*\[.*\])$/ )) or
       (($User,$Host) = ( $ThisLine =~ /^Command stream end of file, while reading line user=(.*) host=(.*\[.*\])$/ )) or
       (($User,$Host) = ( $ThisLine =~ /^Connection (?:reset by peer|timed out), while reading line user=(.*) host=(.*\[.*\])$/ )) or
@@ -96,7 +96,7 @@ while (defined($ThisLine = <STDIN>)) {
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
-      
+
       $ThisLine =~ s/^(client [.0-9]+)\S+/$1/;
       chomp($ThisLine);
       $OtherList{$ThisLine}++;
@@ -112,7 +112,7 @@ if ( ( $Detail >= 0 ) and (keys %LoginFailed)) {
             "\n=========================".
             "\n                                                  Host (user) |          # ".
             "\n------------------------------------------------------------- | -----------";
-   
+
    $ConnCount = 0;
    foreach $Host (sort keys %LoginFailed) {
       $Conns = $LoginFailed{$Host};
@@ -134,7 +134,7 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
              "\n=========================".
              "\n                                  Host | Connections |    SSL   |   Total  ".
              "\n-------------------------------------- | ----------- | -------- | ---------";
-  
+
    $ConnCount = 0;
    $SSLConn = 0;
    $TotalConn = 0;
@@ -182,7 +182,7 @@ if (keys %Logout2) {
              "\n====================".
              "\n                                   User | Logouts | Downloaded |  Mbox Size".
              "\n--------------------------------------- | ------- | ---------- | ----------";
-  
+
    $ConnCount = 0;
    $SizeAll = 0;
    $DownAll = 0;
@@ -200,7 +200,7 @@ if (keys %Logout2) {
       #$Size = $MboxSize{$User};
       $Size = 0; #Hack
       $SizeSpaceLength = 11 - length($Size);
-      print "\n" ." " x $UserSpaceLength . $User . " |" . " " x $CountSpaceLength .  $Conns . " |" . 
+      print "\n" ." " x $UserSpaceLength . $User . " |" . " " x $CountSpaceLength .  $Conns . " |" .
                   " " x $DownSpaceLength . $Down . " |" . " " x $SizeSpaceLength . $Size;
       $ConnCount += $Conns;
       $SizeAll += $Size;
@@ -274,4 +274,8 @@ exit(0);
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

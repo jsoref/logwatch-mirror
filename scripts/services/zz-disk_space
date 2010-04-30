@@ -75,7 +75,7 @@ sub DirUsage {
 sub DirectorySizes
 {
       my $Dir = $_[0];
-      DirUsage($Dir.'/*');	
+      DirUsage($Dir.'/*');
 }
 
 sub HomeDirectorySizes
@@ -215,3 +215,8 @@ if ($diskfull_threshhold > 0)
 }
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -24,3 +24,8 @@
 system("egrep -vi \"@ARGV\"");
 
 # vi: shiftwidth=3 syntax=perl tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

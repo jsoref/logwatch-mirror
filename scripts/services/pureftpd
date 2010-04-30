@@ -152,7 +152,7 @@ if (keys %{$TooManyConnections}) {
 if ($ShowDataStats) {
    foreach $Direction (keys %{$Stats}) {
       print "\nTransfer statistics - $Direction files:\n";
-      
+
       print "\t$Stats->{$Direction}->{files_count} $Direction files\n";
       printf "\t%.2f $Direction MB\n", ($Stats->{$Direction}->{'files_size'}/1024)/1024;
       if ($Stats->{$Direction}->{speed}) {
@@ -179,7 +179,7 @@ if ($ShowDataTransfers) {
             }
          }
       }
-   }   
+   }
 }
 
 if (keys %SecureAnon) {
@@ -206,4 +206,8 @@ if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

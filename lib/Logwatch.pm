@@ -200,7 +200,7 @@ sub TotalCountOrder(\%;&) {
             }
         }
         my $count = $BB <=> $AA;
-        
+
         return $count if $count;
         if (ref $coderef) {
             $a = $A;
@@ -347,7 +347,7 @@ sub LookupIP {
 This function merely prints out some information about --range to STDERR.
 
 =cut
-    
+
 sub RangeHelpDM {
    eval "use Date::Manip"; my $hasDM = $@ ? 0 : 1;
 
@@ -427,7 +427,7 @@ This function returns the period, which is the part after the "for (those|that|t
 in a range
 
 =cut
-    
+
 sub GetPeriod {
 
    my $range = lc $ENV{"LOGWATCH_DATE_RANGE"} || "yesterday";
@@ -534,7 +534,7 @@ sub TimeBuild {
 This function returns a regexp to filter by date/time
 
 =cut
-    
+
 
 sub TimeFilter {
    my ($format) = $_[0];
@@ -563,7 +563,7 @@ sub TimeFilter {
            $format =~ s/%a/.../;
            $format =~ s/%d/../;
            $format =~ s/%e/../;
-           if ($period eq 'month') {last;}      
+           if ($period eq 'month') {last;}
            $format =~ s/%b/.../;
            $format =~ s/%m/../;
            if ($period eq 'year') {last;}
@@ -572,7 +572,7 @@ sub TimeFilter {
    }
 
    $SearchDate .= "(";
-    
+
    for my $time (@time_t) {
         if ($time) {
            $SearchDate .= strftime($format, localtime($time)) . "|";

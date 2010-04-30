@@ -31,7 +31,7 @@
 # supported (see http://www.freeswan.org).  But it also appears to work
 # with Openswan (http://www.openswan.org), which is described as a code
 # fork of FreeS/WAN.
-# 
+#
 # Also, notice that in this script, many variables are set, but not
 # printed.  And many logged statements are filtered by this script.
 #
@@ -41,11 +41,11 @@
 
 # This is a scanner for logwatch (see www.logwatch.org) that processes
 # FreeSWAN's <http://www.freeswan.org/> Pluto log files and attempts to
-# make some sense out of them. 
+# make some sense out of them.
 #
 # Please CC suggestions to mcr@freeswan.org and/or design@lists.freeswan.org
 
-# the vendorID hash maps vendor IDs to products. VendorIDs are hashs of 
+# the vendorID hash maps vendor IDs to products. VendorIDs are hashs of
 # internal stuff from each vendor. Grow this table as you encouter new
 # products.
 
@@ -286,4 +286,8 @@ if (keys %badexch) {
 }
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

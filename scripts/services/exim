@@ -241,7 +241,7 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ( $ThisLine =~ /rejected [HE][EH]LO from\s/ ) {
       # Typically due to underscores _ in the HELO line
       #   (a common protocol violation)
-      # Also can be due to odd escape sequences 
+      # Also can be due to odd escape sequences
       #   (never seen from a valid MX)
       $Proto{$ThisLine}++;
    }
@@ -267,15 +267,15 @@ while (defined($ThisLine = <STDIN>)) {
       $Lookup++;
       push @LookupH, $ThisLine;
    }
-   elsif ( $ThisLine =~ /^\d+\-\d+\-\d+\s\d+\:\d+\:\d+\s\w+\-\w+\-\w+\s/ ) { # inne wiadomosci przesylane przez EXIMA
+   elsif ( $ThisLine =~ /^\d+\-\d+\-\d+\s\d+\:\d+\:\d+\s(\+\d+\s)?\w+\-\w+\-\w+\s/ ) { # inne wiadomosci przesylane przez EXIMA
     # Collect Message ID specific notes...
-    ($mdate,$mtime,$mid,$mrest) = ($ThisLine =~ /^(\d+\-\d+\-\d+)\s(\d+\:\d+\:\d+)\s(\w+\-\w+\-\w+)(.+)/);
+    ($mdate,$mtime,$tz,$mid,$mrest) = ($ThisLine =~ /^(\d+\-\d+\-\d+)\s(\d+\:\d+\:\d+)\s(\+\d+\s)?(\w+\-\w+\-\w+)(.+)/);
       # Count of individual Message Lines, used for sort
     $licze++;         # Dodaje taki licznik aby potem przy wypisaniu posortowac po nim, bo wypisywal nie po kolei
     $mmsg{$mid}{$licze.$mrest} = "$mdate $mtime";
 
    }
-   else 
+   else
    {
       $OtherList{$ThisLine}++;
    }
@@ -344,7 +344,7 @@ if ($Detail >= $LvlRelay) {
 
       if ( $Detail >= $LvlRelayLines ) {
          print   "--- Lines follow:\n\n";
-   
+
          foreach $ThisOne (@GreylistH) {
             print "$ThisOne\n";
          }
@@ -356,7 +356,7 @@ if ($Detail >= $LvlRelay) {
 
       if ( $Detail >= $LvlRelayLines ) {
          print   "--- Lines follow:\n\n";
-   
+
          foreach $ThisOne (@RelayH) {
             print "$ThisOne\n";
          }
@@ -392,7 +392,7 @@ if ($Detail >= $LvlVirus) {
             $cc = $1;
          }
          # There is probably a more graceful way to do this...
-         if (defined( $vir{$cc} )) { 
+         if (defined( $vir{$cc} )) {
             # Assign current value to temporary (mid)
             $mid = $vir{$cc};
          }
@@ -469,7 +469,7 @@ if ($Detail >= $LvlDontAccept) {
          }
          else {
             # If we picked up a malfunction but didn't collect it here,
-            # no need to make the user suffer with superfluous error 
+            # no need to make the user suffer with superfluous error
             # messages.
             #next;
             print "Didn't Summarize: $ThisOne\n";
@@ -593,7 +593,7 @@ if ($Detail >= $LvlProtocl) {
          }
          else {
             # If we picked up a malfunction but didn't collect it here,
-            # no need to make the user suffer with superfluous error 
+            # no need to make the user suffer with superfluous error
             # messages.
             #next;
             print "Didn't Summarize: $ThisOne\n";
@@ -711,4 +711,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

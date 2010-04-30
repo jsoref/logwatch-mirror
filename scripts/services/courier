@@ -18,18 +18,18 @@
 ###########################################################################
 #
 # Please don't change the formatting:
-# 
+#
 # if (...) {
 #    ...
 # }
-# 
-# but 
-# 
-# (while|foreach) .. 
+#
+# but
+#
+# (while|foreach) ..
 # {
 #    ...
 # }
-# 
+#
 
 #######################################################
 ### Copyright 2003-2006 by Willi Mann <willi@wm1.at>
@@ -110,7 +110,7 @@ sub PushUnmatched
    }
 }
 
-sub recprint1 
+sub recprint1
 {
    my $hash = shift;
    my $depth = shift;
@@ -122,12 +122,12 @@ sub recprint1
    my $out = "";
    my $inum = 0;
    my $size = 0;
-   
+
    my @prefar = @{$prefar} if defined $prefar;
    my $pref = shift(@prefar);
    $pref .= " " if defined $pref;
    $pref = "" if not defined $pref;
-   
+
    my @IPar = @{$IPar} if defined $IPar;
    my $IP = shift(@IPar);
 
@@ -189,7 +189,7 @@ sub tblprint1
             $out .= "$key1\n";
             $out .= "-" x (length($key1))."\n";
          }
-  
+
          $out .= $lout;
          $nmb += $lnmb;
          $size += $lsize;
@@ -204,13 +204,13 @@ sub tblprint1
 
       return ($out, $nmb, $size);
    }
-      
+
 }
 
-sub max 
+sub max
 {
    my $ret = shift;
-   foreach my $val (@_) 
+   foreach my $val (@_)
    {
       $ret = $val if $val > $ret;
    }
@@ -218,7 +218,7 @@ sub max
 }
 
 
-sub maketbl1 
+sub maketbl1
 {
    my $hash = shift;
    my $sizehash = shift;
@@ -256,7 +256,7 @@ sub maketbl1
    #for last line
    $columnmax[1] = max $columnmax[1], length $inmb;
    $columnmax[2] = max $columnmax[2], length $size;
-   
+
    if (defined $tabletitle) {
       $out .= "$tabletitle\n";
       $out .= $uchar x length($tabletitle)."\n";
@@ -268,15 +268,15 @@ sub maketbl1
    $out .= " | " if defined $sizehash;
    $out .= " " x ($columnmax[2] - length($tablecolumns->[2])).$tablecolumns->[2] if defined $sizehash;
    $out .= "\n";
-   
+
    #second line
    $out .= "-" x $columnmax[0]. " | ".
            "-" x $columnmax[1];
    $out .= " | ". "-" x $columnmax[2] if defined $sizehash;
    $out .= "\n";
-   
+
    #tablebody
-   foreach my $key1 (sort keys %{$hash}) 
+   foreach my $key1 (sort keys %{$hash})
    {
       my $nmb = $hash->{$key1};
       #col1
@@ -289,7 +289,7 @@ sub maketbl1
          $out .= $key1;
       }
       $out .= " | ";
-      
+
       #col2
       $out .= " " x ($columnmax[1] - length($nmb)). $hash->{$key1};
       if (defined $sizehash) {
@@ -326,7 +326,7 @@ sub MakeTblReason {
    return $TblReason;
 }
 
-sub nTimes 
+sub nTimes
 {
    my $nmb = shift;
    if ($nmb == 1) {
@@ -335,7 +335,7 @@ sub nTimes
       return "$nmb Times";
    }
 }
-      
+
 
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG: Inside Courier Filter \n\n";
@@ -416,7 +416,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /id=.*?,from=<.*?>,addr=<.*?>,size=[0-9]*,status:.*/) ##courieresmtp
    ) {
       # Don't care about these...
-   } 
+   }
    # ESMTP, including all delivery
    elsif ( $service =~ /^(courierd|courieresmtpd|courieresmtp|courierlocal|courieruucp|courierfax|courierdsn)$/ ){
       #First the don't cares
@@ -446,38 +446,38 @@ while (defined($ThisLine = <STDIN>)) {
          if ( ($From) = ( $ThisLine =~ /^from=<([^<>]*?)>(:?,|)/ )) {
             $ThisLine = $';
          }
-         if (( $To ) = ( $ThisLine =~ /^to=<([^<>]*?)>/ ) ) { 
+         if (( $To ) = ( $ThisLine =~ /^to=<([^<>]*?)>/ ) ) {
             $ThisLine = $';
          }
          if (( $Msg ) = ( $ThisLine =~ /^msg=(.*)/ )) { }
-         
+
          $ThisLine =~ s/^: //;
-         
+
          #Extract it
          my ($SMTPErrCode) = ($ThisLine =~ /^([0-9]{3})/);
-         
+
          # next if already seen
          if($ThisLine =~ /^[0-9]{3} / and $LastSMTPErrCode == $SMTPErrCode) {
             $LastSMTPErrCode = 0;
             next;
          }
-         
+
          #next if already seen but not last line.
          next if $LastSMTPErrCode == $SMTPErrCode and not defined $Msg;
 
          my $Reason = $ThisLine;
          $Reason = $Msg if defined $Msg;
- 
+
          $ErrorMsgs{$Reason}{$Host}{$From || "-"}{$To || "-"}++ if not $Tables;
          my $TblReason = MakeTblReason($Reason) if $Tables;
          $ErrorTbl{$TblReason}{$Host}++ if $Tables;
-         
+
          $LastSMTPErrCode = $SMTPErrCode;
 
-         #zero it if done 
+         #zero it if done
          $LastSMTPErrCode = 0 if $ThisLine =~ /^[0-9]{3} / or defined $Msg;
-         
-      } elsif ( ($From, $To, $Size) = ( $ThisLine =~ 
+
+      } elsif ( ($From, $To, $Size) = ( $ThisLine =~
                  /^id=.*?,from=<(.*?)>,addr=<(.*?)>,size=([0-9]*),success: .*/ ) ) { ##courieresmtp, courierlocal
          #example line:
          #id=00081D7A.3E9E0B39.000036E4,from=<u@ttt.at>,addr=<aa@aa.at>,size=35861,success: delivered: ff.ff.at [111.111.111.111]
@@ -488,12 +488,12 @@ while (defined($ThisLine = <STDIN>)) {
          $DeSuTbl{$To}++;
          $DeSuTblSz{$To} += $Size;
 
-       } elsif ( ($ID, $From, $To, my $status) = ( $ThisLine =~ 
+       } elsif ( ($ID, $From, $To, my $status) = ( $ThisLine =~
                /^id=(.*),from=<(.*?)>,addr=<(.*?)>,status: (deferred|failure)/ ) ) { ##courieresmtp
          #example lines: deferred, failed delivery attempts
          #id=00081D03.3E850D34.000076BD,from=<oo@oo.at>,addr=<uu@uu.at>,status: deferred
          #id=00081D7B.3E9167E7.00002B27,from=<bb@bb.at>,addr=<rr@rr.at>,status: failure
-         
+
          my $Reason = $FailRe{$ID}{$From}{$To};
          if ($Reason eq "") {
             $Reason = "-";
@@ -565,17 +565,17 @@ while (defined($ThisLine = <STDIN>)) {
 
          $Login{$proto}{$User}{$Host}++;
       } elsif (
-         ( ( $User, $Host, $Size) = ( $ThisLine =~ 
+         ( ( $User, $Host, $Size) = ( $ThisLine =~
                /^LOGOUT, user=(.*?), ip=\[(.*?)\], (?:port=\[\d+\], )?(?:top|headers)=[0-9]*, (?:retr|body)=([0-9]*)/ ) ) ||
-         ( ( $User, $Host, $Size, $Size2) = ( $ThisLine =~ 
+         ( ( $User, $Host, $Size, $Size2) = ( $ThisLine =~
                /^DISCONNECTED, user=(.*?), ip=\[(.*?)\], headers=([0-9]*?), body=([0-9]*)/ ) )
          ) {  ###pop3login, imaplogin, courierpop3login, pop3d, imapd
          #example line
          #LOGOUT, user=xy, ip=[::ffff:192.168.0.24], top=0, retr=0
          #DISCONNECTED, user=zz@uu.ch, ip=[::ffff:192.168.0.1], headers=0, body=1100
-         
+
          $Size += $Size2 if defined $Size2;
-         
+
          $Logout{$proto}{$User}{$Host}++;
          $Logout2{$proto}{$User}++;
          $LogoutSize{$proto}{$User}{$Host} += $Size;
@@ -590,7 +590,7 @@ while (defined($ThisLine = <STDIN>)) {
       }
    } else {
       # Report any unmatched entries...
-     
+
       PushUnmatched $service, $ThisLine;
    }
    $LastLine = $ThisLine;
@@ -730,4 +730,8 @@ if (keys %OtherList)
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

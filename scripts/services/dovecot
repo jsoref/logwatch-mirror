@@ -62,12 +62,12 @@
 ########################################################
 # The Dovecot script was written by:
 #   Patrick Vande Walle <patrick@isoc.lu>
-# Based on previous work by 
+# Based on previous work by
 #    Pawel Golaszewski <blues@gda.pl>
 #
 # TODO:
 # - use printf features to align text in table
-# 
+#
 ########################################################
 
 ########################################################
@@ -102,7 +102,7 @@ while (defined($ThisLine = <STDIN>)) {
      # service name
      $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
      if ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) {
-        # We don't care about these                                                                                                                    
+        # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
      } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up$/) {
@@ -113,15 +113,17 @@ while (defined($ThisLine = <STDIN>)) {
          $Login{$User}{$Host}++;
          $LoginPOP3{$User}++;
          $ConnectionPOP3{$Host}++;
-         $Connection{$Host}++; 
+         $Connection{$Host}++;
       }
    } elsif ( ($User, $Host) = ( $ThisLine =~ /^imap-login: Login: (.*?) \[(.*)\]/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Login{$User}{$Host}++;
          $LoginIMAP{$User}++;
          $ConnectionIMAP{$Host}++;
-         $Connection{$Host}++; 
+         $Connection{$Host}++;
       }
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: deliver\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+      $Deliver{$User}{$Mailbox}++;
 
 # This is for Dovecot 1.0 series
     } elsif ( ($User, $Host) = ( $ThisLine =~ /^dovecot: pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
@@ -143,6 +145,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{"no reason"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
       $Disconnected{$Reason}++;
+   } elsif (($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
+      $Disconnected{$Reason}++;
    } elsif (($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
       $TLSInitFail++;
    } elsif (($Host) = ($ThisLine =~ /Aborted login \[(.*)\]/) ) {
@@ -161,23 +165,26 @@ while (defined($ThisLine = <STDIN>)) {
             (($Reason) = ($ThisLine =~ /pop3-login: Disconnected: (.+)/)) or
             (($Reason) = ($ThisLine =~ /imap-login: Disconnected: (.+)/)) ) {
       $Disconnected{"no reason"}++;
-   } elsif ( (($Reason) = ($ThisLine =~ /POP3.+: Disconnected: (.+) top/)) or 
-          (($Reason) = ($ThisLine =~ /pop3-login: Disconnected \((.+)\): /)) or 
-          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/)) or 
-          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/)) ) { 
+   } elsif ( (($Reason) = ($ThisLine =~ /POP3.+: Disconnected: (.+) top/)) or
+          (($Reason) = ($ThisLine =~ /pop3-login: Disconnected \((.+)\): /)) or
+          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/)) or
+          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/)) ) {
       $Disconnected{$Reason}++;
    } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
       $Disconnected{$2}++;
-   } elsif (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed bytes=/))  { 
-        $ConnectionCl{"no reason"}++; 
-   } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/)) or 
-             (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/)) ) { 
-      $ConnectionCl{$Reason}++; 
-   } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/) { 
-      $ConnectionCl{"no reason"}++; 
+   } elsif (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed bytes=/))  {
+        $ConnectionCl{"no reason"}++;
+   } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/)) or
+             (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/)) ) {
+      $ConnectionCl{$Reason}++;
+   } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/) {
+      $ConnectionCl{"no reason"}++;
    } elsif (($Error) = ($ThisLine =~ /child \d* \(login\) returned error (.*)/)) {
-   # dovecot: child 23747 (login) returned error 89 
-      $ChildErr{$Error}++; 
+   # dovecot: child 23747 (login) returned error 89
+      $ChildErr{$Error}++;
+   } elsif (($Name) = ($ThisLine =~ /dovecot: IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/)) {
+   # dovecot: IMAP(podracka): mkdir(/home/LF/KLINIKY/podracka/mail/.imap/saved-messages) failed: Disk quota exceeded
+      $DiskQuotaExceed{$Name}++;
    } else {
       # Report any unmatched entries...
       chomp($ThisLine);
@@ -200,7 +207,7 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
              "\n====================================".
              "\n                                  Host |    POP3   |   IMAP   |   Total ".
              "\n-------------------------------------- | --------- |--------- | ---------";
-  
+
    $TLSInitFail = 0;
    foreach $Host (sort keys %Connection) {
       $Total = $Connection{$Host};
@@ -239,6 +246,27 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
    print "\n" . "-" x 73;
    print "\n" . " " x $POP3SpaceLength . $POP3Count . " |" . " " x $IMAPSpaceLength . $IMAPCount .
                  " |" . " " x $totalSpaceLength . $TotalCount . "\n";
+}
+
+if ( ( $Detail >= 10 ) and (keys %Deliver)) {
+   print "\n\nDovecot Deliveries:";
+   $DeliverCount = 0;
+   foreach my $User (keys %Deliver) {
+      print "\n\n  User $User:";
+      $UserCount = 0;
+      $NumMailboxes = 0;
+      foreach $Mailbox (keys %{$Deliver{$User}}) {
+         $NumMailboxes++;
+         $MailboxCount = $Deliver{$User}{$Mailbox};
+         print "\n    To $Mailbox: $MailboxCount Time(s)";
+         $UserCount += $MailboxCount;
+      }
+      $DeliverCount += $UserCount;
+      if ($NumMailboxes > 1) {
+      print "\n  Total: $UserCount Time(s)";
+      }
+   }
+   print "\n\nTotal: $DeliverCount successful deliveries";
 }
 
 if ( ( $Detail >= 10 ) and (keys %Login)) {
@@ -303,6 +331,13 @@ if ($TLSInitFail > 0) {
    print "\n\nTLS Initialization failed $TLSInitFail Time(s)";
 }
 
+if (keys %DiskQuotaExceed) {
+   print "\n\nDisk quota exceeded:";
+   foreach my $Name (sort keys %DiskQuotaExceed) {
+      print "\n   disk quota for user '". $Name . "' exceeded: ". $DiskQuotaExceed{$Name} ." Time(s)";
+   }
+}
+
 if (keys %OtherList) {
    print "\n\n**Unmatched Entries**\n";
    foreach $line (sort {$a cmp $b} keys %OtherList) {
@@ -314,3 +349,8 @@ exit(0);
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

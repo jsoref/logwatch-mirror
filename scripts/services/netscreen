@@ -56,10 +56,10 @@ while (defined($ThisLine = <STDIN>)) {
 ($month,$day,$time,$host_ip,$host,$msg)=split(/ +/,$ThisLine,7);
 
    if ( ($ThisLine =~ /traffic/ ) or
-         ($ThisLine =~ /Copyright/ ) or 
-         ($ThisLine =~ /removed due to simultaneous rekey/ ) or 
-         ($ThisLine =~ /Responded to the first peer message/ ) or 
-         ($ThisLine =~ /NBR change/ ) or 
+         ($ThisLine =~ /Copyright/ ) or
+         ($ThisLine =~ /removed due to simultaneous rekey/ ) or
+         ($ThisLine =~ /Responded to the first peer message/ ) or
+         ($ThisLine =~ /NBR change/ ) or
          ($ThisLine =~ /accept udp/ ) or
          ($ThisLine =~ /accept tcp/ ) or
          ($ThisLine =~ /accept icmp/ ) or
@@ -184,14 +184,14 @@ while (defined($ThisLine = <STDIN>)) {
 	   $Users{$host}{$2}{$4}{"(all)"}++;
        }
    }
-   elsif ( $ThisLine =~ m/Admin user (\S+) login attempt for (\S+) management \(port (\d+)\) from (.+):(.+). failed. (.*)/ ) { 
+   elsif ( $ThisLine =~ m/Admin user (\S+) login attempt for (\S+) management \(port (\d+)\) from (.+):(.+). failed. (.*)/ ) {
        if ( $Debug >= 5 ) {
 	   print STDERR "DEBUG: Found -Failed login- line\n";
        }
        my $name = LookupIP($4);
        $BadLogins{$host}{"$1/$2 from $name"}++;
-   } 
-   elsif ( $ThisLine =~ m/SSH client at (.+) has attempted to make an SCS connection to interface untrust with IP (.+) but failed (.*)/ ) { 
+   }
+   elsif ( $ThisLine =~ m/SSH client at (.+) has attempted to make an SCS connection to interface untrust with IP (.+) but failed (.*)/ ) {
        my $name = LookupIP($2);
        $Temp = "SSH from $name";
        $BadLogins{$host}{$Temp}++;
@@ -548,7 +548,7 @@ if (keys %IllegalUsers) {
 	print "   " . $ThisOne . ":\n";
 	for (sort keys %{$IllegalUsers{$ThisOne}}) {
 	    print "\t   $_: $IllegalUsers{$ThisOne}{$_} Time(s)\n";
-	    
+
 	}
     }
 }
@@ -589,4 +589,8 @@ if ($#OtherList >= 0) {
 }
 
 exit(0);
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

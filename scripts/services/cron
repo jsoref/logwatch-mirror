@@ -120,7 +120,7 @@ $BFMFile = 0;
 
 while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   if ( 
+   if (
       ($ThisLine =~ /Updated timestamp for job/) or
       ($ThisLine =~ /INFO \(pidfile fd = \d+\)/) or
       ($ThisLine =~ /rsyncd/) or
@@ -132,8 +132,8 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /logfile turned over/) or
       ($ThisLine =~ /ready to process filesystem events/) or # newsyslog on OpenBSD
       ($ThisLine =~ /loading (system|user) tables/) or
-      ($ThisLine =~ /loading table .*/) or 
-      ($ThisLine =~ /void Inotify::Remove\(InotifyWatch\*\): removing watch failed/) or 
+      ($ThisLine =~ /loading table .*/) or
+      ($ThisLine =~ /void Inotify::Remove\(InotifyWatch\*\): removing watch failed/) or
       ($ThisLine =~ /error: \(22\) Invalid argument/)
    ) {
       # Ignore
@@ -142,7 +142,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ s/^\S+\s+\S+\s+..:..:..\s+\S+\s+\S+\[\d+\]:\s+\((\S+)\)\s+//)
    ) {
       $User = $1;
-      
+
       if ($ThisLine =~ s/^CMD \((.+)\)\s*$/$1/) {
          $Runs->{$User}->{$ThisLine}++;
       } elsif ($ThisLine =~ s/^CMD FINISH \((.+)\)\s*$/$1/) {
@@ -176,7 +176,7 @@ while (defined($ThisLine = <STDIN>)) {
       } elsif ( ($Reason) = ($ThisLine =~ /^error \((.+)\)$/) ) {
          $Errors{$Reason}++;
       } elsif ( ($FileName) = ($ThisLine =~ /BAD FILE MODE \((.+)\)/) ) {
-         $BFMFile{$FileName}++; 
+         $BFMFile{$FileName}++;
       } elsif ( ($FileName) = ($ThisLine =~ /WRONG FILE OWNER \((.+)\)/) ) {
          $WFO{$FileName}++;
       } else {
@@ -193,7 +193,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /.*?: Job (.*) (completed|terminated)/) or
       ($ThisLine =~ /.*?: updating configuration from/) or
       ($ThisLine =~ /.*?: Exiting with code 0/) or
-      ($ThisLine =~ /.*?: SIGTERM signal received/) 
+      ($ThisLine =~ /.*?: SIGTERM signal received/)
    ) {
       # Ignore
    } elsif ( ($User) = ($ThisLine =~ /.*?: editing ([^ ]*)'s fcrontab.*/)) {
@@ -227,11 +227,11 @@ while (defined($ThisLine = <STDIN>)) {
       $INCRONDSTDe{$Table}++;
    } elsif (($ThisLine =~ /incrond/) && (($User) = ($ThisLine =~ /table for user (.*) destroyed, removing/))) {
       $INCRONDUTDe{$User}++;
-   } elsif (  ($ThisLine =~ /incrond/) && 
+   } elsif (  ($ThisLine =~ /incrond/) &&
       ( (($Error) = ($ThisLine =~ /(cannot create watch for (system table|user) .*: \(2\) No such file or directory)/)) ||
-      (($Error) = ($ThisLine =~ /(access denied on (.*) - events will be discarded silently)/)) || 
+      (($Error) = ($ThisLine =~ /(access denied on (.*) - events will be discarded silently)/)) ||
       (($Error) = ($ThisLine =~ /(unhandled exception occurred)/)) ||
-      (($Error) = ($ThisLine =~ /(cannot exec process.*)/)) 
+      (($Error) = ($ThisLine =~ /(cannot exec process.*)/))
       )  ) {
       $INCRONDErr{$Error}++;
    } elsif ( ($ThisLine =~ /crond/) &&
@@ -241,12 +241,12 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif (( ($Error) = ($ThisLine =~ /ERROR: (failed to change SELinux context)/)) or
            (($Error) = ($ThisLine =~ /ERROR:(Could not set exec context to .* for .*)/))) {
       $SELCONTErr{$Error}++;
-   } elsif ($ThisLine =~ /FAILED to authorize user with PAM \(User not known to the underlying authentication module\)/) { 
-      $PAMAUTHErr++; 
-   } elsif ( ($FileName,$Cause) = ($ThisLine =~ /ERROR chdir failed \((.*)\): (.*)/) ) { 
-      $CHDIRErr{"$FileName,$Cause"}++; 
-   } elsif ($ThisLine =~ /ERROR \(failed to change user\)/) { 
-      $CHUSERHErr++;  
+   } elsif ($ThisLine =~ /FAILED to authorize user with PAM \(User not known to the underlying authentication module\)/) {
+      $PAMAUTHErr++;
+   } elsif ( ($FileName,$Cause) = ($ThisLine =~ /ERROR chdir failed \((.*)\): (.*)/) ) {
+      $CHDIRErr{"$FileName,$Cause"}++;
+   } elsif ($ThisLine =~ /ERROR \(failed to change user\)/) {
+      $CHUSERHErr++;
    } else {
       # Report any unmatched entries...
       push @OtherList, "$ThisLine\n";
@@ -336,7 +336,7 @@ if($ntpdatenosync) {
 
 if ($INCRONDSS) {
   printf "\n  service incrond started " . $INCRONDSS . ": time(s)\n";
-}  
+}
 
 if ($INCRONDStS) {
   printf "\n  service incrond stoped " . $INCRONDStS . ": time(s)\n";
@@ -361,7 +361,7 @@ if ((%INCRONDSTCh) || (%INCRONDUTCh)) {
     print "    table for user " . $key . "changed " . $INCRONDUTCh{$key} . ": time(s)\n";
   }
 }
-          
+
 if ((%INCRONDSTDe) || (%INCRONDUTDe)) {
   printf "\n  destroyed tables \n";
   for $key (keys %INCRONDSTDe) {
@@ -377,7 +377,7 @@ if (%CRONDErr) {
   for $key (keys %CRONDErr) {
     print "    " . $key . ": " . $CRONDErr{$key} . " time(s)\n";
   }
-}          
+}
 
 if (%INCRONDErr) {
   printf "\n  incrond daemon errors \n";
@@ -417,4 +417,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

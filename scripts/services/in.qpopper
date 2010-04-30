@@ -44,7 +44,7 @@ while (defined($ThisLine = <STDIN>)) {
         # We don't care about these
     }
     ## Stats: <UserID> 0 0 0 0 <Host> <IP>
-    elsif (($UserID, $NumDeleted, $BytesDeleted, $NumLeft, $BytesLeft) = ( $ThisLine =~ /Stats: ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+)/ )) { 
+    elsif (($UserID, $NumDeleted, $BytesDeleted, $NumLeft, $BytesLeft) = ( $ThisLine =~ /Stats: ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+) ([^ ]+)/ )) {
         $Stats{$UserID}{"Times"}++;
         $Stats{$UserID}{"NumDel"} += $NumDeleted;
         $Stats{$UserID}{"BytesDel"} += $BytesDeleted;
@@ -110,7 +110,7 @@ if (keys %FailedLogin) {
 
 if (keys %OtherList) {
    print "\n**Unmatched Entries**\n";
-   foreach $line (sort {$OtherList{$b}<=>$OtherList{$a} } keys %OtherList) 
+   foreach $line (sort {$OtherList{$b}<=>$OtherList{$a} } keys %OtherList)
    {
       print "   $line: $OtherList{$line} Time(s)\n";
    }
@@ -119,4 +119,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

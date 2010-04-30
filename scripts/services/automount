@@ -36,7 +36,7 @@ while (defined($ThisLine = <STDIN>)) {
          ($ThisLine =~ /^lookup\(ldap\): got answer, but no first entry for /) or
          ($ThisLine =~ /^>>.*mount: .*$/) or
          ($ThisLine =~ /lookup_read_master: lookup\(nisplus\): couldn't locat nis\+ table auto.master/) or
-         ($ThisLine =~ /create_(tcp|udp)_client: hostname lookup failed: (No such process|Operation not permitted)/) or 
+         ($ThisLine =~ /create_(tcp|udp)_client: hostname lookup failed: (No such process|Operation not permitted)/) or
          ($ThisLine =~ /lookup_mount: exports lookup failed for .*directory/) or
          ($ThisLine =~ /master_do_mount: failed to startup mount/)
          ) {
@@ -53,7 +53,7 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^mount\(nfs\): entry (.*) lookup failure$/) {
       $Failed{$1}{'nfsl'}++;
    }
-   elsif (( $ThisLine =~ /^mount\(generic\): failed to mount .* on (.*)$/) 
+   elsif (( $ThisLine =~ /^mount\(generic\): failed to mount .* on (.*)$/)
        or ( $ThisLine =~ /^handle_mounts: mount on (.*) failed!/)
 	) {
       $Failed{$1}{'mnt'}++;
@@ -121,9 +121,13 @@ if (keys %OtherList) {
    foreach $ThisOne (keys %OtherList) {
       print "$ThisOne: $OtherList{$ThisOne} Time(s)\n";
    }
-}                                                                                       
-    
+}
+
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

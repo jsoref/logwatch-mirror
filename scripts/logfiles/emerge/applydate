@@ -72,7 +72,14 @@ while (defined(my $line = <STDIN>)) {
               print STDERR "DEBUG: converted time: $emergeTime\n";
       }
 
-      if ($emergeTime =~ /$SearchDate/) { 
+      if ($emergeTime =~ /$SearchDate/) {
          print $line;
       }
-} 
+}
+
+# vi: shiftwidth=3 syntax=perl tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

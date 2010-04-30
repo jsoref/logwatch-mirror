@@ -76,11 +76,11 @@ while(my $line=<STDIN>) {
 	}
 }
 
-my @k = ( "Installed" , \@install, 
+my @k = ( "Installed" , \@install,
           "Reinstalled" , \@reinstall,
-          "Upgraded" , \@upgrade, 
-      	 "Removed", \@remove, 
-	       "Purged", \@purge, 
+          "Upgraded" , \@upgrade,
+      	 "Removed", \@remove,
+	       "Purged", \@purge,
           "Configuration files", \@conffile,
 	       "Unknown lines", \@unknown);
 
@@ -95,4 +95,10 @@ while (@k > 0) {
 
 	}
 }
+
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

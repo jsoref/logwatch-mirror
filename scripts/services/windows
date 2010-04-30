@@ -15,8 +15,8 @@
 # Initial commit.  Files submitted by William Roumier.
 #
 ##########################################################################
-# This is a logwatch script that looks at a log file composed of windows auth 
-# security logs counts the number of times a user failed to login and 
+# This is a logwatch script that looks at a log file composed of windows auth
+# security logs counts the number of times a user failed to login and
 # optionally the number times they succesfully logged in and some other account
 # creation/modification audits.
 #
@@ -48,7 +48,7 @@ my $detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 my ($month, $day, $time, $host, $process, $eventid, $msg);
 
-# Loop through the given input and parse it first to make sure we need to, 
+# Loop through the given input and parse it first to make sure we need to,
 # then to sort it into various categories.
 while (defined($line = <STDIN>)) {
 
@@ -121,13 +121,13 @@ while (defined($line = <STDIN>)) {
 				$loginSuccess{$2}{$5}++;
 			}
 		}
-		 
+
 		elsif ($eventid == 517) { # Audit log was cleared.
 			$msg =~ /Primary User Name:\s*(\S+)\s+.*Client User Name:\s*(\S+)/;
 			# print "DEBUG Audit log cleared: host:$host primary:$1 client:$2\n";
 			$auditLogCleared{$host}{$1}{$2}++;
 		}
- 
+
 		elsif ($eventid == 608) { # User Right Assigned
 			$msg =~ /User Right:\s*(\S+)\s+Assigned To:\s*(\S+)\s+Assigned By:\s+User Name:\s*(\S+)/;
 			# print "DEBUG Rights Added: right:$1 to:$2 by:$3\n";
@@ -144,7 +144,7 @@ while (defined($line = <STDIN>)) {
 			# print "DEBUG New Trusted Domain: domain:$2 user:$3 host:$host\n";
 			$newDomainTrust{$host}{$2}{$3}++;
 		}
-		elsif ($eventid == 611) { # Removing Trusted Domain 
+		elsif ($eventid == 611) { # Removing Trusted Domain
 			$msg =~ /Removing Trusted Domain\s+Domain( Name)?:\s*(\S+)\s+.*Established By:\s+User Name:\s*(\S+)/;
 			# print "DEBUG New Trusted Domain: domain:$2 user:$3 host:$host\n";
 			$rmDomainTrust{$host}{$2}{$3}++;
@@ -157,7 +157,7 @@ while (defined($line = <STDIN>)) {
 		}
 
 		# Group all account types together - should be clear what's what.
-		elsif ($eventid == 624 || $eventid == 631 || $eventid == 635 || $eventid == 645 
+		elsif ($eventid == 624 || $eventid == 631 || $eventid == 635 || $eventid == 645
 			|| $eventid == 653 || $eventid == 658 || $eventid == 663) { # Account Created
 
 			$msg =~ /New Account Name:\s*(\S+)\s+.*Caller User Name:\s*(\S+)/;
@@ -184,7 +184,7 @@ while (defined($line = <STDIN>)) {
 			# print "DEBUG User Account password set: $1 by $2 on $host\n";
 			$passwordSet{$host}{$2}{$1}++;
 		}
-		elsif ($eventid == 630 || $eventid == 634 || $eventid == 638 || $eventid == 647 
+		elsif ($eventid == 630 || $eventid == 634 || $eventid == 638 || $eventid == 647
 			|| $eventid == 652 || $eventid == 657 || $eventid == 662 || $eventid == 667) { # User Account Deleted
 
 			$msg =~ /Target Account Name:\s*(\S+)\s+.+Caller User Name:\s*(\S+)/;
@@ -193,37 +193,37 @@ while (defined($line = <STDIN>)) {
 		}
 
 		# Note: This doesn't distinguish between Global and Local Groups
-		elsif ($eventid == 632 || $eventid == 636 || $eventid == 650 || $eventid == 655 
+		elsif ($eventid == 632 || $eventid == 636 || $eventid == 650 || $eventid == 655
 			|| $eventid == 660 || $eventid == 665) { # Group Member Added
 
 			$msg =~ /Member Name:\s*(\S+)\s+.+Target Account Name:\s*(\S+)\s+.+Caller User Name:\s*(\S+)/;
 			# print "DEBUG Group Member Added: $1 to $2 by $3 on $host\n";
 			$groupMemberAdded{$host}{$2}{$3}{$1}++;
 		}
-		elsif ($eventid == 633 || $eventid == 637 || $eventid == 651 || $eventid == 656 
+		elsif ($eventid == 633 || $eventid == 637 || $eventid == 651 || $eventid == 656
 			|| $eventid == 661 || $eventid == 666) { # Group Member Removed
 
 			$msg =~ /Member Name:\s*(\S+)\s+.+Target Account Name:\s*(\S+)\s+.+Caller User Name:\s*(\S+)/;
-			#print "DEBUG Group Member Removed: $1 to $2 by $3 on $host\n"; 
+			#print "DEBUG Group Member Removed: $1 to $2 by $3 on $host\n";
 			$groupMemberRemoved{$host}{$2}{$3}{$1}++;
 		}
-		elsif ($eventid == 639 || $eventid == 641 || $eventid == 642 || $eventid == 646 || $eventid == 649 
+		elsif ($eventid == 639 || $eventid == 641 || $eventid == 642 || $eventid == 646 || $eventid == 649
 			|| $eventid == 654 || $eventid == 659 || $eventid == 664 || $eventid == 668) { # Account Changed
 
 			$msg =~ /Target Account Name:\s*(\S+)\s+.+Caller User Name:\s*(\S+)/;
 			#print "DEBUG Account Changed: $1 by $2 on $host\n";
 			$accountChanged{$host}{$2}{$1}++;
 		}
-		
+
 		elsif ($eventid == 643) { # Domain Policy Changed
 			$msg =~ /Domain Policy Changed:\s*(.+) modified.+Caller User Name:\s*(\S+)/;
-			#print "DEBUG Domain Policy Changed: $2 on $host to $1\n"; 
+			#print "DEBUG Domain Policy Changed: $2 on $host to $1\n";
 			$domainPolicyChanged{$host}{$2}{$1}++;
 		}
 
 		elsif ($detail > 5 && $eventid == 672) { # Authentication Ticket Granted
 			$msg =~ /User Name:\s*(\S+)\s+.+Service Name:\s*(\S+)\s+.+Client Address:\s*(\S+)/;
-			#print "DEBUG TGT Granted to $1 for $2 from $3\n"; 
+			#print "DEBUG TGT Granted to $1 for $2 from $3\n";
 			$tgtGranted{$host}{$1}{$2}{$3}++;
 		}
 		elsif ($detail > 5 && $eventid == 673) { # Service Ticket Granted
@@ -340,7 +340,7 @@ if ($detail > 3) {
 	if (keys %accountChanged) {
 		printLevel3("Account Changed by Host, Modifier, Account", \%accountChanged);
 	}
-	
+
 	if (keys %domainPolicyChanged) {
 		printLevel3("Domain Policy Changed by Host, Modifier, Change", \%domainPolicyChanged);
 	}
@@ -432,3 +432,8 @@ sub printLevel4 {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

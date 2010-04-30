@@ -87,7 +87,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Lookups{$Port}{$Temp}{$Host}++;
       $LookupCount++;
       $MasqLookupCount++;
-   } elsif ( 
+   } elsif (
       (($Host) = ($ThisLine =~ /^Connection from ([^ ]* \([^ ]*\)):\d+$/)) or
       (($Host) = ($ThisLine =~ /^Connection from ([^ ]*):\d+$/))
       ) {
@@ -159,4 +159,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

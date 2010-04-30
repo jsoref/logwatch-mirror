@@ -130,7 +130,7 @@ else
 fi
 
 printf "Enter the path for the Logwatch ConfigDir [$CONFIGDIR] : "
-read config  
+read config
 
 if [ "$config" = "" ]; then
    printf "### Using $CONFIGDIR\n"
@@ -263,22 +263,25 @@ for f in `echo $PATH | tr : ' '`; do
 done
 
 #Man page
-if [ -d $MANDIR/man8 ] && [ $HAVE_MAKEWHATIS ]; then
+if [ -d $MANDIR/man5 ] && [ -d $MANDIR/man8 ] && [ $HAVE_MAKEWHATIS ]; then
    install -m 0644 logwatch.8 $MANDIR/man8
+   install -m 0644 logwatch.conf.5 $MANDIR/man5
+   install -m 0644 override.conf.5 $MANDIR/man5
+   install -m 0644 ignore.conf.5 $MANDIR/man5
    #OpenBSD no -s
    if [ $OS = "OpenBSD" ]; then
-      makewhatis -u $MANDIR/man8
+      makewhatis -u $MANDIR/man5 $MANDIR/man8
    else
       #FreeBSD and NetBSD no -s no -u
       if [ $OS = "FreeBSD" ] || [ $OS = "NetBSD" ]; then
-         makewhatis $MANDIR/man8
+         makewhatis $MANDIR/man5 $MANDIR/man8
       else
          #MacOS X aka Darwin no -u [even thought the manpage says]
          if [ $OS = "Darwin" ]; then
-            makewhatis -s 8 $MANDIR
+            makewhatis -s "5 8" $MANDIR
          else
          #Linux
-            makewhatis -u -s 8 $MANDIR
+            makewhatis -u -s "5 8" $MANDIR
          fi
       fi
    fi
@@ -287,12 +290,21 @@ else
       #Go for the safe install rather then editing man.cf
       mkdir -p $MANDIR/man1m > /dev/null 2>&1
       install -m 0644 logwatch.8 $MANDIR/man1m
+      install -m 0644 logwatch.conf.5 $MANDIR/man1m
+      install -m 0644 override.conf.5 $MANDIR/man1m
+      install -m 0644 ignore.conf.5 $MANDIR/man1m
       catman -w -M $MANDIR/man1m
    else
+      install -m 0755 -d $MANDIR/man5
+      install -m 0644 logwatch.conf.5 $MANDIR/man5
+      install -m 0644 override.conf.5 $MANDIR/man5
+      install -m 0644 ignore.conf.5 $MANDIR/man5
+
       install -m 0755 -d $MANDIR/man8
       install -m 0644 logwatch.8 $MANDIR/man8
-      printf "Installed manpage in $MANDIR/man8.\n"
-      printf "Check your man.cf or man.conf to enable MANSECTS 8\n"
+
+      printf "Installed manpages in $MANDIR/man5 and $MANDIR/man8.\n"
+      printf "Check your man.cf or man.conf to enable MANSECTS 5 and 8\n"
    fi
 fi
 

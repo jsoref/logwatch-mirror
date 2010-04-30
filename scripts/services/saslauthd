@@ -58,7 +58,7 @@ $Startups = 0;
 $Shutdowns = 0;
 
 while (defined($ThisLine = <STDIN>)) {
-   if ( 
+   if (
       ( $ThisLine =~ m/^DEBUG: / ) or
       ( $ThisLine =~ m/^ipc_init        : listening on socket:/ )
    ) {
@@ -109,3 +109,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

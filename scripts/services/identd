@@ -111,7 +111,7 @@ while (defined($ThisLine)) {
     }
     elsif ($ThisLine =~ /^Successful lookup: [1234567890]+ , [1234567890]+ : [^ ]+/ ) {
         # skip empty entry ...
-    } 
+    }
     else {
         # Report any unmatched entries...
         if ( $Debug >= 5 ) {
@@ -129,9 +129,9 @@ if ( (keys %Identd) and ($Detail >= 10) ) {
     print "Identd Lookups:\n";
     foreach $ThisOne (keys %Identd) {
         print "   Host: " . ${Identd{$ThisOne}}[0] . " (" . $ThisOne . ") - " . ${Identd{$ThisOne}}[1] . " Connection(s).\n";
-        
+
     }
-} 
+}
 
 if (($#EmptyRequests >= 0) and ($Detail >= 5)) {
     print "\nEmpty requests:\n";
@@ -157,4 +157,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -64,7 +64,7 @@ if ( $Debug >= 5 ) {
 
 while (defined(my $ThisLine = <STDIN>)) {
 
-    if ( $Debug >= 5 ) {    
+    if ( $Debug >= 5 ) {
        print STDERR "DEBUG($DebugCounter): $ThisLine";
        $DebugCounter++;
     }
@@ -73,14 +73,14 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ m/target/)    # startup
     ) {
        # Ignore these
-    } elsif ( ($ThisLine =~ m/WARNING:/) or 
+    } elsif ( ($ThisLine =~ m/WARNING:/) or
               ($ThisLine =~ m/Requested Block:/) or
-              ($ThisLine =~ m/Sense Key:/) or 
-              ($ThisLine =~ m/Vendor:/) or 
-              ($ThisLine =~ m/ASC:/) 
+              ($ThisLine =~ m/Sense Key:/) or
+              ($ThisLine =~ m/Vendor:/) or
+              ($ThisLine =~ m/ASC:/)
     ) {
        $ListDiskWarning{$ThisLine} += 1;
-       if ( $ThisLine =~ m/WARNING:/ ) 
+       if ( $ThisLine =~ m/WARNING:/ )
        {
          $Diskwarning++;
        }
@@ -106,3 +106,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

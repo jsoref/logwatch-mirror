@@ -121,7 +121,7 @@ while (defined($ThisLine = <STDIN>))
 {
    if ( ($address, $id, $start_time, $end_time, $type, $info) = ($ThisLine =~ /([^\s]+)\s([^\s]+)\s(\d+)\s(\d+)\s(RECV|SCAN|SEND)\s(.*)$/) )
    {
-      ($ip) = ($address =~ /\[(.*)\]/); 
+      ($ip) = ($address =~ /\[(.*)\]/);
       $time = ($end_time - $start_time);
       if ( $type =~ /RECV/ )
       {
@@ -327,8 +327,12 @@ if (keys %score_total) {
       print "\tMaximum : " . $score_max{$action} . "\n";
    }
 }
-	
+
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

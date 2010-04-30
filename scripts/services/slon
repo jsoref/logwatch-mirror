@@ -27,9 +27,9 @@
 #
 # Heavily based on xntpd script
 #
-# This script and config file assumes that slon is 
-# logging to /var/log/messages, if not, you need to 
-# update the /usr/share/logwatch/default.conf/services/slon.conf and 
+# This script and config file assumes that slon is
+# logging to /var/log/messages, if not, you need to
+# update the /usr/share/logwatch/default.conf/services/slon.conf and
 # possibly add a new entry in /usr/share/logwatch/default.conf/logfiles
 #
 # Please send all comments, suggestions, bug reports,
@@ -70,7 +70,7 @@ while (defined($ThisLine = <STDIN>)) {
     }
     chomp($ThisLine);
     if (
-        ($ThisLine =~ m/new sl_action_seq/) or 
+        ($ThisLine =~ m/new sl_action_seq/) or
         ($ThisLine =~ m/new sl_rowid_seq value/) or
         ($ThisLine =~ m/seconds delay for first row/) or
         ($ThisLine =~ m/seconds until close cursor/) or
@@ -146,3 +146,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

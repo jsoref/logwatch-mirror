@@ -59,7 +59,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    if ($ThisLine =~ /pam_unix\(sudo:auth\): authentication failure; logname=\S* uid=[0-9]* euid=[0-9]* tty=\S* ruser=\S* rhost=\S*  user=\S*/
       )
        # this log is parsed in pam_unix section
-   {    
+   {
      # Ignore
    } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ; COMMAND=(\S+)( ?.*)/) {
       push @{$byUser{$user}{$euser}}, [$error . $cmd,$args, $dir, $tty];
@@ -108,3 +108,8 @@ if (keys %OtherList) {
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

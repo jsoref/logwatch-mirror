@@ -66,7 +66,7 @@ while (defined($ThisLine = <STDIN>)) {
          $ThisLine =~/^Login excessive login failures user=(\S+) auth=\S+ host=[\w\. 0-9\-]*\[(\d+.\d+.\d+.\d+)\]/ ) {
       $Conn_loginfail{$1}{$2}++;
       next;
-   } 
+   }
 
    if ( $ThisLine =~/service init from (\d+.\d+.\d+.\d+)$/ ) {
       $Connections{$1}++;
@@ -76,12 +76,12 @@ while (defined($ThisLine = <STDIN>)) {
    if ( $ThisLine =~/^(Login|Auth|APOP|Update) user=(\S+) host=[^\[]*\[(\d+.\d+.\d+.\d+)\]/ ) {
       $Conn_loginok{$2}{$3}++;
       next;
-   } 
+   }
 
    if ( $ThisLine =~/^AUTHENTICATE (\S+) failure host=[\w\. 0-9\-]*\[(\d+.\d+.\d+.\d+)\]/ ) {
       $Conn_loginfail{$1}{$2}++;
       next;
-   } 
+   }
 
    # Report any unmatched entries...
    $OtherList{$ThisLine}++;
@@ -124,4 +124,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

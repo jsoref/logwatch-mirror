@@ -31,11 +31,17 @@ my $line;
 my %hosts;
 
 while (defined($line = <STDIN>)) {
-      $line =~ m/^... .. ..:..:.. ([\w\-\_]+)\b/io; 
+      $line =~ m/^... .. ..:..:.. ([\w\-\_]+)\b/io;
 	  $hosts{$1} = "1";
 }
 
 my @uniquehost = sort keys (%hosts);
 
 for my $host (@uniquehost) { print "$host\n"; };
+
 # vi: shiftwidth=3 syntax=perl tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

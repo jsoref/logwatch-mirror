@@ -27,7 +27,7 @@
 # Revision 1.29  2005/06/07 18:14:50  bjorn
 # Filtering out audit statements, since we now have an "audit" service.
 ##########################################################################
-# Kernel script for Logwatch 
+# Kernel script for Logwatch
 #
 # Visit the Logwatch website at
 #   http://www.logwatch.org
@@ -101,7 +101,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SkipError = 1 if $ThisLine =~ /\[<[\da-f]+>\] error_exit\+0x/;
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
    }
-   # OTHER  
+   # OTHER
    else {
       # XXX For now, going to ignore all other kernel messages as there
       # XXX are practically an infinite number and most of them are obviously
@@ -120,8 +120,8 @@ if (keys %SYNflood) {
    foreach my $ThisOne (sort {$a cmp $b} keys %SYNflood) {
       print "   " . $ThisOne . " from:\n";
       foreach my $Next (sort {$a cmp $b} keys %{$SYNflood{$ThisOne}}) {
-         print "      " . $Next . ": $SYNflood{$ThisOne}{$Next} Time(s)\n";   
-      }      
+         print "      " . $Next . ": $SYNflood{$ThisOne}{$Next} Time(s)\n";
+      }
    }
 }
 
@@ -185,4 +185,8 @@ if ( ($Detail >= 5) and (keys %Kernel) ) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -115,7 +115,7 @@ if ( ($Detail >= 10) and (keys %Ignored) ) {
    }
    print "\n";
 }
-       
+
 if ( ($Detail >= 10) and (keys %Exclude) ) {
    print "\nExcluded following ports";
    foreach $mode (sort {$a cmp $b} keys %Exclude) {
@@ -148,4 +148,8 @@ if ( ($Detail >= 5) and (keys %Unknown) ) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

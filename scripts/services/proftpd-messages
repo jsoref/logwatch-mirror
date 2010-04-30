@@ -211,14 +211,14 @@ if ( ( (keys %BadUsers) or (keys %BadPasswds) ) and ($Detail >= 5) ) {
          }
       }
    }
-   
+
    if ( (keys %BadPasswds) and ($Detail >= 5) ) {
       print "\n  Incorrect Password:\n";
       foreach $ThisOne (sort {$a cmp $b} keys %BadPasswds) {
          print $ThisOne . $BadPasswds{$ThisOne} . " Time(s)\n";
       }
    }
-   
+
    if ( (keys %BadShell) and ($Detail >= 5) ) {
       print "\n  Invalid Shell:\n";
       foreach $ThisOne (sort {$a cmp $b} keys %BadShell) {
@@ -273,3 +273,8 @@ if (($#OtherList >= 0) and (not $IgnoreUnmatched)) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

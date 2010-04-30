@@ -54,12 +54,12 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /AUTOCLEAN/) or
       ($ThisLine =~ />>> emerge /) or
       ($ThisLine =~ /\*\*\* emerge /) or
-      ($ThisLine =~ /Cleaning/) or      
+      ($ThisLine =~ /Cleaning/) or
       ($ThisLine =~ /Updating world file/) or
-      ($ThisLine =~ /Post-Build/) 
+      ($ThisLine =~ /Post-Build/)
     ) {
       # Don't care about these...
-   } 
+   }
      elsif ( $ThisLine =~ s/emerge on: ([^ ]+) $2/$1 / ) {
       $EmergeStarted++;
    } elsif ( $ThisLine =~ s/Sync completed ([^ ]+) $2/$1 / ) {
@@ -120,4 +120,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

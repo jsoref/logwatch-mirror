@@ -192,7 +192,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #current sarge
    if ($ThisLine =~ /^[^ :]*:( [0-9:\[\]\.]+|) \(pam_(unix|securetty)\)/i ) {next; }
-   
+
    #Woody - specific, thanks to Michael Stovenour
    if ($ThisLine =~ /^PAM_unix[\[\]0-9]*:/i ) { next; }
 
@@ -237,7 +237,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /pam_timestamp\(?[^ ]*\)?: timestamp file `([^ ]+)' (has unacceptable age \(\d+ seconds\)|is older than oldest login), disallowing access to ([^ ]+) for user ([^ ]+)/) or
       ( $ThisLine =~ /userhelper\[\d+\]: running '([^ ]+)' with [^ ]+ context/) or
       ( $ThisLine =~ /pam_timestamp\(.*:session\): updated timestamp file `\/var\/run\/sudo.*'/) or
-      ( $ThisLine =~ /[^ ]*: pam_keyinit(.*:.*): Unable to change GID to [0-9]* temporarily/) or 
+      ( $ThisLine =~ /[^ ]*: pam_keyinit(.*:.*): Unable to change GID to [0-9]* temporarily/) or
       ( $ThisLine =~ /password check failed for user \([a-zA-Z]*\)/) or
       ( $ThisLine =~ /PAM pam_set_item: attempt to set conv\(\) to NULL/) or
       ( $ThisLine =~ /PAM pam_get_item: nowhere to place requested item/) or
@@ -246,7 +246,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /vmware-authd\[[0-9]+\]: PAM \[error: [^ ]+ cannot open shared object file: No such file or directory\]/) or
       ( $ThisLine =~ /vmware-authd\[[0-9]+\]: PAM adding faulty module: [^ ]+/) or
       ( $ThisLine =~ /Connection closed by/) or
-      ( $ThisLine =~ /sshd.*: Accepted \S+ for \S+ from [\d\.:a-f]+ port \d+/) or # ssh script reads this log 
+      ( $ThisLine =~ /sshd.*: Accepted \S+ for \S+ from [\d\.:a-f]+ port \d+/) or # ssh script reads this log
       ( $ThisLine =~ /userhelper.*: running (.*) with context (.*)/) or
       ( $ThisLine =~ /userhelper.*: pam_thinkfinger(.*): conversation failed/) or
       ( $ThisLine =~ /su: PAM [0-9] more authentication failure; .*/) or
@@ -276,7 +276,7 @@ while (defined($ThisLine = <STDIN>)) {
       $FailedLogins->{$User}->{$Host}++;
    } elsif ( ($Service,$IP) = ($ThisLine =~ /^([^ ]+)\[\d+\]: connect(ion)? from "?(\d+\.\d+\.\d+\.\d+).*/) ) {
       $Name = LookupIP($IP);
-      if ($Summarize =~ /\Q$Service\E/) { 
+      if ($Summarize =~ /\Q$Service\E/) {
          $Connections->{$Service}++;
       } else {
          $Connections->{$Service}->{$Name}++;
@@ -299,14 +299,14 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Service,$Name) = ($ThisLine =~ /^([^ ]+)\[\d+\]: refused connect from (.*)$/) ) {
       $Refused->{$Service}->{$Name}++;
    } elsif ( ($Service,$Name) = ($ThisLine =~ /^([^ ]+)\[\d+\]: connect from ([^\n]+)$/) ) {
-      if ($Summarize =~ /\Q$Service\E/) { 
+      if ($Summarize =~ /\Q$Service\E/) {
          $Connections->{$Service}++;
       } else {
          $Connections->{$Service}->{$Name}++;
       }
    } elsif ( (undef, $Service, $IP) = ($ThisLine =~ /^(xinetd|xinetd-ipv6)\[\d+\]: START: ([^ ]+) pid=\d+ from=([^\n]+)$/) ) {
       if ($Ignore =~ /\b\Q$Service\E\b/i) { next; }
-      if ($Summarize =~ /\Q$Service\E/) { 
+      if ($Summarize =~ /\Q$Service\E/) {
          $Connections->{$Service}++;
       } else {
          # the following is intended for the <no address> string, but captures
@@ -395,7 +395,7 @@ while (defined($ThisLine = <STDIN>)) {
       # sudo unauthorized commands
       push @SudoList, "$1: $3\n" unless ($2 eq "");
    } elsif ( ($service, $from) = ($ThisLine =~ /^xinetd\[\d+\]: FAIL: (.+) (?:address|libwrap|service_limit|connections per second) from=([\d.]+)/)) {
-      if ($Ignore =~ /\b\Q$service\E\b/i) { next; }    
+      if ($Ignore =~ /\b\Q$service\E\b/i) { next; }
       $Refused->{$service}->{$from}++;
    } elsif ( ($from, $service, $user) = ($ThisLine =~ /^pam_abl\[\d+\]: Blocking access from (.+) to service (.+), user (.+)/)) {
       if ($Detail >= 5) {
@@ -445,7 +445,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ /^pam_pwdfile\[\d+\]: password too short or NULL/) {
       $pwd_file_too_short++;
    } elsif ( ($User,$Su) = ($ThisLine =~ /^su: ([^ ]+) to ([^ ]+) on \/dev\/ttyp([0-9a-z]+)/) ) {
-      $Su_User{$User}{$Su}++; 
+      $Su_User{$User}{$Su}++;
    } elsif ( ($Su,$User) = ($ThisLine =~ /^su: \(to ([^ ]+)\) ([^ ]+) on (?:none|\/dev\/(pts\/|ttyp)([0-9]+))/) ) {
       $Su_User{$User}{$Su}++;
    } elsif ( ($Su,$User) = ($ThisLine =~ /^su\[\d+\]: Successful su for (\S+) by (\S+)/) ) {
@@ -455,11 +455,11 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($User) = $ThisLine =~ /change user `([^']+)' password/) {
       $PwdChange{"$User"}++;
    } elsif ( ($User) = ($ThisLine =~ /^cvs: password mismatch for ([^']+): ([^']+) vs. ([^']+)/) ){
-      $cvs_passwd_mismatch{$User}++;       
+      $cvs_passwd_mismatch{$User}++;
    } elsif ( ($User,$From,$To) = ($ThisLine =~ /usermod\[[0-9]*\]: change user `([^ ]*)' shell from `([^ ]*)' to `([^ ]*)'/) ) {
       $ChangedShell{"$User,$From,$To"}++;
    } elsif ( ($Name1,$Name2) = ($ThisLine =~ /usermod\[[0-9]*\]: change user name `([^ ]*)' to `([^ ]*)'/)) {
-      $ChangedUserName{"$Name1,$Name2"}++; 
+      $ChangedUserName{"$Name1,$Name2"}++;
    } elsif (($Name,$GID) = ($ThisLine =~ /change GID for `([^ ]*)' to ([0-9]*)/)) {
       $ChangedGID{"$Name,$GID"}++;
    } elsif (($Name,$UID1,$UID2) = ($ThisLine =~ /change user `([^ ]*)' UID from `([0-9]*)' to `([^ ]*)'/)) {
@@ -474,6 +474,9 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($User) = ($ThisLine =~ /useradd.*failed adding user `(.*)', data deleted/) ) {# failed adding user/)) {# (.*), data deleted/)) {
       # useradd: failed adding user `rpcuser', data deleted
       $FailedAddUsers{$User}++;
+   } elsif (($User,$Reason) = ($ThisLine =~ /dovecot-auth: pam_userdb\(dovecot:auth\): user `(.*)' denied access \((.*)\)/)) {
+      # dovecot-auth: pam_userdb(dovecot:auth): user `bobok' denied access (incorrect password)
+      $DeniedAccess{"$User,$Reason"}++;
    } else {
       # Unmatched entries...
       $ThisLine =~ s/\[\d+\]:/:/;
@@ -574,6 +577,7 @@ if (keys %UnknownUser) {
 if ($pwd_file_unknown > 0) {
    print "\nUsers unknown in password database (pwd_file): $pwd_file_unknown\n";
 }
+
 if ($pwd_file_too_short > 0) {
    print "\nPassword too short or NULL (pwd_file): $pwd_file_too_short Time(s)\n";
 }
@@ -581,7 +585,7 @@ if ($pwd_file_too_short > 0) {
 if (keys %{$Connections}) {
    print "\nConnections:\n";
    foreach $ThisOne (keys %{$Connections}) {
-      if ($Summarize =~ /\Q$ThisOne\E/) { 
+      if ($Summarize =~ /\Q$ThisOne\E/) {
          print "   Service " . $ThisOne . ": " . $Connections->{$ThisOne} . " Connection(s)\n";
       } else {
          my $service_check = 0;
@@ -630,6 +634,14 @@ if (keys %{$FailedSaver}) {
       foreach $Display (sort {$a cmp $b} keys %{$FailedSaver{$User}}) {
          print "      $Display : $FailedSaver{$User}{$Display} Time(s)\n";
       }
+   }
+}
+
+if (keys %DeniedAccess) {
+   print "\ndovecot-auth: Denied access\n";
+   foreach (keys %DeniedAccess) {
+      ($User,$Reason) = split ",";
+      print "   for user " . $User . " (reason: " . $Reason . ") :" . $DeniedAccess{"$User,$Reason"} . " Time(s)\n";
    }
 }
 
@@ -761,7 +773,7 @@ if (keys %TallyOverflow) {
 if (keys %Executed_app) {
    print "\nUserhelper executed applications:\n";
    foreach (keys %Executed_app) {
-     ($longapp,$asuser,$user) = split ","; 
+     ($longapp,$asuser,$user) = split ",";
      $app = substr($longapp,rindex($longapp,"/")+1);
      print "   $user -> $app as $asuser:  ".$Executed_app{"$longapp,$asuser,$user"}." Time(s)\n";
    }
@@ -834,3 +846,8 @@ if (keys %MissingLib) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

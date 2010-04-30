@@ -76,8 +76,8 @@
 #
 # If no update attempt has been done, an alert will be output to inform
 # you about this (which probably means that freshclam isn't running).
-# 
-# If you have stopped using ClamAV and would like to get rid of the 
+#
+# If you have stopped using ClamAV and would like to get rid of the
 # alert, you should delete the logfile. If there's no logfile, no alerts
 # will be output - but if Logwatch finds a logfile and no update attempts
 # have been made for whatever timeperiod Logwatch is analyzing, an alert
@@ -138,7 +138,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       } else {
          $InRange = 0;
       }
-      # $Version was already logged if necessary, so now we clear it 
+      # $Version was already logged if necessary, so now we clear it
       $Version = "";
    } elsif ($InRange) {
       $Status = $Status . "   " . $ThisLine;
@@ -210,3 +210,8 @@ if ($Detail >= 10) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

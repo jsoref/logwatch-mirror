@@ -30,7 +30,7 @@ while (defined($ThisLine = <STDIN>)) {
          ( $ThisLine =~ /^check pass; user unknown/ ) or
          ( $ThisLine =~ /^User account has expired/ ) or # This one is caught below (2-line message)
          ( $ThisLine =~ /^get passwd; pwdb: structure is no longer valid$/) or
-         ( $ThisLine =~ /^fatal: Read error from remote host: Connection reset by peer$/) or 
+         ( $ThisLine =~ /^fatal: Read error from remote host: Connection reset by peer$/) or
          ( $ThisLine =~ /^new password not acceptable$/ ) or
          ( $ThisLine =~ /^FTP session closed$/) or
          ( $ThisLine =~ /^FTP LOGIN REFUSED/) or
@@ -43,7 +43,7 @@ while (defined($ThisLine = <STDIN>)) {
       chomp($ThisLine);
       push @PWChanges, $ThisLine;
    }
-   elsif ( ($RemoteHost,$User) = ( $ThisLine =~ /^failed login from ([^ ]+) \[.*\], ([^ ]+)$/)  or 
+   elsif ( ($RemoteHost,$User) = ( $ThisLine =~ /^failed login from ([^ ]+) \[.*\], ([^ ]+)$/)  or
          ($RemoteHost,$User) = ( $ThisLine =~ /^Login failure user=(\S+) host=([^ ]+)$/) ) {
       chomp ($User);
       push @{$FailedLogins{$RemoteHost}}, $User;
@@ -84,7 +84,7 @@ while (defined($ThisLine = <STDIN>)) {
       chomp ($ThisLine);
       $RootLogins{$ThisLine}++;
    }
-   elsif ( ($User,$From) = ( $ThisLine =~ /^LOGIN ON [^ ]+ BY ([^ ]+) FROM ([^ ]+)$/ ) or 
+   elsif ( ($User,$From) = ( $ThisLine =~ /^LOGIN ON [^ ]+ BY ([^ ]+) FROM ([^ ]+)$/ ) or
          ($User,$From) = ( $ThisLine =~ /^Login user=([^ ]+) host=([^ ]+)$/ ) ) {
       chomp ($From);
       ${$RemoteLogins{$User}}{$From}++;
@@ -215,4 +215,9 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
 

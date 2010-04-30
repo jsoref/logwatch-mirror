@@ -93,7 +93,7 @@ if ( $Debug >= 5 ) {
 
 while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   if ( 
+   if (
       ($ThisLine =~ /smbd\/server\.c:open_sockets_smbd\(\d+\)  Reloading services after SIGHUP/) or
       ($ThisLine =~ /lib\/util_sock\.c:get_peer_addr\(\d+\)  getpeername failed\. Error was (Transport endpoint|Socket) is not connected/) or
       ($ThisLine =~ /add_domain_logon_names/) or
@@ -132,7 +132,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /lib\/access\.c:check_access\(\d+\)$/) or
       ($ThisLine =~ /lib\/access\.c:check_access\(\d+\)  Allowed connection from/) or
       ($ThisLine =~ /smbd\/close\.c:close_normal_file\(\d+\)  .+ closed file/) or
-      ($ThisLine =~ /smbd\/open\.c:open_file\(\d+\)  .+ opened file/) or 
+      ($ThisLine =~ /smbd\/open\.c:open_file\(\d+\)  .+ opened file/) or
       ($ThisLine =~ /smbd\/process.c:timeout_processing\(\d+\)  Closing idle connection/) or
       ($ThisLine =~ /nmbd\/nmbd_browsesync\.c:sync_with_dmb\(\d+\)  sync_with_dmb:  Initiating sync with domain master browser/) or
       ($ThisLine =~ /param\/loadparm\.c:do_section\(\d+\)  Processing section/) or
@@ -141,7 +141,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /smbd\/reply\.c:reply_special\(\d+\)  netbios connect: name1=.+ /) or
       ($ThisLine =~ /nmbd\/nmbd_browsesync\.c:announce_local_master_browser_to_domain_master_browser\(\d+\)  announce_local_master_browser_to_domain_master_browser:  We are both a domain and a local master browser for workgroup .+ /) or
       ($ThisLine =~ /auth\/auth\.c:check_ntlm_password\(\d+\)  check_ntlm_password:  authentication for user \[.+\] -> \[.+\] -> \[.+\] succeeded/) or
-      ($ThisLine =~ /rpc_server\/srv_samr_nt\.c:_samr_lookup_domain\(d+\)  Returning domain sid for domain ([^ ]) -> ([^ ])/) or 
+      ($ThisLine =~ /rpc_server\/srv_samr_nt\.c:_samr_lookup_domain\(d+\)  Returning domain sid for domain ([^ ]) -> ([^ ])/) or
 		($ThisLine =~ /===============================================================/)
    ) {
       #Don't care about these...
@@ -182,7 +182,7 @@ while (defined($ThisLine = <STDIN>)) {
 		$SocketReadError++;
    } elsif (
       ( $ThisLine =~ /lib\/util_sock.c:write_socket\(\d+\)  write_socket: Error writing \d bytes to socket/ ) or
-      ( $ThisLine =~ /lib\/util_sock.c:write_socket_data\(\d+\)  write_socket_data: write failure./ ) or 
+      ( $ThisLine =~ /lib\/util_sock.c:write_socket_data\(\d+\)  write_socket_data: write failure./ ) or
       ( $ThisLine =~ /lib\/util_sock.c:send_smb\(\d+\)  Error writing \d+ bytes to client. / )
    ) {
       # Something more generic should be here
@@ -251,7 +251,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($SID,$dsid) = ($ThisLine =~ /User administrator has Primary Group SID ([^ ]+),   which conflicts with the domain sid ([^ ]+).  Failing operation.$/)) {
       $SIDnotvalid{"$SID,$dsid"}++;
    } elsif ( ($Addr) = ($ThisLine =~ /libsmb\/cliconnect.c:cli_connect\([0-9]+\)  Error connecting to ([0-9.]*) \(Connection refused\)/)) {
-      $RefConnect{$Addr}++;      
+      $RefConnect{$Addr}++;
    } elsif ( ($Name) = ($ThisLine =~ /passdb\/pdb_smbpasswd.c:startsmbfilepwent\([0-9]+\)  startsmbfilepwent_internal: file ([^ ]*) did not exist. File successfully created./)) {
       $CrFile{$Name}++;
    } elsif ( ($user,$file,$read,$write) = ($ThisLine =~ /(\S+) opened file (\S+) read=(\w+) write=(\w+)/)) {
@@ -328,7 +328,7 @@ if (($Detail >= 5) and (keys %Connect)) {
             }
          } else {
             foreach $Ho (sort {$a cmp $b} keys %{$Connect{$Serv}{$Us}}) {
-               print " $Ho " . (" " x (25 - length($Ho))) . ": 
+               print " $Ho " . (" " x (25 - length($Ho))) . ":
                $Connect{$Serv}{$Us}{$Ho} Time(s)\n";
             }
          }
@@ -409,7 +409,7 @@ if (($Detail >= 9) and (keys %NotImplemented)) {
       }
    }
 }
-     
+
 
 if (keys %ForceElection) {
 	print "\nForced Election:\n";
@@ -576,3 +576,8 @@ if (($Detail >= 10) and keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

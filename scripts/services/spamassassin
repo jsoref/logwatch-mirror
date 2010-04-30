@@ -59,7 +59,7 @@ my %Users;
 #    server killed by SIGTERM, shutting down : 1 Time(s)
 #    meta test DIGEST_MULTIPLE has undefined dependency 'PYZOR_CHECK' : 1 Time(s)
 #    meta test SARE_SPEC_PROLEO_M2a has dependency 'MIME_QP_LONG_LINE' with a zero score : 1 Time(s)
- 
+
 while (defined($ThisLine = <STDIN>)) {
    $ThisLine =~ s/^[a-zA-Z0-9]+: //;
    if ( # We don't care about these
@@ -149,4 +149,9 @@ if (keys %OtherList) {
 
 exit(0);
 
-# vi: shiftwidth=3 tabstop=3 et
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -54,7 +54,7 @@ my ($month,$day,$time,$host,$process,$conn,$msg);
 
 while (defined($ThisLine = <STDIN>)) {
     if ($ThisLine =~ m/^$SearchDate/o) { # added
-    
+
     if ( $Debug >= 30 ) {
         print STDERR "DEBUG($DebugCounter): $ThisLine";
         $DebugCounter++;
@@ -63,9 +63,9 @@ while (defined($ThisLine = <STDIN>)) {
 ($month,$day,$time,$host,$process,$conn,$msg)=split(/ +/,$ThisLine,7);
 
    if ( ($ThisLine =~ /(ISDN-6-.+)/ ) or
-         ($ThisLine =~ /Copyright/ ) or 
-         ($ThisLine =~ /Cisco Internetwork Operating System Software/ ) or 
-         ($ThisLine =~ /IOS \(tm\)/ ) or 
+         ($ThisLine =~ /Copyright/ ) or
+         ($ThisLine =~ /Cisco Internetwork Operating System Software/ ) or
+         ($ThisLine =~ /IOS \(tm\)/ ) or
          ($ThisLine =~ /TAC:Home:SW:IOS:Specials/ )
     ) {
       # don't care about this, will code this later
@@ -108,7 +108,7 @@ while (defined($ThisLine = <STDIN>)) {
          $source_ip = @testfields[3];
          $source_port = @testfields[4];
          $destination_ip = @testfields[7];
-         $destination_port = @dfields[8];          
+         $destination_port = @dfields[8];
       } else {
          $count = 0;
       }
@@ -407,3 +407,8 @@ if (keys %SYSLOG) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

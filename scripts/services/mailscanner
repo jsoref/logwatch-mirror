@@ -102,7 +102,7 @@ while (defined($ThisLine = <STDIN>)) {
          ( $ThisLine =~ m/Content Checks: Found [0-9]+ problems/ ) or
          ( $ThisLine =~ m/Read [0-9]+ hostnames from the phishing whitelist/ ) or
          ( $ThisLine =~ m/completed at [0-9]+ bytes per second/ ) or
-         ( $ThisLine =~ m/Message .+ from .+ to .+ is/ ) or 
+         ( $ThisLine =~ m/Message .+ from .+ to .+ is/ ) or
          ( $ThisLine =~ m/^[A-F0-9]+\.[A-F0-9]{5} to/ ) or #for postfix Requeue:
          ( $ThisLine =~ m/^calling custom .* function/ ) or
          ( $ThisLine =~ m/^Initialising database connection/ ) or
@@ -343,7 +343,7 @@ while (defined($ThisLine = <STDIN>)) {
    } else {
       chomp($ThisLine);
       # Report any unmatched entries...
-      $OtherList{$ThisLine}++; 
+      $OtherList{$ThisLine}++;
    }
 }
 
@@ -658,3 +658,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -48,7 +48,7 @@ $TotalBytesIn = 0;
 
 while (defined($ThisLine = <STDIN>)) {
    # Remove transfer time if it is there
-   if ( ($RemoteHost,$Size,$FileName,$Direction,$AccessMode,$UserName) = 
+   if ( ($RemoteHost,$Size,$FileName,$Direction,$AccessMode,$UserName) =
          ( $ThisLine =~ /^([^ ]+) (\d+) (.*) . . (.) (.) (.*) ftp . .*$/ ) ) {
       if ($Detail < 15) {
          $FileName = dirname($FileName);
@@ -60,7 +60,7 @@ while (defined($ThisLine = <STDIN>)) {
             $TotalBytesOut += $Size;
             if ($Detail >= 15) {
                $Temp = '   ' . $FileName . ' -> ' . $RemoteHost . ' (Email: ' . $UserName . ")\n";
-            }        	
+            }
             else {
                $Temp = '   ' . $FileName . ' -> ' . $RemoteHost . "\n";
             }
@@ -74,7 +74,7 @@ while (defined($ThisLine = <STDIN>)) {
             $TotalBytesIn += $Size;
             if ($Detail >= 15) {
                $Temp = '   ' . $RemoteHost . ' -> ' . $FileName . ' (User: ' . $UserName . ")\n";
-            }        	
+            }
             else {
                $Temp = '   ' . $RemoteHost . ' -> ' . $FileName . "\n";
             }
@@ -146,7 +146,7 @@ if ( (keys %FilesOut) and ($Detail >= 5) and ($Detail < 10) ) {
    foreach (sort keys %FilesOut) {
       print "   $_: $FilesOut{$_} Time(s)\n";
    }
-} 
+}
 
 if ( (@GuestIn) and ($Detail >= 10) and ($FTPDetail > 0)) {
    print "\nIncoming Guest FTP Transfers:\n";
@@ -186,4 +186,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

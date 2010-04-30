@@ -93,16 +93,16 @@ my $NumberOfLostMessages = 0;
 my %InvalidContext = ();
 my %BugLog = ();
 my $UELimit = 10;
-my $ThisLine; 
+my $ThisLine;
 my %Warning = ();
 
 print STDERR "\n\nDEBUG: Inside audit filter\n\n" if ( $Debug >= 5 );
 
 while ($ThisLine = <STDIN>) {
     chomp($ThisLine);
-    if (( $ThisLine =~ /initializing netlink socket \(disabled\)/) or 
+    if (( $ThisLine =~ /initializing netlink socket \(disabled\)/) or
 	( $ThisLine =~ /audit_pid=[0-9]* old=[0-9]*(?: by auid=[0-9]*)?/) or
-	( $ThisLine =~ /(arch=[0-9]+ )?syscall=[0-9]+ (success=(no|yes) )?exit=[0-9-]+( a[0-3]=[0-9a-f]+)* items=[0-9]+ pid=[0-9]+ (loginuid=[0-9-]+ )?(auid=[0-9]+ )?uid=[0-9]+ gid=[0-9]+ euid=[0-9]+ suid=[0-9]+ fsuid=[0-9]+ egid=[0-9]+ sgid=[0-9]+ fsgid=[0-9]+/) or
+	( $ThisLine =~ /(arch=[0-9]+ )?syscall=[0-9]+ (success=(no|yes) )?exit=[0-9-]+( a[0-3]=[0-9a-f]+)* items=[0-9]+ (ppid=[0-9]+ )?pid=[0-9]+ (loginuid=[0-9-]+ )?(auid=[0-9]+ )?uid=[0-9]+ gid=[0-9]+ euid=[0-9]+ suid=[0-9]+ fsuid=[0-9]+ egid=[0-9]+ sgid=[0-9]+ fsgid=[0-9]+/) or
 	( $ThisLine =~ /Audit daemon rotating log files/) or
 	( $ThisLine =~ /audit_backlog_limit=[0-9]* old=[0-9]*(?: by auid=[0-9]*)?/) or
 	( $ThisLine =~ /SELinux:  unrecognized netlink message type=[0-9]+ for sclass=[0-9]+/) or
@@ -115,15 +115,16 @@ while ($ThisLine = <STDIN>) {
 	( $ThisLine =~ /audit\([0-9.]+:[0-9]+\): (selinux=[0-9]+|auid=[0-9]+|prom=[0-9]+|old_prom=[0-9]+|dev=[^ ]+| )+$/) or
         ( $ThisLine =~ /auditd[ ]+S [0-9A-F]+  [0-9]+  [0-9]+[ ]+[0-9]([ ]*[0-9]+[ ]*|[ ]*)[0-9]+  [0-9]+ \(NOTLB\)/) or
         ( $ThisLine =~ /Started dispatcher: \/sbin\/audispd pid: [0-9]+/) or
-        ( $ThisLine =~ /audit\([0-9.]*:[0-9]*\): bool=.* val=.* old_val=.* auid=[0-9]*/)
-    ) { 
+        ( $ThisLine =~ /audit\([0-9.]*:[0-9]*\): bool=.* val=.* old_val=.* auid=[0-9]*/) or
+	( $ThisLine =~ /item=[0-9] name="\S*" inode=[0-9]+ dev=\S* mode=[0-9]* ouid=[0-9]* ogid=[0-9]* rdev=[0-9:]* obj=\S*/)
+    ) {
 	# Ignore these entries
     } elsif ( $ThisLine =~ /audit\([0-9]{10}.[0-9]{3}:[0-9]\): initialized$/) {
       $NumberOfInits++;
     } elsif ( $ThisLine =~ /Init complete, audit pid set to: [0-9]+/) {
       $NumberOfDStartsPid++;
     } elsif ( $ThisLine =~ /Init complete, auditd [0-9,.]+ listening for events/) {
-      $NumberOfDStarts++; 
+      $NumberOfDStarts++;
     } elsif ( $ThisLine =~ /The audit daemon is exiting./) {
       $NumberOfDStops++;
     } elsif ( $ThisLine =~ /audit_lost=[0-9]+ audit_backlog=[0-9]+ audit_rate_limit=[0-9]+ audit_backlog_limit=[0-9]+$/) {
@@ -132,14 +133,14 @@ while ($ThisLine = <STDIN>) {
       $NumberOfDdStarts++;
     } elsif ( $ThisLine =~ /auditd shutdown succeeded/) {
       $NumberOfDdStops++;
-    } elsif (( $ThisLine =~ /netlink socket too busy/) or 
-             ( $ThisLine =~ /Error sending signal_info request \(Invalid argument\)/) or 
+    } elsif (( $ThisLine =~ /netlink socket too busy/) or
+             ( $ThisLine =~ /Error sending signal_info request \(Invalid argument\)/) or
 	     ( $ThisLine =~ /major=[0-9]+ name_count=[0-9]+: freeing multiple contexts \([1-2]\)/)) {
       $ThisLine =~ s/audit\(:[0-9]+\): //;
       $BugLog{$ThisLine}++;
-    } elsif (( $ThisLine =~ /Audit daemon is low on disk space for logging/)  or 
-             ( $ThisLine =~ /Audit daemon is suspending logging due to low disk space./)) {   
-      $Warning{$ThisLine}++;  
+    } elsif (( $ThisLine =~ /Audit daemon is low on disk space for logging/)  or
+             ( $ThisLine =~ /Audit daemon is suspending logging due to low disk space./)) {
+      $Warning{$ThisLine}++;
     } elsif ( $Detail > 9 ) {
 	if ( $ThisLine =~ /avc:\s*denied\s*{\s*([^}]+).*scontext=(\S+)\s*tcontext=(\S+)\s*tclass=(\S+)/ ) {
 	    $denials{$2.' '.$3.' ('.$1.$4 . ')'}++;
@@ -149,7 +150,7 @@ while ($ThisLine = <STDIN>) {
 	    $InvalidContext{$4." running as ".$2." acting on ".$3." \nshould transit to invalid ".$1}++;
         } elsif ($ThisLine =~ /security_sid_mls_copy:\s*invalid context\s*(\S+)/) {
             $InvalidContext{"context: ".$1}++;
-	} else { 
+	} else {
             $othercount++;
             $ThisLine =~ s/^\s*//;
             if ($othercount < $UELimit+1) {
@@ -178,9 +179,9 @@ while ($ThisLine = <STDIN>) {
 	} elsif ( $ThisLine =~ /avc:\s*granted\s*{\s*[^}]+.*scontext=([^:]+):[^:]+:\S+\s*tcontext=([^:]+):[^:]+:\S+\s*tclass=(\S+)/ ) {
 	    $grants{$1.' '.$2.' ('.$3 . ')'}++;
 	} elsif ($ThisLine =~ /security_compute_sid:\s*invalid context\s*(\S+)\s*for\s*scontext=(\S+)\s*tcontext=\S+\s*tclass=(\S+)/ ) {
-   	    $InvalidContext{$3." running as ".$2." should transit to invalid ".$1}++;  
+   	    $InvalidContext{$3." running as ".$2." should transit to invalid ".$1}++;
         } elsif ($ThisLine =~ /security_sid_mls_copy:\s*invalid context\s*(\S+)/) {
-            $InvalidContext{"context: ".$1}++;   
+            $InvalidContext{"context: ".$1}++;
 	} else {
             $othercount++;
             $ThisLine =~ s/^\s*//;
@@ -217,7 +218,7 @@ if ( keys %InvalidContext) {
         print "   $key: ". $InvalidContext{$key} . " times\n";
     }
 }
-		    
+
 
 
 if ($NumberOfDStarts+$NumberOfDStartsPid) {
@@ -247,7 +248,7 @@ if ($Detail>9) {
       print "\n Number of auditd daemon stops: $NumberOfDdStops \n";
     }
 }
-    
+
 if ( %BugLog) {
   print "\n*** Logs which could mean a bug ***\n";
   foreach my $Entry (keys %BugLog) {
@@ -266,3 +267,10 @@ if ( $#OtherList >= 0 ) {
 }
 
 exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

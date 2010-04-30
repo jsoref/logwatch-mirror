@@ -28,7 +28,7 @@ while (defined($ThisLine = <STDIN>)) {
         ( $ThisLine =~ /[OK|FAIL] RMDIR/ ) or
         ( $ThisLine =~ /[OK|FAIL] CHMOD/ ) or
         ( $ThisLine =~ /[OK|FAIL] DELETE/ ) or
-        ( $ThisLine =~ /MKDIR/ ) ) 
+        ( $ThisLine =~ /MKDIR/ ) )
    { # We don't care about these
    } elsif ( ($IP,$Email) = ( $ThisLine =~ /OK LOGIN: Client \"(.*)\", anon password \"(.*)\"$/ ) ) {
       $Temp = "    (" . $IP . "): " . $Email . " - ";
@@ -55,7 +55,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Temp = "   " . $FileName . " -> " . $IP . " (User: " . $User . ")\n";
       $TotalBytesOut+= $FileSize;
       push @FailedDownloadedFiles,$Temp;
-   } elsif ( ($Date, $IP,$FileSize,$FileName,$Direction,$AccessMode,$User) = 
+   } elsif ( ($Date, $IP,$FileSize,$FileName,$Direction,$AccessMode,$User) =
          ( $ThisLine =~ /^(... ... .. ..:..:.. ....) \d+ ([^ ]+) (\d+) (.*) . . (.) (.) (.*) ftp . .*$/ ) ) {
       # Handle xferlog format entries too...
       # It appears that older versions of vsftpd would write to vsftpd.log with the xferlog format.
@@ -148,4 +148,8 @@ if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

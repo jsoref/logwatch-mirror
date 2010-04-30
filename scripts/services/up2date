@@ -42,7 +42,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
    if ( ( $ThisLine =~ /^updating login info$/ ) or
         ( $ThisLine =~ /^Opening rpmdb in \/var\/lib\/rpm\/ with option .$/ ) or
-        ( $ThisLine =~ /^successfully retrieved authentication token from up2date server$/ ) or 
+        ( $ThisLine =~ /^successfully retrieved authentication token from up2date server$/ ) or
         ( $ThisLine =~ /^(getA|a)vailablePackageList from network$/ ) or
         ( $ThisLine =~ /^getAdvisoryInfo for / ) or
         ( $ThisLine =~ /^logging into up2date server$/ ) or
@@ -67,8 +67,8 @@ while (defined($ThisLine = <STDIN>)) {
 	( $ThisLine =~ /rhn_register logging into up2date server/) or
 	( $ThisLine =~ /rhn_register successfully retrieved authentication token from up2date server/) or
 	( $ThisLine =~ /rhn_register An exception was raised causing login to fail. This is usually correct. Exception information:/) or
-	( $ThisLine =~ /^Running elilo with the new configuration/) ) { 
-	
+	( $ThisLine =~ /^Running elilo with the new configuration/) ) {
+
       # We don't care about these
    } elsif ( $ThisLine =~ s/^installing packages: ([^ ]+)/$1/ ) {
       $PackageInstalled{$ThisLine}++;
@@ -115,4 +115,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

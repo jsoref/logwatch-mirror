@@ -65,4 +65,9 @@ $OStitle = $OSname;
 $OStitle = "Solaris" if ($OSname eq "SunOS" && $release >= 2);
 print "   Release: $OStitle $release\n";
 
-
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

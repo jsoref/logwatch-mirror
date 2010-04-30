@@ -199,11 +199,11 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /binding TCP socket: address in use/) or
       ($ThisLine =~ /dbus_mgr initialization failed. D-BUS service is disabled./) or
       ($ThisLine =~ /dbus_svc_add_filter failed/) or
-      ($ThisLine =~ /isc_log_open 'named.run' failed: permission denied/) or 
-      ($ThisLine =~ /weak RSASHA1 \(5\) key found \(exponent=3\)/) or 
-      ($ThisLine =~ /Bad file descriptor/) or 
+      ($ThisLine =~ /isc_log_open 'named.run' failed: permission denied/) or
+      ($ThisLine =~ /weak RSASHA1 \(5\) key found \(exponent=3\)/) or
+      ($ThisLine =~ /Bad file descriptor/) or
       ($ThisLine =~ /open: .*: file not found/) or
-      ($ThisLine =~ /queries: client [0-9.#:]* view localhost_resolver: query: .* IN .*/) or
+      ($ThisLine =~ /queries: client [\.0-9a-fA-F#:]* view localhost_resolver: query: .* IN .*/) or
       ($ThisLine =~ /zone .*: NS '.*' is a CNAME \(illegal\)/) or
       ($ThisLine =~ /zone .*: zone serial unchanged. zone may fail to transfer to slaves/) or
       ($ThisLine =~ /zone .*: loading from master file .* failed/) or
@@ -212,7 +212,21 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /.*: unexpected end of input/) or
       ($ThisLine =~ /too many timeouts resolving '.*' .*: disabling EDNS/) or
       ($ThisLine =~ /too many timeouts resolving '.*' .*: reducing the advertised EDNS UDP packet size to .* octets/) or
-      ($ThisLine =~ /reloading zones succeeded/)
+      ($ThisLine =~ /reloading zones succeeded/) or
+      ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after disabling EDNS/) or
+      ($ThisLine =~ /success resolving '.*' \(in '.*'?\) after reducing the advertised EDNS UDP packet size to 512 octets/) or
+      ($ThisLine =~ /the working directory is not writable/) or
+      ($ThisLine =~ /using default UDP\/IPv[46] port range: \[[0-9]*, [0-9]*\]/) or
+      ($ThisLine =~ /adjusted limit on open files from [0-9]* to [0-9]*/) or
+      ($ThisLine =~ /using up to [0-9]* sockets/) or
+      ($ThisLine =~ /built with/) or
+      ($ThisLine =~ /'.*': TTL differs in rdataset, adjusting [0-9]* -> [0-9]*/) or
+      ($ThisLine =~ /max open files \([0-9]*\) is smaller than max sockets \([0-9]*\)/) or
+      ($ThisLine =~ /clients-per-query decreased to .*/) or
+      ($ThisLine =~ /^must-be-secure resolving '.*': .*/) or
+      ($ThisLine =~ /^no valid (DS|KEY|RRSIG) resolving '.*': .*/) or
+      ($ThisLine =~ /^not insecure resolving '.*': .*/) or
+      ($ThisLine =~ /^validating \@0x[[:xdigit:]]+: .* DS: must be secure failure/)
       # too many timeouts resolving 'ns-ext.nrt1.isc.org/AAAA' (in '.'?): disabling EDNS: 3 Time(s)
    ) {
       # Don't care about these...
@@ -280,7 +294,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: query \(cache\) denied/ ) ) {
       $FullClient = LookupIP ($Client);
       $DeniedQuery{$FullClient}++;
-   } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client ([\d\.]+)#\d+:(?: view ([^ ]+):)? update '(.*)' denied/)) {
+   } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+:(?: view ([^ ]+):)? update '(.*)' denied/)) {
       $ViewName = ($ViewName ? "/$ViewName" : "");
       $UpdateDenied{"$Rhost ($Ldom$ViewName)"}++;
    } elsif ( ($Rhost, $Ldom) = ($ThisLine =~ /client ([\d\.]+)#\d+: update forwarding '(.*)' denied/)) {
@@ -299,7 +313,7 @@ while (defined($ThisLine = <STDIN>)) {
       $NonAuthoritative{$Zone}++;
    } elsif ( ($ThisLine =~ /unexpected RCODE \((.*)\) resolving/) ){
       $UnexpRCODE{$1}++;
-   } elsif ( ($ThisLine =~ /FORMERR resolving '[^ ]+: [0-9.#]+/) ) {
+   } elsif ( ($ThisLine =~ /FORMERR resolving '[^ ]+: [\.0-9a-fA-F:#]+/) ) {
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
@@ -314,7 +328,7 @@ while (defined($ThisLine = <STDIN>)) {
 	     (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
 	     (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) ) {
       $NError{$ErrorText}++;
-   } elsif ( ($From,$Log) = ($ThisLine =~ /invalid command from ([.0-9]*)#[0-9]*: (.*)/) ) {
+   } elsif ( ($From,$Log) = ($ThisLine =~ /invalid command from ([\.0-9a-fA-F:]*)#[0-9]*: (.*)/) ) {
       $CCMessages{"$From,$Log"}++;
    } elsif ( (($Log) = ($ThisLine =~ /(freezing .*zone.*)/)) or
 	     (($Log) = ($ThisLine =~ /(thawing .*zone.*)/)) ) {
@@ -330,7 +344,7 @@ while (defined($ThisLine = <STDIN>)) {
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
-      $ThisLine =~ s/(client [.0-9]+)\S+/$1/;
+      $ThisLine =~ s/(client [\.0-9a-fA-F:]+)\S+/$1/;
       chomp($ThisLine);
       $OtherList{$ThisLine}++;
    }
@@ -467,7 +481,7 @@ if ( ( $Detail >= 10 ) and (keys %NetworkUnreachable) ) {
       print "   $ThisOne:\n";
       foreach $Host (sort {$a cmp $b} keys %{$NetworkUnreachable{$ThisOne}}) {
          print "      $Host: $NetworkUnreachable{$ThisOne}{$Host} Time(s)\n";
-      } 
+      }
    }
 }
 
@@ -497,7 +511,7 @@ if ( ( $Detail >= 5 ) and (keys %ZoneUpdates) ) {
       print "   $ThisOne:\n";
       foreach $Message (sort {$a cmp $b} keys %{$ZoneUpdates{$ThisOne}}) {
          print "      $Message: $ZoneUpdates{$ThisOne}{$Message} Time(s)\n";
-      } 
+      }
    }
 }
 
@@ -594,7 +608,7 @@ if ((keys %CCCommands) or (keys %UnknownCCCommands)) {
    }
    foreach $ThisOne (keys %UnknownCCCommands) {
       print "   " . $ThisOne . "(unknown command): " . $CCCommands{$ThisOne} . " Time(s)\n";
-   }               
+   }
 }
 
 if (keys %OtherList) {
@@ -607,4 +621,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

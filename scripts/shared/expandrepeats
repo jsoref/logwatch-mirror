@@ -19,7 +19,7 @@
 ## copyright please contact logwatch-devel@logwatch.org.
 #########################################################
 
-# This used to expand "Last Message Repeated n Times" messages in 
+# This used to expand "Last Message Repeated n Times" messages in
 # standard syslog files.  Now, I have decided it is much better to
 # just ignore the repeats, as otherwise our temporary logfiles will
 # be too huge.
@@ -40,3 +40,8 @@ while (defined($ThisLine = <STDIN>)) {
 }
 
 # vi: shiftwidth=3 syntax=perl tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

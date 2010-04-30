@@ -206,7 +206,10 @@ my %LoginLock = ();
 my %PostPonedAuth = ();
 my %LockedAccount = ();
 my %AllowUsers = ();
+my %DenyUsers = ();
 my %AllowGroups = ();
+my %DenyGroups = ();
+my %NoGroups = ();
 my %NoShellUsers = ();
 my %ShellNotExecutableUsers = ();
 my %DeprecatedOption = ();
@@ -227,8 +230,8 @@ my $Starts = 0;
 my $NetworkErrors = 0;
 
 if ( $Debug >= 5 ) {
-	print STDERR "\n\nDEBUG: Inside SSHD Filter \n\n";
-	$DebugCounter = 1;
+   print STDERR "\n\nDEBUG: Inside SSHD Filter \n\n";
+   $DebugCounter = 1;
 }
 
 while (defined(my $ThisLine = <STDIN>)) {
@@ -327,7 +330,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( my ($Port,$Address,$Reason) = ($ThisLine =~ /^error: Bind to port ([^ ]+) on ([^ ]+) failed: (.+).$/ )) {
       my $Temp = "$Address port $Port ($Reason)";
       # Failed to bind on 0.0.0.0 likely due to configured "ListenAddress"
-      # on both IPv4 and IPv6 
+      # on both IPv4 and IPv6
       unless ($Address =~ /^0.0.0.0$/) {
          $BindFailed{$Temp}++;
       }
@@ -390,8 +393,14 @@ while (defined(my $ThisLine = <STDIN>)) {
       $LockedAccount{$User}++;
    } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*) from (?:[^ ]*) not allowed because not listed in AllowUsers/)) {
       $AllowUsers{$User}++;
+   } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [0-9.]*)? not allowed because listed in DenyUsers/)){
+      $DenyUsers{$User}++;
+   } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [0-9.]*)? not allowed because not in any group/)) {
+      $NoGroups{$User}++;
+   } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [0-9.]*)? not allowed because a group is listed in DenyGroups/)) {
+      $DenyGroups{$User}++;
    } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*) from ([^ ]*) not allowed because none of user's groups are listed in AllowGroups/)) {
-      $AllowGroups{$User}++;    
+      $AllowGroups{$User}++;
    } elsif ( ($User) = ($ThisLine =~ /^User ([^ ]*) not allowed because shell (\S+) does not exist/)) {
       $NoShellUsers{$User}++;
    } elsif ( ($User) = ($ThisLine =~ /^User ([^ ]*) not allowed because shell (\S+) is not executable/)) {
@@ -401,13 +410,13 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( my ($Line,$Option) = ($ThisLine =~ /^rexec line (\d+): Deprecated option (.*)$/)) {
       $DeprecatedOption{"$Option - line $Line"}++;
    } elsif ( my ($Pom1,$Pom2,$User) = ($ThisLine =~ /pam_krb5(\[\d*\])?: authentication fails for (`|')([^ ]*)'/)) {
-      $KrbAutFail{$User}++;	 
+      $KrbAutFail{$User}++;
    } elsif ( my ($Error) = ($ThisLine =~ /pam_krb5: authenticate error: (.*)$/)) {
       $KrbAutErr{$Error}++;
    } elsif ( ($ThisLine =~ /pam_krb5: unable to determine uid\/gid for user$/)) {
       $KrbAutErr{"unable to determine uid/gid for user"}++;
    } elsif ( my ($Error) = ($ThisLine =~ /pam_krb5: error removing file (.*)$/)) {
-      $KrbErr{"error removing file " . $Error}++;     
+      $KrbErr{"error removing file " . $Error}++;
    } elsif ( my ($Pom,$Error) = ($ThisLine =~ /pam_krb5(\[\d*\]): error resolving user name '[^ ]*' to uid\/gid pai/)) {
       $KrbErr{"error resolving user name '$Error' to uid\/gid pai"}++;
    } elsif ( my (undef,$User,$Host) = ($ThisLine =~ m/^(Illegal|Invalid) user (.*) from ([^ ]+)/ )) {
@@ -417,7 +426,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (my ($File,$Perm,$Why) = ($ThisLine =~ /error: chmod (.*) (.*) failed: (.*)/)) {
       $ChmodErr{"$File,$Perm,$Why"}++;
    } elsif (my ($File,$From,$To,$Why) = ($ThisLine =~ /error: chown (.*) (.*) (.*) failed: (.*)/)) {
-      $ChownErr{"$File,$From,$To,$Why"}++;            
+      $ChownErr{"$File,$From,$To,$Why"}++;
    } else {
       # Report any unmatched entries...
       unless ($ThisLine =~ /fwd X11 connect/) {
@@ -561,10 +570,31 @@ if (keys %AllowUsers) {
    }
 }
 
+if (keys %DenyUsers) {
+   print "\nLogin attempted when in DenyUsers list:\n";
+   foreach my $User (sort {$a cmp $b} keys %DenyUsers) {
+      print "   $User : $DenyUsers{$User} Time(s)\n";
+   }
+}
+
 if (keys %AllowGroups) {
    print "\nLogin attempted when not in AllowGroups list:\n";
    foreach my $User (sort {$a cmp $b} keys %AllowGroups) {
       print "   $User : $AllowGroups{$User} Time(s)\n";
+   }
+}
+
+if (keys %DenyGroups) {
+   print "\nLogin attempted when in DenyGroups list:\n";
+   foreach my $User (sort {$a cmp $b} keys %DenyGroups) {
+      print "   $User : $DenyGroups{$User} Time(s)\n";
+   }
+}
+
+if (keys %NoGroups) {
+   print "\nLogin attempted when user is in no group:\n";
+   foreach my $User (sort {$a cmp $b} keys %NoGroups) {
+      print "   $User : $NoGroups{$User} Time(s)\n";
    }
 }
 
@@ -636,14 +666,14 @@ if (keys %KrbAutFail) {
       print "   $User: " .  $KrbAutFail{$User} . " Time(s)\n";
    }
 }
-	       
+
 if (keys %KrbAutErr) {
    print "\n\pam_krb5 authentication errors:\n";
    foreach my $Error (sort keys %KrbAutErr) {
       print "   $Error: " .  $KrbAutErr{$Error} . " Time(s)\n";
    }
 }
-	       
+
 
 if (keys %KrbErr) {
    print "\n pam_krb5 errors:\n";
@@ -741,12 +771,12 @@ if (keys %ChmodErr) {
 
 if (keys %ChownErr) {
   print "\nChown errors:\n";
-  foreach (keys %ChownErr) { 
+  foreach (keys %ChownErr) {
     my ($File,$From,$To,$Why)= split ",";
     print "   " . $File . " " . $From . " " .$To . " failed(" . $Why . "): ". $ChmodErr{"$File,$From,$To,$Why"} . " Time(s)\n";
   }
 }
-              
+
 
 if (keys %OtherList) {
    print "\n**Unmatched Entries**\n";
@@ -756,3 +786,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

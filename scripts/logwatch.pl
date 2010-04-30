@@ -228,12 +228,12 @@ if ($ShowVersion) {
 
 if ($tmp_mailto) {
    $Config{'mailto'} = $tmp_mailto;
-   $Config{'output'} = "mail"; #8.0 
+   $Config{'output'} = "mail"; #8.0
 }
 
 if ($tmp_savefile) {
    $Config{'filename'} = $tmp_savefile;
-   $Config{'output'} = "file"; #8.0 
+   $Config{'output'} = "file"; #8.0
 }
 
 if ($Config{'hostformat'} eq "splitmail") {
@@ -565,7 +565,7 @@ if ((scalar @ServiceList > 0) && (grep /^all$/i, @ServiceList)) {
           if (exists $tmphash{$offservice}) {
              delete $tmphash{$offservice};
           }
-          
+
       } else {
           die "Wrong configuration entry for \"Service\", if \"All\" selected, only \"-\" items are allowed\n";
       }
@@ -606,7 +606,7 @@ if ((scalar @ServiceList > 0) && (grep /^all$/i, @ServiceList)) {
 # Now lets fill up @LogFileList again...
 foreach my $ServiceName (@ServiceList) {
    foreach my $LogName ( @{$ServiceData{$ServiceName}{'logfiles'} } ) {
-      unless ( grep m/^$LogName$/, @LogFileList ) { 
+      unless ( grep m/^$LogName$/, @LogFileList ) {
          push @LogFileList, $LogName;
       }
    }
@@ -669,7 +669,7 @@ if ($Config{'debug'}>7) {
 unless ($TempDir =~ m=/$=) {
     $TempDir .= "/";
 }
-   
+
 #############################################################################
 
 # Set up the environment...
@@ -758,15 +758,15 @@ foreach $LogFile (@LogFileList) {
          if (($Archive =~ m/gz$/) && (-f "$Archive") && (-s "$Archive")) {
             my $arguments = "$Archive >> $DestFile";
             system("$Config{'pathtozcat'} $arguments") == 0
-               or die "system '$Config{'pathtozcat'} $arguments' failed: $?" 
+               or die "system '$Config{'pathtozcat'} $arguments' failed: $?"
          } elsif (($Archive =~ m/bz2$/) && (-f "$Archive") && (-s "$Archive")) {
             my $arguments = "$Archive 2>/dev/null >> $DestFile";
             system("$Config{'pathtobzcat'} $arguments") == 0
-               or die "system '$Config{'pathtobzcat'} $arguments' failed: $?" 
+               or die "system '$Config{'pathtobzcat'} $arguments' failed: $?"
          } elsif ((-f "$Archive") && (-s "$Archive")) {
             my $arguments = "$Archive  >> $DestFile";
             system("$Config{'pathtocat'} $arguments") == 0
-               or die "system '$Config{'pathtocat'} $arguments' failed: $?" 
+               or die "system '$Config{'pathtocat'} $arguments' failed: $?"
          } #End if/elsif existence
       } #End if $CheckTime
 
@@ -851,7 +851,7 @@ foreach $LogFile (@LogFileList) {
       } else {
          #System call does the log processing
          system("$Config{'pathtocat'} $Command") == 0
-            or die "system '$Config{'pathtocat'} $Command' failed: $?" 
+            or die "system '$Config{'pathtocat'} $Command' failed: $?"
       }
    }
 }
@@ -872,7 +872,7 @@ if ($Config{'hostformat'} ne "none") { #8.0
      my $eeefile = ("$TempDir" . "$newlogfile");
      if ((!(-d $eeefile)) && (!($eeefile =~ m/-archive/))) {
          system("$Config{'pathtocat'} $eeefile $ecpcmd") == 0
-            or die "system '$Config{'pathtocat'} $eeefile $ecpcmd' failed: $?" 
+            or die "system '$Config{'pathtocat'} $eeefile $ecpcmd' failed: $?"
      }
    }
    #read in the final host list
@@ -930,9 +930,9 @@ sub getInt {
    }
    return $word;
 }
-              
+
 ######################################################################
-#sub CleanVars 
+#sub CleanVars
 #Notes: Called during #Load CONFIG, READ OPTIONS, make adjustments
 ######################################################################
 sub CleanVars {
@@ -1071,7 +1071,7 @@ sub ReadConfigFile {
 #########################################################################
 sub Usage () {
    # Show usage for this program
-   print "\nUsage: $0 [--detail <level>] [--logfile <name>] [--output <output_type>]\n" . 
+   print "\nUsage: $0 [--detail <level>] [--logfile <name>] [--output <output_type>]\n" .
       "   [--format <format_type>] [--encode <enconding>] [--numeric]\n" .
       "   [--mailto <addr>] [--archives] [--range <range>] [--debug <level>]\n" .
       "   [--filename <filename>] [--help|--usage] [--version] [--service <name>]\n" .
@@ -1120,7 +1120,7 @@ sub initprint {
    } elsif ($Config{'output'} eq "file") {
       open(OUTFILE,">>" . $Config{'filename'}) or die "Can't open output file: $Config{'filename'} $!\n";
    } else {
-   #fixme mailto 
+   #fixme mailto
       if (($Config{'hostformat'} eq "splitmail") || ($emailopen eq "")) {
          #Use mailer = in logwatch.conf to set options. Default should be "sendmail -t"
          #In theory this should be able to handle many different mailers. I might need to add
@@ -1140,7 +1140,7 @@ sub initprint {
             print OUTFILE "Subject: Logwatch for $Config{'hostname'} (${OStitle})\n";
          }
          #Add MIME
-         $out_mime = "MIME-Version: 1.0\n"; 
+         $out_mime = "MIME-Version: 1.0\n";
          #Config{encode} switch
          if ( $Config{'encode'} eq "base64" ) {
             $out_mime .= "Content-transfer-encoding: base64\n";
@@ -1158,7 +1158,7 @@ sub initprint {
             print OUTFILE "Reporting on hosts: @hosts\n";
          }
          $emailopen = 'y';
-      } #End if hostformat || emailopen 
+      } #End if hostformat || emailopen
    } #End if printing/save/else
    $printing = 'y';
 
@@ -1182,7 +1182,7 @@ sub initprint {
    $index_par++;
    if ( $Config{'format'} eq "html" ) {
       &output( $index_par, "LOGWATCH Summary" . (($Config{'hostformat'} ne "none") ? ": $Config{'hostname'}" : ""), "start");
-      &output( $index_par, "       Logwatch Version: $Version ($VDate)\n", "line"); 
+      &output( $index_par, "       Logwatch Version: $Version ($VDate)\n", "line");
    }       else {
       &output( $index_par, "\n ################### Logwatch $Version ($VDate) #################### \n", "line");
    }
@@ -1305,15 +1305,15 @@ sub parselogs {
 
       my $Command = '';
       if ($FileList[0] eq 'none') {
-         $Command = " $FilterText 2>&1 "; 
+         $Command = " $FilterText 2>&1 ";
       } elsif ($FileText) {
          if ($HostStrip ne " ") {
-            $Command = " ( $Config{'pathtocat'} $FileText | $HostStrip | $FilterText) 2>&1 "; 
+            $Command = " ( $Config{'pathtocat'} $FileText | $HostStrip | $FilterText) 2>&1 ";
          } else {
-            $Command = " ( $Config{'pathtocat'} $FileText | $FilterText) 2>&1 "; 
+            $Command = " ( $Config{'pathtocat'} $FileText | $FilterText) 2>&1 ";
          }
       }
-   
+
       if ($Command) {
          if ($Config{'debug'}>4) {
             print "\nProcessing Service: " . $Service . "\n" . $Command . "\n";
@@ -1365,34 +1365,34 @@ sub parselogs {
       }
    }
 
-   #HTML should be external to logwatch.pl -mgt 
+   #HTML should be external to logwatch.pl -mgt
    #These are steps only needed for HTML output
    if ( $Config{'format'} eq "html" ) {
-      #HEADER 
+      #HEADER
       #Setup temp Variables to swap
       my %HTML_var;
       $HTML_var{Version} = "$Version";
       $HTML_var{VDate} = "$VDate";
-      #open template this needs to allow directory override like the rest of the confs 
+      #open template this needs to allow directory override like the rest of the confs
       open(HEADER, "$Config{html_header}") || die "Can not open HTML Header at $Config{html_header}: $!\n";
-      my @header = <HEADER>; 
+      my @header = <HEADER>;
       close HEADER;
-      #Expand variables... There must be a better way -mgt 
+      #Expand variables... There must be a better way -mgt
       for my $header_line (@header) {
          $header_line =~ s/\$([\w\_\-\{\}\[\]]+)/$HTML_var{$1}/g;
          $out_head .= $header_line;
       }
 
       #FOOTER
-      #open template this needs to allow directory override like the rest of the confs 
+      #open template this needs to allow directory override like the rest of the confs
       open(FOOTER, "$Config{html_footer}") || die "Can not open HTML Footer at $Config{html_header}: $!\n";
-      my @footer = <FOOTER>; 
+      my @footer = <FOOTER>;
       close FOOTER;
-      #Expand variables... There must be a better way -mgt 
+      #Expand variables... There must be a better way -mgt
       for my $footer_line (@footer) {
          $footer_line =~ s/\$([\w\_\-\{\}\[\]]+)/$HTML_var{$1}/g;
          $out_foot .=  $footer_line;
-      } 
+      }
 
       #Set up out_reference
       &output("ul","<a name=top><ul>", "ref_extra") if defined( $index_par );
@@ -1402,7 +1402,7 @@ sub parselogs {
       &output("ul","</ul></a>", "ref_extra") if defined( $index_par );
 
    }
-   
+
    if ( $Config{'format'} eq "html" ) {
       $index_par++;
       &output( $index_par,  "Logwatch Ended at " . localtime(time) , "start" );
@@ -1411,7 +1411,7 @@ sub parselogs {
       &output( $index_par, $report_finish, "line") if ($printing);
    }
 
-#Printing starts here $out_mime $out_head $out_reference $out_body $out_foot  
+#Printing starts here $out_mime $out_head $out_reference $out_body $out_foot
    print OUTFILE $out_mime if $out_mime;
    if ( $Config{'encode'} eq "base64" ) {
       print OUTFILE encode_base64($out_head) if $out_head;
@@ -1440,7 +1440,7 @@ sub parselogs {
       $out_reference = '';
       @reports = ();
       close(OUTFILE) unless ($Config{'output'} eq "stdout"); #fixme should never be true -mgt
-   } 
+   }
 }
 #############################################################################
 #END parselogs
@@ -1473,7 +1473,7 @@ sub output {
            <h2><a name=\"$index\">$reports[$index]</a></h2>
            </tr></th>\n";
       }
-   } 
+   }
 
    if ( $type eq "stop" ) {
       if ( $Config{'format'} eq "html" ) {
@@ -1532,9 +1532,13 @@ sub output {
 	      }
       }
    }
-
 }
 ###########################################################################
 #END sub output
 ###########################################################################
 # vi: shiftwidth=3 tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

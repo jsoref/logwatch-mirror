@@ -24,7 +24,7 @@ use Logwatch ':ip';
 $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 while (defined($ThisLine = <STDIN>)) {
-   if ( ($ThisLine =~ /^Unauthorized access by NFS client .*$/ ) or 
+   if ( ($ThisLine =~ /^Unauthorized access by NFS client .*$/ ) or
          ($ThisLine =~ /^NFS client [^ ]+ tried to access .*$/ ) or
          ($ThisLine =~ /^[^ ]* exported to both [0-9.]*\/[0-5]* and [0-9.]*\/[0-9]/) ) {
       # don't care about this, as the next line reports the IP again
@@ -85,7 +85,7 @@ if (keys %NotFound) {
 if (keys %SignalExit) {
    printf "\nExit after catching signal:\n";
    foreach $Number (keys %SignalExit) {
-      print "   Signal " . $Number. ": " . $SignalExit{$Number} . " Time(s)\n"; 
+      print "   Signal " . $Number. ": " . $SignalExit{$Number} . " Time(s)\n";
    }
 }
 
@@ -117,4 +117,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

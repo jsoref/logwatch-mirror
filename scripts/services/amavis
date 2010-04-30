@@ -68,9 +68,9 @@ while (defined($ThisLine = <STDIN>)) {
       $NextLine =~ s/^\([\d-]+\) \.\.\.//;
       $ThisLine .= $NextLine;
    }
-   
-   if ( ($ThisLine =~ /^do_ascii/) 
-        or ($ThisLine =~ /^Found av scanner/) 
+
+   if ( ($ThisLine =~ /^do_ascii/)
+        or ($ThisLine =~ /^Found av scanner/)
         or ($ThisLine =~ /^Found myself/)
         or ($ThisLine =~ /^Module/)
         or ($ThisLine =~ /^TIMING/)
@@ -89,8 +89,8 @@ while (defined($ThisLine = <STDIN>)) {
         or ($ThisLine =~ /^.* code[ \t]+(NOT)? loaded/)
         or ($ThisLine =~ /^tempdir being removed/)
         or ($ThisLine =~ /^Found primary av scanner/)
-        or ($ThisLine =~ /^Found \$[\S]+[\s]+at/)  
-        or ($ThisLine =~ /^No \$[\S]+,[\s]+not using it/) 
+        or ($ThisLine =~ /^Found \$[\S]+[\s]+at/)
+        or ($ThisLine =~ /^No \$[\S]+,[\s]+not using it/)
         or ($ThisLine =~ /^Found secondary av scanner/)
         or ($ThisLine =~ /^Using internal av scanner code/)
         or ($ThisLine =~ /^mail_via_smtp/)
@@ -102,10 +102,10 @@ while (defined($ThisLine = <STDIN>)) {
         or ($ThisLine =~ /^Requesting (a |)process rundown after [0-9]+ tasks/)
         or ($ThisLine =~ /^NOTICE: Not sending DSN, spam level [0-9.]+ exceeds DSN cutoff level/)
         or ($ThisLine =~ /skip local delivery\([0-9]\): <> -> <(spam|bad-header|banned|virus)-quarantine>*/)
-        or ($ThisLine =~ /config files read: .*amavisd.conf/) 
-        or ($ThisLine =~ /mangling by .* \([0-9]\) done, new size: [0-9]*, orig [0-9]* bytes/) 
-        or ($ThisLine =~ /mangling by: [0-9], <.*>/) 
-        or ($ThisLine =~ /mangling YES: [0-9] \(orig: [0-9]\), discl_allowed=.*, <.*> -> <.*>/) 
+        or ($ThisLine =~ /config files read: .*amavisd.conf/)
+        or ($ThisLine =~ /mangling by .* \([0-9]\) done, new size: [0-9]*, orig [0-9]* bytes/)
+        or ($ThisLine =~ /mangling by: [0-9], <.*>/)
+        or ($ThisLine =~ /mangling YES: [0-9] \(orig: [0-9]\), discl_allowed=.*, <.*> -> <.*>/)
         or ($ThisLine =~ /^starting.  amavisd at/) ) {
        # We don't care about these
    } elsif ($ThisLine =~ /^Passed( CLEAN)?, /) {
@@ -116,7 +116,7 @@ while (defined($ThisLine = <STDIN>)) {
 
       if ($Detail >= 10) {
           $Banned{$FileName}{$From}++;
-      }; # if 
+      }; # if
 
    } elsif (($Virus, $FromIP, $From) = ( $ThisLine =~ /^(?:Virus found - quarantined|INFECTED|Blocked INFECTED) \(([^\)]+)\)\, (?:\[([^\]]*)\] )*[\(\<]([^\>\)]*)[\)\>]/ )) {
 
@@ -165,7 +165,7 @@ while (defined($ThisLine = <STDIN>)) {
         $Spamtypes{$Towards}++;
       }; # if
 
-      if ($Detail >= 10) { 
+      if ($Detail >= 10) {
         $Spams{$Towards}{"<>"}++;
       }; # if
 
@@ -225,7 +225,7 @@ while (defined($ThisLine = <STDIN>)) {
    } else {
       # Report any unmatched entries...
       chomp($ThisLine);
-      $OtherList{$ThisLine}++;        
+      $OtherList{$ThisLine}++;
    } # else
 } # while
 
@@ -235,7 +235,7 @@ while (defined($ThisLine = <STDIN>)) {
 
 if ($CleanMsgs > 0) {
    print "\n$CleanMsgs messages checked and passed.\n";
-}; # if 
+}; # if
 
 if ($InfectedMsgs > 0) {
    print "$InfectedMsgs virus infected messages were found.\n";
@@ -250,7 +250,7 @@ if ($BannedNames > 0) {
 }; # if
 
 if ($BadHeaders > 0) {
-   print "$BadHeaders messages with bad headers were found.\n"; 
+   print "$BadHeaders messages with bad headers were found.\n";
 }; # if
 
 if ($IntentionallyDrop > 0) {
@@ -290,7 +290,7 @@ if ((keys %Virustypes)) {
             $OutString .= "      $From  $Viruses{$Virus}{$From} Time(s)\n";
          }; # foreach
          print "   $Virus: $VirCount Times(s)  From:\n$OutString\n";
-      }; # if 
+      }; # if
    }; # foreach
 
 }; # if
@@ -358,4 +358,8 @@ if (keys %OtherList) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

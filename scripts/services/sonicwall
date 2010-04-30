@@ -55,7 +55,7 @@ my %configConvert = (
 
 # Taken from DiskUsage.pm inside Filesys-DiskUsage-0.02
 #
-# Jose Castro, C<< <cog@cpan.org> 
+# Jose Castro, C<< <cog@cpan.org>
 # Please report any bugs or feature requests to
 # C<bug-disk-usage@rt.cpan.org>, or through the web interface at
 # L<http://rt.cpan.org>.  I will be notified, and then you'll
@@ -107,11 +107,11 @@ while (defined($ThisLine = <STDIN>)) {
 if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file line
 
    if ( ($ThisLine =~ /traffic/ ) or
-         ($ThisLine =~ /Copyright/ ) or 
-         ($ThisLine =~ /removed due to simultaneous rekey/ ) or 
-         ($ThisLine =~ /Administrator logged out/ ) or 
-         ($ThisLine =~ /Connection (Closed|Opened)/ ) or 
-         ($ThisLine =~ /(TCP|UDP) connection dropped/ ) 
+         ($ThisLine =~ /Copyright/ ) or
+         ($ThisLine =~ /removed due to simultaneous rekey/ ) or
+         ($ThisLine =~ /Administrator logged out/ ) or
+         ($ThisLine =~ /Connection (Closed|Opened)/ ) or
+         ($ThisLine =~ /(TCP|UDP) connection dropped/ )
     ) {
       # don't care about this, will code this later
    }
@@ -127,13 +127,13 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
    }
 
     elsif ( ($number,$src_ip,$port_src,$interface_src,$src_name,$dst_ip,$port_dst,$interface_dst,$dst_name,$ip_proto,$xfer_port_type,$op_type,$http_result) = ($ThisLine =~ /n=(\d+) src=(\d+\.\d+\.\d+\.\d+):(\d+):(WAN|LAN|DMZ):?(.*)? dst=(\d+\.\d+\.\d+\.\d+):(\d+):(WAN|LAN|DMZ):?(.*)? proto=(udp|tcp)\/(http|80) op=(HEAD|Other) result=(\d+)/) ) {
-	
+
  	if ($op_type eq "HEAD") {
 	$URL_HEAD{$host_ip}{$url}++;
-	}	
+	}
 	else {
 	$URL_OTHER{$host_ip}{$url}++;
-	}	
+	}
 }
 
 
@@ -142,25 +142,25 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
 
 	if ($op_type eq "GET") {
 	$URL_GET{$host_ip}{$url}++;
-	}	
+	}
 	else {
 	$URL_POST{$host_ip}{$url}++;
-	}	
-		
+	}
+
       if ($xfer_way eq "sent")	{
 
         $ProtoPacketSent{$host_ip}{$ip_proto}++;
 	$TotalProtoByteSent{$host_ip}{$ip_proto}=$TotalProtoByteSent{$host_ip}{$ip_proto}+$xfer_byte;
-  	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
         $ByteSent{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteSent{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte;
  	$PortPacketSent{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
 	}
-     } 
+     }
  else {
         $ProtoPacketReceived{$host_ip}{$ip_proto}++;
 	$TotalProtoByteReceived{$host_ip}{$ip_proto}=$TotalProtoByteReceived{$host_ip}{$ip_proto}+$xfer_byte;
-	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
 	 $ByteReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteReceived{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte;
 	 $PortPacketReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
@@ -174,22 +174,22 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
 
 	if ($op_type eq "GET") {
 	$URL_GET{$host_ip}{$url}++;
-	}	
+	}
 	else {
 	$URL_POST{$host_ip}{$url}++;
-	}	
-		
+	}
+
         $ProtoPacketSent{$host_ip}{$ip_proto}++;
 	$TotalProtoByteSent{$host_ip}{$ip_proto}=$TotalProtoByteSent{$host_ip}{$ip_proto}+$xfer_byte_sent;
-  	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
         $ByteSent{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteSent{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte_sent;
  	$PortPacketSent{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
 	}
-        
+
 	$ProtoPacketReceived{$host_ip}{$ip_proto}++;
 	$TotalProtoByteReceived{$host_ip}{$ip_proto}=$TotalProtoByteReceived{$host_ip}{$ip_proto}+$xfer_byte_rcvd;
-	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
 	 $ByteReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteReceived{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte_rcvd;
 	 $PortPacketReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
@@ -210,16 +210,16 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
 
         $ProtoPacketSent{$host_ip}{$ip_proto}++;
 	$TotalProtoByteSent{$host_ip}{$ip_proto}=$TotalProtoByteSent{$host_ip}{$ip_proto}+$xfer_byte;
-  	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
         $ByteSent{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteSent{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte;
  	$PortPacketSent{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
 	}
-     } 
+     }
  else {
         $ProtoPacketReceived{$host_ip}{$ip_proto}++;
 	$TotalProtoByteReceived{$host_ip}{$ip_proto}=$TotalProtoByteReceived{$host_ip}{$ip_proto}+$xfer_byte;
-	
+
         if (($ip_proto eq "tcp") or ($ip_proto eq "udp")) {
 	 $ByteReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}=$ByteReceived{$ip_proto}{$ip_proto,"/",$xfer_port_type}+$xfer_byte;
 	 $PortPacketReceived{$host_ip}{$ip_proto,"/",$xfer_port_type}++;
@@ -269,14 +269,14 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
    elsif ( ($message) = ($ThisLine =~ /RESTART: (.*)/) ) {
       $Restarted{$host_ip}{$message}++;
    }
-   elsif ( $ThisLine =~ m/msg="Probable TCP NULL scan " n=(\d+) src=(\d+\.\d+\.\d+\.\d+) (.*)/ ) { 
+   elsif ( $ThisLine =~ m/msg="Probable TCP NULL scan " n=(\d+) src=(\d+\.\d+\.\d+\.\d+) (.*)/ ) {
        if ( $Debug >= 5 ) {
 	   print STDERR "DEBUG: Found -TCP NULL scan- line\n";
        }
        my $name = LookupIP($2);
        $Temp = "TCP NULL scan from $name";
        $TCP_NULL_scan{$host_ip}{$Temp}++;
-   } 
+   }
    elsif ( ($interface) = ($ThisLine =~ /msg="Successful administrator login" n=(\d+) src=(\d+\.\d+\.\d+\.\d+) (.*)/) ) {
        if ($Debug >= 5) {
 	   print STDERR "DEBUG: Found -$1 logged in from $4 using $2\n";
@@ -300,7 +300,7 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
 
 
 
-   elsif ( $ThisLine =~ m/msg="Administrator login failed - incorrect password" n=(\d+) src=(\d+\.\d+\.\d+\.\d+) (.*)/ ) { 
+   elsif ( $ThisLine =~ m/msg="Administrator login failed - incorrect password" n=(\d+) src=(\d+\.\d+\.\d+\.\d+) (.*)/ ) {
        if ( $Debug >= 5 ) {
 	   print STDERR "DEBUG: Found -Failed login- line\n";
        }
@@ -308,8 +308,8 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
        $Temp = "HTTP from $name";
        $BadAdminLogins{$host_ip}{"Administrator login failed - incorrect password from $name"}++;
        $IllegalUsers{$host_ip}{$Temp}++;
-   } 
-   elsif ( $ThisLine =~ m/msg="Unknown user attempted to log in" n=(\d+) src=(\d+\.\d+\.\d+\.\d+) dst=(\d+\.\d+\.\d+\.\d+) user=(.*)/ ) { 
+   }
+   elsif ( $ThisLine =~ m/msg="Unknown user attempted to log in" n=(\d+) src=(\d+\.\d+\.\d+\.\d+) dst=(\d+\.\d+\.\d+\.\d+) user=(.*)/ ) {
        if ( $Debug >= 5 ) {
 	   print STDERR "DEBUG: Found -Failed login- line\n";
        }
@@ -317,8 +317,8 @@ if ($ThisLine =~ /sn=/ ) { #mean that we ave to deal with a sonicwall log file l
        $Temp = "HTTP from $name";
        $BadLogins{$host_ip}{"$4 user attempted to log in from $name"}++;
        $IllegalUsers{$host_ip}{$Temp}++;
-   } 
-   elsif ( $ThisLine =~ m/SSH client at (.+) has attempted to make an SCS connection to interface untrust with IP (.+) but failed (.*)/ ) { 
+   }
+   elsif ( $ThisLine =~ m/SSH client at (.+) has attempted to make an SCS connection to interface untrust with IP (.+) but failed (.*)/ ) {
        my $name = LookupIP($2);
        $Temp = "SSH from $name";
        $BadLogins{$host_ip}{$Temp}++;
@@ -513,7 +513,7 @@ if ( ( $Detail >= 5 ) and (keys %ByteSent) ) {
 }
 
 
- 
+
 if (keys %NTPUpdated) {
    print "\nDevice where The system clock has been updated through NTP :\n";
    foreach $ThisOne (keys %NTPUpdated) {
@@ -643,7 +643,7 @@ if (keys %IllegalUsers) {
 	print "   " . $ThisOne . ":\n";
 	for (sort keys %{$IllegalUsers{$ThisOne}}) {
 	    print "\t   $_: $IllegalUsers{$ThisOne}{$_} Time(s)\n";
-	    
+
 	}
     }
 }
@@ -686,3 +686,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

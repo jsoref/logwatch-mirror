@@ -26,7 +26,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /Id "r" respawning too fast: disabled for 5 minutes/) or
       ( $ThisLine =~ /Re-reading inittab/) or
       ( $ThisLine =~ /.* main process ended, respawning/)) {
-      # We don't care about these     
+      # We don't care about these
    }
    elsif ( $ThisLine =~ s/Switching to runlevel: (.)\s*$/$1/ ) {
       # Which runlevel did we change to?
@@ -43,11 +43,11 @@ while (defined($ThisLine = <STDIN>)) {
 	   chomp ($ThisLine);
 	   $ReExecInit++;
    }
-   elsif ( $ThisLine =~ /(\w+) main process \(\d+\) killed by TERM signal/ ) {
-      $Killed{$1}++;
+   elsif ( ($Name,$Cause) = ($ThisLine =~ /(.*) main process \([0-9]*\) killed by (.*)/)) {
+      $ProcessKilled{"$Name,$Cause"}++;
    }
    elsif ( ($Name, $Status) = ($ThisLine =~ /(.*) main process \([0-9]*\) terminated with status ([0-9]*)/)) {
-       $ProcessTerminated{"$Name,Status"}++;
+      $ProcessTerminated{"$Name,Status"}++;
    }
    elsif ( $ThisLine =~ /Re-executing \/sbin\/init/) {
       $ReExecSbinInit++;
@@ -63,6 +63,7 @@ if ((keys %RunLevel) and ($Detail >= 10)) {
       print "   Entered or switched to runlevel " . $Level . ": " . $RunLevel{$Level} . " Time(s)\n";
    }
 }
+
 if ($ReExecInit and $Detail) {
 	print "\n\nRe-execs of init: $ReExecInit times\n";
 }
@@ -71,9 +72,11 @@ if ($ReExecSbinInit) {
         print "\n\nRe-executing \/sbin\/init/: $ReExecSbinInit times\n";
 }
 
-if ((keys %Killed) and ($Detail >= 10)) {
-   foreach $Process (sort keys %Killed) {
-      print "   " . $Process . " main process killed by TERM signal : " . $Killed{$Process} . " Time(s)\n";
+if ((keys %ProcessKilled) and ($Detail >=10)) {
+   print "\nKilled processses:\n";
+   foreach (keys %ProcessKilled) {
+      my ($Name,$Cause)=split ",";
+      print "   Process " . $Name. " killed by " . $Cause . ": " . $ProcessKilled{"$Name,$Cause"} . " Time(s)\n";
    }
 }
 
@@ -93,4 +96,8 @@ if ($#OtherList >= 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

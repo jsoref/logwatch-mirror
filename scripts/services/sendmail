@@ -225,7 +225,7 @@ sub PrettyHost {
    my $Line = $_[0];
    # $_[1] is the length available
    my $LineLength = $_[1];
-   # 
+   #
    if ((not defined $main::sendmail_prettyhost) or
        ($main::sendmail_prettyhost == 0)) {
       return($Line);
@@ -273,13 +273,13 @@ if (not defined $Detail) {
 #print "\nSee file conf/services/sendmail.conf on how to customize output.";
 
 # The following variables are auto-increment counts, so are initialized
-my $AddrRcpts =          my $BytesTransferred =   my $CantCreateOutput =   
-my $DaemonThrottle =     my $LoadAvgQueueSkip =   my $LoadAvgReject =      
+my $AddrRcpts =          my $BytesTransferred =   my $CantCreateOutput =
+my $DaemonThrottle =     my $LoadAvgQueueSkip =   my $LoadAvgReject =
 my $MsgsNoRcpt =
-my $MsgsSent =           my $NoMilterFilters =    my $NoMoreSpace =        
-my $NumTimeoutSend =     my $NumTimeoutSendWarnings =my $OutdatedAliasdb =    
-my $OverSize =           my $OverSizeBytes =      my $RelayLocalhost =     
-my $RemoteProtocolError =my $ReturnReceipt =      my $SendmailStarts =     
+my $MsgsSent =           my $NoMilterFilters =    my $NoMoreSpace =
+my $NumTimeoutSend =     my $NumTimeoutSendWarnings =my $OutdatedAliasdb =
+my $OverSize =           my $OverSizeBytes =      my $RelayLocalhost =
+my $RemoteProtocolError =my $ReturnReceipt =      my $SendmailStarts =
 my $SendmailStopped =    my $TLSAcceptFailed =    my $TLSConnectFailed =
 my $TooManyRcpts =       my $XS4ALL =
 0;
@@ -289,28 +289,28 @@ my $TooManyRcpts =       my $XS4ALL =
 # (Someday it might be useful to reduce their scope, but most of them are used in the large
 # if..elsif structure, making that hard.
 my (
-$Address,                $Arg,                    $Attack,                 
+$Address,                $Arg,                    $Attack,
 $Auth,
-$BlSite,                 $Bytes,                  $DeliverStat,            
+$BlSite,                 $Bytes,                  $DeliverStat,
 $Dest,                   $Domain,
-$Error,                  $ErrorCount,             
-$ETRN,                   $File,                   $Forward,                
-$FromUser,               $Header,                 $HeaderMod,            
-$Host,                   $IP,                     
+$Error,                  $ErrorCount,
+$ETRN,                   $File,                   $Forward,
+$FromUser,               $Header,                 $HeaderMod,
+$Host,                   $IP,
 $LastIndex,              $LastIndex2,
-$Load,                   $Luser,                  $MailerName,             
-$MailerString,           $MailerType,             $NewQueueID,             
-$NumRcpts,               $Owner,                  $QueueID,                
-$Reason,                 $RejCmd,                 $Relay,                  
-$RelayDeniedCount,       $RelayHost,              $RelayName,              
-$Ruser,                  $Size,                   $Source,                 
-$StarttlsCipherEntry,    $StarttlsCipherType,     $StarttlsMode,           
-$StarttlsNumBits,        $StarttlsReason,         $StarttlsVerify,         
-$StatError,              $StatFile,               $Temp,                   
-$Temp1,                  $ThisLine,               $ThisOne,                
-$TimeoutSend,            $TimeoutSendWarning,     $TLSFile,                
-$TLSReason,              $TotalBytes,             $TotalNum,               
-$ToUser,                 $User,                   $Usr,                    
+$Load,                   $Luser,                  $MailerName,
+$MailerString,           $MailerType,             $NewQueueID,
+$NumRcpts,               $Owner,                  $QueueID,
+$Reason,                 $RejCmd,                 $Relay,
+$RelayDeniedCount,       $RelayHost,              $RelayName,
+$Ruser,                  $Size,                   $Source,
+$StarttlsCipherEntry,    $StarttlsCipherType,     $StarttlsMode,
+$StarttlsNumBits,        $StarttlsReason,         $StarttlsVerify,
+$StatError,              $StatFile,               $Temp,
+$Temp1,                  $ThisLine,               $ThisOne,
+$TimeoutSend,            $TimeoutSendWarning,     $TLSFile,
+$TLSReason,              $TotalBytes,             $TotalNum,
+$ToUser,                 $User,                   $Usr,
 $Warning,		 $Directory, 		  $Cause
 );
 
@@ -319,27 +319,27 @@ $Warning,		 $Directory, 		  $Cause
 my @SizeDist;
 
 my (
-%Abuse,                  %AddressError,           %AttackAttempt,          
+%Abuse,                  %AddressError,           %AttackAttempt,
 %AuthWarns,              %BadAuth,
-%BadRcptThrottle,        %BlackHoled,             
-%BlackHoles,             %CheckMailReject,        %CheckRcptReject,        
-%CollectError,           %CommandUnrecognized,    %DisabledMailbox,        
-%DNSMap,                 
-%DomainErrors,           %DummyConnection,        %ETRNs,                  
-%ForwardErrors,          %KnownSpammer,           %LargeHdrs,              
+%BadRcptThrottle,        %BlackHoled,
+%BlackHoles,             %CheckMailReject,        %CheckRcptReject,
+%CollectError,           %CommandUnrecognized,    %DisabledMailbox,
+%DNSMap,
+%DomainErrors,           %DummyConnection,        %ETRNs,
+%ForwardErrors,          %KnownSpammer,           %LargeHdrs,
 %LargeMsgs,              %LastCmd,
-%LoadAvg,                %LostInputChannel,       
-%LostQueueFile,          %LowSpace,               %MailBomber,             
-%MailBomberConn,         %Mailers,                %MailRejected,           
+%LoadAvg,                %LostInputChannel,
+%LostQueueFile,          %LowSpace,               %MailBomber,
+%MailBomberConn,         %Mailers,                %MailRejected,
 %MilterDeferrals,
-%MilterHeaderCount,      %Msgs,                   %NotLocal,               
-%OtherList,              %PREGreeting,            %PREGreetingQueue,       
+%MilterHeaderCount,      %Msgs,                   %NotLocal,
+%OtherList,              %PREGreeting,            %PREGreetingQueue,
 %RelayDenied,            %RelayReject,            %RuleSets,
 %SaslError,              %SenderIDresults,        %SortedUsers,
-%SPFResults,             %Starttls,               %StarttlsCert,           
-%StarttlsCipher,         %StatDeferred,           %StatFileError,          
+%SPFResults,             %Starttls,               %StarttlsCert,
+%StarttlsCipher,         %StatDeferred,           %StatFileError,
 %StatRejected,           %StatRejectedLog,
-%SysErr,                 %Timeouts,               
+%SysErr,                 %Timeouts,
 %TLSFailed,              %TLSFileMissing,         %ToList,
 %TooManyHops,            %UnknownUsers,           %UnknownUsersCheckRcpt,
 %WUnsafe
@@ -391,10 +391,10 @@ next unless $ThisLine;
       ( $ThisLine =~ /accepting new messages \(again\)/ ) or
       # the following is captured later, as detailed info is also printed
       # file=collect.c, LogLevel>1, LOG_WARNING
-      ( $ThisLine =~ /^collect: premature EOM: / ) or 
+      ( $ThisLine =~ /^collect: premature EOM: / ) or
       # the following is captured later, as detailed info is also printed
       # file=milter.c, LogLevel>0, LOG_INFO
-      ( $ThisLine =~ /^Milter \(.*\): to error state$/ ) or 
+      ( $ThisLine =~ /^Milter \(.*\): to error state$/ ) or
 
       # milter statements
       # file=milter.c, LogLevel>8, LOG_INFO
@@ -451,7 +451,7 @@ next unless $ThisLine;
       # status code 354 used to request data
       ( $ThisLine =~ /^--- 354 Enter mail, end with \"\.\" on a line by itself/ ) or
       # invalid smtp commands detected later ($RejCmd)
-      ( $ThisLine =~ /^--- 502 5(\.[0-9]){2} Sorry, we do not allow this operation$/ ) or      
+      ( $ThisLine =~ /^--- 502 5(\.[0-9]){2} Sorry, we do not allow this operation$/ ) or
       # Need RCPT most likely because of incorrect RCPT command, in which case ignore it
       ( ( $ThisLine =~ /^--- 503 5(\.[0-9]){2} Need RCPT \(recipient\)$/ ) and
           ( $Msgs{$QueueID}{"BadRCPT"} > 0)) or
@@ -576,7 +576,7 @@ next unless $ThisLine;
       ( $ThisLine =~ /$QueueIDFormat: unlink-fail $ENOENT/o ) or
       # generic DEBUG statement
       ( $ThisLine =~ /^DEBUG: / )
-      
+
 
    ) {
       # We don't care about these statements above
@@ -629,7 +629,7 @@ next unless $ThisLine;
       } else {
          $MsgsNoRcpt++;
       }
-      
+
       # Add info from message to a hash
       $Msgs{$QueueID}{"Relay"} = $RelayHost;
       $Msgs{$QueueID}{"FromUser"} = $FromUser;
@@ -663,6 +663,8 @@ next unless $ThisLine;
                $ToList{$ListAddr}++;
             }
          } elsif  (($CleanTo =~ m/\w+\@[\w\.]+/) && ($RelayName !~ m/\[127\.0\.0\.1\]/)) {
+            $ToList{$CleanTo}++;
+         } elsif ($CleanTo =~ m/\w+/) {  # Match a simple name
             $ToList{$CleanTo}++;
          } #Else ignore it
 
@@ -784,7 +786,7 @@ next unless $ThisLine;
       $BlackHoles{$BlSite}++;
    } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /^ruleset=(?:check_relay|check_rcpt), arg1=([^,]*),(?: arg2=[^,]*,)? reject=55\d\s*[\d.]*\s*.*http:\/\/([^\/]*)\//) ) {
       #Example 553 error with NO RELAY -mgt
-      #ruleset=check_relay, arg1=s010600402b39ee29.vf.shawcable.net, arg2=127.0.0.2, reject=553 5.3.0 
+      #ruleset=check_relay, arg1=s010600402b39ee29.vf.shawcable.net, arg2=127.0.0.2, reject=553 5.3.0
       #Spam blocked see: http://spamcop.net/bl.shtml?70.68.8.182: 1 Time(s)
       $Temp = "From " . $Relay . " by " . $BlSite;
       $BlackHoled{$Temp}++;
@@ -1048,9 +1050,9 @@ next unless $ThisLine;
 
    # This is for the Sendmail Sender-ID milter
    } elsif ( (my $SenderIDStatus, $SPFStatus) = ($ThisLine =~ /^Milter insert \(1\): header: Authentication-Results:.*; sender-id=(fail.*|softfail|neutral|none|error|unknown|pass); spf=(fail.*|softfail|neutral|none|error|unknown|pass)/) ) {
-   # Example string  
-   # Milter insert (1): header: Authentication-Results: my.host.name 
-   # sender=list-users-bounces+list-users=host.name@another.org; 
+   # Example string
+   # Milter insert (1): header: Authentication-Results: my.host.name
+   # sender=list-users-bounces+list-users=host.name@another.org;
    # sender-id=neutral; spf=neutral
       $SPFResults{$SPFStatus}++;
       $SenderIDResults{$SenderIDStatus}++;
@@ -1118,7 +1120,7 @@ next unless $ThisLine;
       }
       # store last unmatched entry, in case it is needed later.
       $LastCmd{$QueueID} = $ThisLine;
-      $OtherList{$ThisLine}++; 
+      $OtherList{$ThisLine}++;
    }
 }
 
@@ -1531,7 +1533,7 @@ if (keys %BadAuth) {
       $TotalError[$ErrorIndex] += $BadAuth{$Auth};
    }
 }
-$TotalError[++$ErrorIndex] = 0;   
+$TotalError[++$ErrorIndex] = 0;
 
 if($RemoteProtocolError > 0) {
    eval "$PrintCond" if ($Detail >= 3);
@@ -1797,7 +1799,7 @@ if (keys %BadRcptThrottle) {
 
    print "\n\nClient submitted too many bad recipients: [Occurrences >= $BadRcptThrottleThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $BadRcptCount keys %BadRcptThrottle) {
-      print "\n    $ThisOne: $BadRcptThrottle{$ThisOne} Time(s)" if ($Detail >= 5) 
+      print "\n    $ThisOne: $BadRcptThrottle{$ThisOne} Time(s)" if ($Detail >= 5)
          && ( $BadRcptThrottle{$ThisOne} >= $BadRcptThrottleThreshold );
       $TotalError[$ErrorIndex] += $BadRcptThrottle{$ThisOne};
    }
@@ -2020,7 +2022,7 @@ if (keys %BlackHoled) {
    }
    if ($Detail >= 10) {
       print "\n\nBlackholed:";
-      my $BlackHoleThreshold = $ENV{'sendmail_blackholethreshold'} || "1"; 
+      my $BlackHoleThreshold = $ENV{'sendmail_blackholethreshold'} || "1";
       foreach $ThisOne (sort keys %BlackHoled) {
          if ($BlackHoled{$ThisOne} >= $BlackHoleThreshold) {
             print "\n    $ThisOne: $BlackHoled{$ThisOne} Times(s)";
@@ -2130,3 +2132,8 @@ if ($TotalHeaderPrinted > 0) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

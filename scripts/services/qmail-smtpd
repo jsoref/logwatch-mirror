@@ -164,7 +164,7 @@ while (defined($ThisLine = <STDIN>)) {
 		$Domains{$remote} = $remotedomain if($remotedomain);
 		$ChkuserRejectsTo{$to}++;
 		$ChkuserRejectsReason{$reason}++;
-		
+
 		$TotalReject++;
 		# remove it from previous parse
 		if ( defined( $From{$from} ) ) {
@@ -305,7 +305,7 @@ while (defined($ThisLine = <STDIN>)) {
 		}
 		$Totalscantimeattach += $scantime;
 	}
-	
+
 	# simscan-1.2 attach
 	elsif ( ($scantime, $attach, $attachfrom, $attachto ) = ($ThisLine =~ /simscan:\[\d+\]:ATTACH:(.*)s:(.*):.*:(.*):(.*)/)) {
 		$SimscanTotal++;
@@ -340,7 +340,7 @@ while (defined($ThisLine = <STDIN>)) {
 			$SimscanPassthruIpFrom{$passthruipfrom}++;
 			$SimscanPassthruFrom{$passthrufrom}++;
 			$SimscanPassthruTo{$passthruto}++;
-			$SimscanPassthruTotal++;		
+			$SimscanPassthruTotal++;
 		}
 		if ($Maxscantimespam < $scantime) {
 			$Maxscantimespam = $scantime;
@@ -445,7 +445,7 @@ if ($QmailDetail >= 1) {
 	}
 	if (($SimscanRegexThreshold < 0) or ($SimscanRegexThreshold eq '')) {
 		$SimscanRegexThreshold = $QmailThreshold;
-	}	
+	}
 	if (($SimscanPassthruIpFromThreshold < 0) or ($SimscanPassthruIpFromThreshold eq '')) {
 		$SimscanPassthruIpFromThreshold = $QmailThreshold;
 	}
@@ -624,7 +624,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectsTo) ) {
 			print "\nChkuser Rejects To (Threshold of " . $ChkuserRejectsToThreshold . "):\n";
 			$threshold_reached=0;
@@ -643,7 +643,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectsRemote) ) {
 			print "\nChkuser Rejects Remote (Threshold of " . $ChkuserRejectsRemoteThreshold . "):\n";
 			$threshold_reached=0;
@@ -683,7 +683,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectsRelayTo) ) {
 			print "\nChkuser Rejects Relay To (Threshold of " . $ChkuserRejectsRelayToThreshold . "):\n";
 			$threshold_reached=0;
@@ -702,7 +702,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectsRelayRemote) ) {
 			print "\nChkuser Rejects Relay Remote (Threshold of " . $ChkuserRejectsRelayRemoteThreshold . "):\n";
 			$threshold_reached=0;
@@ -764,7 +764,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserAcceptsTo) ) {
 			print "\nChkuser Accepts to (Threshold of " . $ChkuserAcceptsToThreshold . "):\n";
 			$threshold_reached=0;
@@ -804,7 +804,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserAcceptsRelayTo) ) {
 			print "\nChkuser Accepts Relay to (Threshold of " . $ChkuserAcceptsRelayToThreshold . "):\n";
 			$threshold_reached=0;
@@ -844,7 +844,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserNoAuthResourceTo) ) {
 			print "\nChkuser No Auth resource to (Threshold of " . $ChkuserNoAuthResourceThreshold . "):\n";
 			$threshold_reached=0;
@@ -863,7 +863,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserOverquotaTo) ) {
 			print "\nChkuser Over Quota (Threshold of " . $ChkuserOverquotaThreshold . "):\n";
 			$threshold_reached=0;
@@ -882,7 +882,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectedIntrusionFrom) ) {
 			print "\nChkuser Rejected Intrusions from (Threshold of " . $ChkuserRejectedIntrusionThreshold . "):\n";
 			$threshold_reached=0;
@@ -901,7 +901,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		if ( (keys %ChkuserRejectedIntrusionTo) ) {
 			print "\nChkuser Rejected Intrusions to (Threshold of " . $ChkuserRejectedIntrusionThreshold . "):\n";
 			$threshold_reached=0;
@@ -1236,7 +1236,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		# simscan passthru from
 		if ( (keys %SimscanPassthruFrom) ) {
 			print "\nSimscan Passthru From (Threshold of " . $SimscanPassthruFromThreshold . "):\n";
@@ -1256,7 +1256,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		# simscan passthru to
 		if ( (keys %SimscanPassthruTo) ) {
 			print "\nSimscan Passthru To (Threshold of " . $SimscanPassthruToThreshold . "):\n";
@@ -1317,7 +1317,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		# simscan spamreject to
 		if ( (keys %SimscanSpamrejectTo) ) {
 			print "\nSimscan Spam reject To (Threshold of " . $SimscanSpamRejectToThreshold . "):\n";
@@ -1379,7 +1379,7 @@ if ($QmailDetail >= 1) {
 				print "\t" . "None found above the threshold\n";
 			}
 		}
-	
+
 		# simscan spamdropped to
 		if ( (keys %SimscanSpamdroppedTo) ) {
 			print "\nSimscan Spam dropped To (Threshold of " . $SimscanSpamDroppedToThreshold . "):\n";
@@ -1566,3 +1566,8 @@ if (($#OtherList >= 0) and (! $IgnoreUnmatched)) {
 exit(0);
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -46,7 +46,7 @@ sub LookupIPv46 {
       return $Addr;
       }
 }
-   
+
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG \n\n";
 }
@@ -247,7 +247,7 @@ if ( ( $Detail >= 0 ) and (keys %LoginFailed)) {
              "\n=========================".
              "\n                                                  Host (user) |          # ".
              "\n------------------------------------------------------------- | -----------";
-  
+
    $ConnCount = 0;
    foreach $Host (sort keys %LoginFailed) {
       $Conns = $LoginFailed{$Host};
@@ -263,7 +263,7 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
              "\n=========================".
              "\n                                                         Host | Connections".
              "\n------------------------------------------------------------- | -----------";
-  
+
    $ConnCount = 0;
    foreach $Host (sort keys %Connection) {
       $Conns = $Connection{$Host};
@@ -281,7 +281,7 @@ if (keys %Logout2) {
              "\n============================".
              "\n                                   User | Logouts | Downloaded |  Mbox Size".
              "\n--------------------------------------- | ------- | ---------- | ----------";
-  
+
    $ConnCount = 0;
    $SizeAll = 0;
    $DownAll = 0;
@@ -395,3 +395,8 @@ exit(0);
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

@@ -15,7 +15,7 @@
 # Added fail2ban service, written by Yaroslav Halchenko.
 #
 #
-# This was originally written by 
+# This was originally written by
 #           Yaroslav Halchenko <debian@onerussian.com>
 ########################################################
 
@@ -31,7 +31,7 @@
 # must be explicitly stated in the contribution an the
 # Logwatch project reserves the right to not accept such
 # contributions.  If you have made significant
-# contributions to this script and want to claim 
+# contributions to this script and want to claim
 # copyright please contact logwatch-devel@logwatch.org.
 ########################################################
 
@@ -59,3 +59,8 @@ while (defined($ThisLine = <STDIN>)) {
 }
 
 # vi: shiftwidth=3 syntax=perl tabstop=3 et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:

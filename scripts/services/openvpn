@@ -25,7 +25,7 @@
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'};
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
-   
+
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG \n\n";
 }
@@ -41,11 +41,12 @@ while (defined($ThisLine = <STDIN>)) {
    if (
       ($ThisLine =~ /^\[[\w.-]+\] Inactivity timeout \(--ping-restart\), restarting/) or
       ($ThisLine =~ /^\/sbin\//) or
-      ($ThisLine =~ /^Attempting to establish TCP connection with [\d.]+:\d+/) or 
+      ($ThisLine =~ /^Attempting to establish TCP connection with [\d.]+:\d+/) or
       ($ThisLine =~ /^Closing TUN\/TAP interface/) or
       ($ThisLine =~ /^Connection reset, restarting \[\d+\]/) or
       ($ThisLine =~ /^Control Channel Authentication/) or
       ($ThisLine =~ /^Control Channel MTU parms/) or
+      ($ThisLine =~ /CRL CHECK OK: \/.*\//) or
       ($ThisLine =~ /^Data Channel MTU parms/) or
       ($ThisLine =~ /^Diffie-Hellman initialized/) or
       ($ThisLine =~ /^event_wait : Interrupted system call \(code=\d+\)/) or
@@ -66,14 +67,17 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /^MULTI: bad source address from client .*, packet dropped/) or
       ($ThisLine =~ /^Need IPv6 code in mroute_extract_addr_from_packet/) or
       ($ThisLine =~ /^NOTE: UID\/GID downgrade will be delayed because of --client, --pull, or --up-delay/) or
+      ($ThisLine =~ /OpenVPN .* built on [A-Z][a-z]{2} [ 12]?[0-9] [0-9]{4}/) or
       ($ThisLine =~ /^OPTIONS IMPORT/) or
       ($ThisLine =~ /^Preserving previous TUN\/TAP instance: \w+/) or
       ($ThisLine =~ /^PUSH: Received control message/) or
       ($ThisLine =~ /^Re-using SSL\/TLS context/) or
+      ($ThisLine =~ /read UDPv4 \[.*\]: No route to host \(code=[0-9]*\)/) or
       ($ThisLine =~ /^Restart pause, \d+ second\(s\)/) or
       ($ThisLine =~ /^SENT CONTROL/) or
       ($ThisLine =~ /^SIGTERM\[hard,[^\]]*\] received, process exiting/) or
       ($ThisLine =~ /^SIGUSR1\[soft,(connection-reset|ping-restart)\] received, (process|client-instance) restarting/) or
+      ($ThisLine =~ /Socket Buffers: R=\[[0-9]+->[0-9]+\] S=\[[0-9]+->[0-9]+\]/) or
       ($ThisLine =~ /^TCP\/UDP: Closing socket/) or
       ($ThisLine =~ /^TCP\/UDP: Dynamic remote address changed during TCP connection establishment/) or
       ($ThisLine =~ /^TCP connection established with [\d.]+:\d+/) or
@@ -83,16 +87,17 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /^TLS: soft reset/) or
       ($ThisLine =~ /^TLS: tls_process: killed expiring key$/) or
       ($ThisLine =~ /^TLS: move_session: dest=.* src=.* reinit_src=[0-9]*/) or
-      ($ThisLine =~ /^TLS: tls_multi_process: untrusted session promoted to trusted/) or
+      ($ThisLine =~ /^TLS: tls_multi_process: untrusted session promoted to (semi-)?trusted/) or
+      ($ThisLine =~ /TLS: tls_multi_process: killed expiring key/) or
       ($ThisLine =~ /^TLS: new session incoming connection from .*/) or
+      ($ThisLine =~ /TLS Error: TLS object -> incoming plaintext read error/) or
+      ($ThisLine =~ /TLS ERROR: received control packet with stale session-id=.*/) or
       ($ThisLine =~ /^TUN\/TAP device \w+ opened/) or
+      ($ThisLine =~ /TUN\/TAP TX queue length set to [0-9]*/) or
       ($ThisLine =~ /^UDPv4 link /) or
       ($ThisLine =~ /^UID set to/) or
       ($ThisLine =~ /^VERIFY OK: nsCertType=\w+/) or
       ($ThisLine =~ /^chroot to /) or
-      ($ThisLine =~ /TUN\/TAP TX queue length set to [0-9]*/) or
-      ($ThisLine =~ /Socket Buffers: R=\[[0-9]+->[0-9]+\] S=\[[0-9]+->[0-9]+\]/) or
-      ($ThisLine =~ /OpenVPN .* built on [A-Z][a-z]{2} [ 12]?[0-9] [0-9]{4}/) or
       ($ThisLine =~ /Authenticate\/Decrypt packet error: bad packet ID \(may be a replay\): \[ #.* \] -- see the man page entry for --no-replay and --replay-window for more info or silence this warning with --mute-replay-warnings/)
    ) {
       # Don't care about these...
@@ -236,4 +241,8 @@ exit(0);
 
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
-
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
