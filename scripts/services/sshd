@@ -222,6 +222,7 @@ my @Scanned = ();
 my %OtherList = ();
 my %ChmodErr = ();
 my %ChownErr = ();
+my %Krb_relm = ();
 
 my $sftpRequests = 0;
 my $NetworkErrors = 0;
@@ -427,6 +428,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ChmodErr{"$File,$Perm,$Why"}++;
    } elsif (my ($File,$From,$To,$Why) = ($ThisLine =~ /error: chown (.*) (.*) (.*) failed: (.*)/)) {
       $ChownErr{"$File,$From,$To,$Why"}++;
+   } elsif (my ($user,$relm) = ($ThisLine =~ /Authorized to ([^ ]+), krb5 principal \1@([^ ]+) \(krb5_kuserok\)/)) {
+      $Krb_relm{$relm}{$user}++;  
    } else {
       # Report any unmatched entries...
       unless ($ThisLine =~ /fwd X11 connect/) {
@@ -777,6 +780,19 @@ if (keys %ChownErr) {
   }
 }
 
+if ( ($Detail == 7 && keys %Krb_relm > 1) || ($Detail > 8 && keys %Krb_relm) ){
+  print "\nSucessfull Kerberos Authentication from ",(scalar keys %Krb_relm)," relm:\n";
+  foreach my $relm (keys %Krb_relm) { 
+    if($Detail > 9){
+      print "   ",$relm,":\n";
+      foreach my $user(keys %{$Krb_relm{$relm}}){
+        print "     ",$user,": ". $Krb_relm{$relm}{$user} . " Times(s)\n";
+      }
+    }else{
+      print "   ",$relm,": ". (scalar keys %{$Krb_relm{$relm}}) . " User(s)\n";
+    }
+  }
+}
 
 if (keys %OtherList) {
    print "\n**Unmatched Entries**\n";
