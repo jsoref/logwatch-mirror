@@ -15,7 +15,7 @@
 ## Logwatch project reserves the right to not accept such
 ## contributions.  If you have made significant
 ## contributions to this script and want to claim
-## copyright please contact logwatch-devel@logwatch.org.
+## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
 $| = 1;

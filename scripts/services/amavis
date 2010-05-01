@@ -38,7 +38,7 @@
 #    Jim O'Halloran <jim@kendle.com.au>
 #
 # Please send all comments, suggestions, bug reports,
-#    etc, to logwatch-devel@logwatch.org and jim@kendle.com.au.
+#    etc, to logwatch-devel@lists.sourceforge.net and jim@kendle.com.au.
 ##########################################################################
 
 $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};

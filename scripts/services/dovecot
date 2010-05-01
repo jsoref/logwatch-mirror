@@ -58,7 +58,7 @@
 #
 ########################################################
 # Please send all comments, suggestions, bug reports,
-#    etc, to logwatch-devel@logwatch.org
+#    etc, to logwatch-devel@lists.sourceforge.net
 ########################################################
 # The Dovecot script was written by:
 #   Patrick Vande Walle <patrick@isoc.lu>
@@ -83,7 +83,7 @@
 ## Logwatch project reserves the right to not accept such
 ## contributions.  If you have made significant
 ## contributions to this script and want to claim
-## copyright please contact logwatch-devel@logwatch.org.
+## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;

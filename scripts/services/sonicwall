@@ -23,7 +23,7 @@
 #    Kirk Bauer <kirk@kaybee.org>
 #
 # Please send all comments, suggestions, bug reports,
-#    etc, to logwatch-devel@logwatch.org
+#    etc, to logwatch-devel@lists.sourceforge.net
 ########################################################
 
 #######################################################
@@ -39,7 +39,7 @@
 ## Logwatch project reserves the right to not accept such
 ## contributions.  If you have made significant
 ## contributions to this script and want to claim
-## copyright please contact logwatch-devel@logwatch.org.
+## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
 use Logwatch ':all';
