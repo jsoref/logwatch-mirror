@@ -40,7 +40,7 @@ while (defined($ThisLine = <STDIN>)) {
 
 if (scalar(@Denies)) {
    print "\n";
-   print "new denied hosts: ".join(",", @Denies);
+   print "new denied hosts: \n    ".join("\n    ", @Denies);
    print "\n";
 }
 

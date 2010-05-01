@@ -357,7 +357,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $BadLogins{$Host}{"$User/$Method"}++;
    } elsif ($ThisLine =~ s/^(log: )?Could not reverse map address ([^ ]*).*$/$2/) {
       $NoRevMap{$ThisLine}++;
-   } elsif ( my ($Address) = ($ThisLine =~ /^reverse mapping checking getaddrinfo for ([^ ]*) failed - POSSIBLE BREAK-?IN ATTEMPT!/)) {
+   } elsif ( my ($Address) = ($ThisLine =~ /^reverse mapping checking getaddrinfo for (\S+( \[\S+\])?) failed - POSSIBLE BREAK-?IN ATTEMPT!/)) {
       $NoRevMap{$Address}++;
    } elsif ( my ($IP,$Address) = ($ThisLine =~ /^Address ([^ ]*) maps to ([^ ]*), but this does not map back to the address - POSSIBLE BREAK-?IN ATTEMPT!/)) {
       $NoRevMap{"$Address($IP)"}++;

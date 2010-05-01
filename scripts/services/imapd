@@ -37,7 +37,10 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /^couriertls: read: Connection reset by peer/ ) or
       # timeouts are reported in some other scripts - maybe it should be here too?
       ($ThisLine =~ /^couriertls: read: Connection timed out/ ) or
-      ($ThisLine =~ /^LOGOUT, ip=\[(.*)\], rcvd=\d+, sent=\d+$/)
+      ($ThisLine =~ /^LOGOUT, ip=\[(.*)\], rcvd=\d+, sent=\d+$/) or
+      # uw-imapd
+      ($ThisLine =~ /^Moved \d+ bytes of new mail to.*$/) or
+      ($ThisLine =~ /^Unexpected client disconnect, while reading line.*$/)
    ) {
       # Don't care about these...
    } elsif ( ($User, $Host) = ( $ThisLine =~ /^Login user=(.*?) host=(.*\[.*\])$/ ) ) {
@@ -64,6 +67,10 @@ while (defined($ThisLine = <STDIN>)) {
 #   } elsif ( ($User,$Host) = ( $ThisLine =~ /^authentication failed for user (.*?) - (.*)/ ) ) {
 #      $LoginFailed{"$Host ($User)"}++;
    } elsif ( ($User, $Host) = ( $ThisLine =~ /^Logout user=(.*?) host=(.*\[.*\])$/) ) {
+      $Logout{$User}{$Host}++;
+      $Logout2{$User}++;
+   # More generic pattern for uw-imapd
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^Logout user=(.*?) host=(.*)$/) ) {
       $Logout{$User}{$Host}++;
       $Logout2{$User}++;
    } elsif ( ($dummy, $User, $Host, $DownloadSize1, $DownloadSize2) = ( $ThisLine =~ /^(LOGOUT|TIMEOUT|DISCONNECTED), user=(.*?), ip=\[([^ ,]+)\](?:, port=\[\d+\])?, headers=(\d+), body=(\d+)/o ) ) {

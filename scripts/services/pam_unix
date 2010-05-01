@@ -187,9 +187,15 @@ while ($line = <STDIN>) {
       } elsif ($line =~ /session closed for user/) {
          # ignore this line
       } elsif (my ($nam, $byid) = ($line =~ /session opened for user (.+) by (.+)$/)) {
-         #resolve uid to name if possible
-         $byid =~ s/\(uid=(\d+)\)/$1/;
-         my $onam = getpwuid($byid) or $byid;
+         # resolve uid to name if possible
+         my $onam;
+         if ($byid =~ s/^\(uid=(\d+)\)$/$1/) {
+           $onam = getpwuid($byid) or $byid;
+         } elsif ($byid =~ s/^(\S+)\(uid=\d+\)$/$1/) {
+           $onam = $byid;
+         } else {
+           $onam = $byid;
+         }
          $data{$service}{'Sessions Opened'}{"$onam -> $nam"}++;
       } elsif ($line =~ /^account root has password changed in future/) {
          #I'm not sure whether this info could not be reported

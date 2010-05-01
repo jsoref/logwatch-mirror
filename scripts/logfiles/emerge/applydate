@@ -52,7 +52,7 @@ use POSIX qw(strftime);
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 
 # Set the date we are looking for based on the desired date range
-my $SearchDate = TimeFilter('%b %e %H:%M:%S');
+my $SearchDate = TimeFilter('%Y %b %e %H:%M:%S');
 
 if ($Debug > 5) {
     print STDERR "DEBUG: Inside applydate (emerge)...\n";
@@ -66,7 +66,7 @@ my $emergeTime;
 
 while (defined(my $line = <STDIN>)) {
       $line =~ /^(\d+):/;
-      $emergeTime = strftime('%b %e %H:%M:%S', localtime($1));
+      $emergeTime = strftime('%Y %b %e %H:%M:%S', localtime($1));
 
       if ($Debug > 5) {
               print STDERR "DEBUG: converted time: $emergeTime\n";

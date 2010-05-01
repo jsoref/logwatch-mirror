@@ -147,7 +147,7 @@ while (defined($ThisLine = <STDIN>)) {
          $Runs->{$User}->{$ThisLine}++;
       } elsif ($ThisLine =~ s/^CMD FINISH \((.+)\)\s*$/$1/) {
          $Runs->{$User}->{$ThisLine}++;
-      } elsif ($ThisLine =~ s/^CMD START \((.+)\)\s*$/$1/) {
+      } elsif ($ThisLine =~ s/^(END|CMD START) \((.+)\)\s*$/$1/) {
          #Ignore for now, NetBSD users could get tricky with
          #How many commands started vs finished -mgt
       } elsif ($ThisLine =~ /ORPHAN \(no passwd entry\)/) {

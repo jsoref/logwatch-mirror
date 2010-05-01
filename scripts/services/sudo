@@ -54,6 +54,8 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $CmdsThresh = $ENV{'command_run_threshold'} || 0;
 
 my ($user, $error, $tty, $dir, $euser, $cmd, $args);
+my $contlines = 0;
+my $argsprinted = 0;
 
 while (defined(my $ThisLine = <STDIN>)) {
    if ($ThisLine =~ /pam_unix\(sudo:auth\): authentication failure; logname=\S* uid=[0-9]* euid=[0-9]* tty=\S* ruser=\S* rhost=\S*  user=\S*/
@@ -61,11 +63,15 @@ while (defined(my $ThisLine = <STDIN>)) {
        # this log is parsed in pam_unix section
    {
      # Ignore
+   } elsif ($ThisLine =~ /pam_unix\(sudo:session\): session (opened|closed) for user \S+/) {
+     # handled in pam_unix
    } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ; COMMAND=(\S+)( ?.*)/) {
       push @{$byUser{$user}{$euser}}, [$error . $cmd,$args, $dir, $tty];
       $byUserSum{$user}{$euser}{$cmd} += 1;
    } elsif ( ($user,$euser) = $ThisLine =~ /^\s*(\S+) : no passwd entry for (\S+)\!$/) {
       push @{$byUser{$user}{$euser . " (No such user)"}}, ["No password entry"];
+   } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*\S+ : \(command continued\)/) {
+      $contlines++;
    } else {
    chomp($ThisLine);
    $OtherList{$ThisLine}++;
@@ -93,11 +99,15 @@ foreach my $user (sort keys %byUser) {
                $ttydetail = "($tty) " if $Detail >= 30;
                print "\t$ttydetail$dir\n";
             } # if $Detail >= 20
+            $argsprinted=1;
          } # if $Detail >= 10
       } # foreach $row
    } # foreach $euser
 } # foreach $user
 
+if($contlines && $argsprinted) {
+	print "\nThe argument list of some of above commands might be incomplete\n";
+}
 
 if (keys %OtherList) {
    print "\n\n**Unmatched Entries**";

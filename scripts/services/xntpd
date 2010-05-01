@@ -146,7 +146,8 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ m/signal_no_reset: signal \d+ had flags \d+/) or
         ($ThisLine =~ /Deleting interface \#[0-9]+ [^,]*, [^,]*, interface stats: received=.*, sent=.*, dropped=.*, active_time=.* secs/) or
         ($ThisLine =~ /Invalid argument/) or
-        ($ThisLine =~ /Listening on interface .* Disabled/)
+        ($ThisLine =~ /Listening on interface .* Disabled/) or
+	($ThisLine =~ /Listening on interface .* Enabled/)
     ) {
        # Ignore these
     } elsif ($ThisLine =~ m/ntpd [\d\-\.\w@]+ ... ... .. ..:..:.. /) {
@@ -159,7 +160,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        push @TimeReset, $TimeStep;
     } elsif ( my (undef,$TimeStep) = ($ThisLine =~ /(step|adjust) time server [^ ]+ offset ([^ ]+) sec$/ )) {
        push @TimeReset, $TimeStep;
-    } elsif ( my ($TimeStep) = ($ThisLine =~ /adjusting local clock by ([^ ]+)s $/ )) {
+    } elsif ( my ($TimeStep) = ($ThisLine =~ /adjusting local clock by ([^ ]+)s$/ )) {
        # Jacob Joseph (12/8/06)
        push @TimeReset, $TimeStep;
     # MEv start no leadin to line
