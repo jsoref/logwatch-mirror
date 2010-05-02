@@ -735,7 +735,7 @@ if (keys %needs_exam) {
          print "   $code $StatusCode{$code} SUMMARY - $u URLs, total: $t Time(s)\n";
       } else {
          print "   $code $StatusCode{$code}\n";
-         for my $url (sort keys %{$needs_exam{$code}}) {
+         for my $url (sort { ($needs_exam{$code}{$b} <=> $needs_exam{$code}{$a}) or ($a cmp $b) } keys %{$needs_exam{$code}}) {
             print "      $url: $needs_exam{$code}{$url} Time(s)\n";
          }
       }

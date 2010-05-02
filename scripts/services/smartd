@@ -101,12 +101,17 @@ while (defined(my $ThisLine = <STDIN>)) {
        # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), is in STANDBY mode, skipping checks/ )) {
        # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), type changed from \'\w+\' to \'\w+\'/ )) {
+       # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), state (?:read from|written to)/ )) {
+       # ignore
    } elsif ( $ThisLine =~ /^file \/var\/run\/smartd.pid written containing PID [0-9]+/ ) {
        # ignore
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^ *$/ )) {
        # ignore empty lines
    } elsif ( ($ThisLine =~ /^smartd version/)
           || ($ThisLine =~ /^Home page/)
+          || ($ThisLine =~ /^smartd .* Copyright \(C\) [0-9-]+ by Bruce Allen/)
           || ($ThisLine =~ /configuration file/i)
           || ($ThisLine =~ /\[trip Temperature is \d+ Celsius\]/)
           || ($ThisLine =~ /^Monitoring/)
@@ -118,8 +123,8 @@ while (defined(my $ThisLine = <STDIN>)) {
 	  || ($ThisLine =~ /Device (.*), SATA disks accessed via libata are not currently supported by smartmontools./)
 	  || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device Try '.*' to turn on SMART features/)
 	  || ($ThisLine =~ /Device: (.*), Bad IEC (SMART) mode page, err=-5, skip device/)
-     || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
-     || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/) )
+	  || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
+	  || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/) )
    {
        # ignore
 

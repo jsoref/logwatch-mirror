@@ -51,12 +51,15 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Starting rsync with/i) or
       ($ThisLine =~ /Merging/) or
       ($ThisLine =~ /Unmerging./) or
+      ($ThisLine =~ /Resuming merge/) or
       ($ThisLine =~ /AUTOCLEAN/) or
       ($ThisLine =~ />>> emerge /) or
+      ($ThisLine =~ />>> depclean/) or
       ($ThisLine =~ /\*\*\* emerge /) or
       ($ThisLine =~ /Cleaning/) or
       ($ThisLine =~ /Updating world file/) or
-      ($ThisLine =~ /Post-Build/)
+      ($ThisLine =~ /Post-Build/) or
+      ($ThisLine =~ /Starting retry \d+ of \d+ with/)
     ) {
       # Don't care about these...
    }
@@ -72,6 +75,8 @@ while (defined($ThisLine = <STDIN>)) {
       $NumberOfPackageUnmerged++;
    } elsif ( $ThisLine =~ s/^Dep Installed: ([^ ]+)/$1 / ) {
       $PackageDepInstalled{$ThisLine}++;
+   } elsif ( $ThisLine =~ /exiting unsuccessfully with status \'(\d)\'/ ) {
+      $ExitUnsuccessfull{$1}++;
    } else {
       # Report any unmatched entries...
       push @OtherList,$ThisLine;
@@ -109,6 +114,12 @@ if (keys %PackageUpdated) {
    print "\nPackage Updated:\n";
    foreach $ThisOne (keys %PackageUpdated) {
        print "   ". $ThisOne;
+   }
+}
+if (keys %ExitUnsuccessfull) {
+   print "\nUnsuccessfull exit with:\n";
+   foreach $ThisOne (keys %ExitUnsuccessfull) {
+       print "   Status $ThisOne : $ExitUnsuccessfull{$ThisOne} Time(s)\n";
    }
 }
 

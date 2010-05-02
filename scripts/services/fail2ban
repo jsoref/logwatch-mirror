@@ -66,11 +66,14 @@ while (defined(my $ThisLine = <STDIN>)) {
     if ( ($ThisLine =~ /..,... DEBUG: /) or
 	 ($ThisLine =~ /..,... \S*\s*: DEBUG /) or # syntax of 0.7.? fail2ban
 	 ($ThisLine =~ /..,... INFO: (Fail2Ban v.* is running|Exiting|Enabled sections:)/) or
-    ($ThisLine =~ /INFO.*Log rotation detected for/) or
+	 ($ThisLine =~ /INFO\s+Log rotation detected for/) or
+	 ($ThisLine =~ /INFO\s+Jail.+(?:stopped|started|uses poller)/) or
+	 ($ThisLine =~ /INFO\s+Changed logging target to/) or
+	 ($ThisLine =~ /INFO\s+Creating new jail/) or
 	 ($ThisLine =~ /..,... \S+\s*: INFO\s+(Set |Socket|Exiting|Gamin|Created|Added|Using)/) or # syntax of 0.7.? fail2ban
 	 ($ThisLine =~ /..,... WARNING: Verbose level is /) or
 	 ($ThisLine =~ /..,... WARNING: Restoring firewall rules/)
-	 )
+       )
     {
 	if ( $Debug >= 6 ) {
 	    print STDERR "DEBUG($DebugCounter): line ignored\n";
