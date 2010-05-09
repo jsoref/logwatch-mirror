@@ -2,6 +2,9 @@
 ## $Id: clam-update,v 1.21 2009/02/20 17:15:19 mike Exp $
 ###########################################################################
 # $Log: clam-update,v $
+# Revision 1.22  2010/05/09 20:15:19  stefan
+# fix: 'Received signal:' format changed
+#
 # Revision 1.21  2009/02/20 17:15:19  mike
 # Added filter for Timestamp set by freshclam, thanks Frantisek Hanzlik for pointing this out -mgt
 #
@@ -115,12 +118,12 @@ while (defined(my $ThisLine = <STDIN>)) {
        # the following failure is also recorded with ERROR later on
        ($ThisLine =~ /^Giving up/) or
        # SIGALRM, SIGUSR1, and SIGHIP signals
-       ($ThisLine =~ /^Received signal \d*, wake up$/) or
-       ($ThisLine =~ /^Received signal \d*, re-opening log file$/) or
+       ($ThisLine =~ /^Received signal \d*,? wake up$/) or
+       ($ThisLine =~ /^Received signal \d*,? re-opening log file$/) or
        # temporary failure
        ($ThisLine =~ /^Trying again/) ) {
       # Do nothing for the above statements
-   } elsif ($ThisLine =~ /^Received signal \d*, terminating$/) {
+   } elsif ($ThisLine =~ /^Received signal \d*,? terminating$/) {
       $InRange = 0;
       $Status = "Last Status:\n   Freshclam daemon was terminated, and is not currently running\n";
    } elsif ((my $Temp) = ($ThisLine =~ /^freshclam daemon (.*)/)) {

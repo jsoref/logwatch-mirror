@@ -41,6 +41,7 @@ while (defined($ThisLine = <STDIN>)) {
       $DebugCounter++;
    }
    if ( ( $ThisLine =~ /^updating login info$/ ) or
+        ( $ThisLine =~ /^updateLoginInfo\(\) login info$/ ) or
         ( $ThisLine =~ /^Opening rpmdb in \/var\/lib\/rpm\/ with option .$/ ) or
         ( $ThisLine =~ /^successfully retrieved authentication token from up2date server$/ ) or
         ( $ThisLine =~ /^(getA|a)vailablePackageList from network$/ ) or

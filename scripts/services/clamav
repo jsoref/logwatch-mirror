@@ -52,6 +52,7 @@ while (defined($ThisLine = <STDIN>)) {
        ( $ThisLine =~ /clamd startup\s+succeeded/ ) or
        ( $ThisLine =~ /Not loading PUA signatures/ ) or
        ( $ThisLine =~ /^(?:LOCAL|TCP): Setting connection queue length to/ ) or
+       ( $ThisLine =~ /^(?:LOCAL|TCP): Removing stale socket file/ ) or
        ( $ThisLine =~ /^No stats for Database check/ )) {
        # We do not care about these.
    } elsif (($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {

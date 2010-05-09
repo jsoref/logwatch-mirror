@@ -48,12 +48,14 @@ while (my $line = <STDIN>) {
       ($line =~ /^dhcpd startup .*succeeded/) or
       ($line =~ /^Sending on/) or
       ($line =~ /^Dynamic and static leases present for/) or
+      # Remove host declaration host_name or remove 10.0.0.199
       ($line =~ /^from the dynamic address pool for/) or
+      ($line =~ /^parse_option_buffer: option unknown-\d+ \([\d:]+\) larger than buffer/) or
       ($line =~ /^BOOTREQUEST/) or
       ($line =~ /^DHCPACK/) or
       ($line =~ /^DHCPNAK/) or
       ($line =~ /^DHCPINFORM/) or
-      ($line =~ /^DHCPDISCOVER/) or
+      ($line =~ /^DHCPDISCOVER from .* via \S+$/) or
       ($line =~ /^DHCPREQUEST/) or
       ($line =~ /^DHCPRELEASE/) or
       ($line =~ /^Abandoning IP address/) or
@@ -90,6 +92,14 @@ while (my $line = <STDIN>) {
       ($line =~ /^the README file./)
       ) {
     # Do nothing
+   } elsif (
+      # If this DHCP server is authoritative for that subnet
+      ($line =~ /^please write an `authoritative;' directive either in the/) or
+      ($line =~ /^subnet declaration or in some scope that encloses the/) or
+      ($line =~ /^subnet declaration - for example, write it at the top/) or
+      ($line =~ /^of the dhcpd.conf file\./)
+     ) {
+    # Do nothing
 
    } elsif ($line =~ s/^exiting./DHCP server exiting./) {
       $data{'Generic error'}{$line}++;
@@ -99,6 +109,8 @@ while (my $line = <STDIN>) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ s/^No subnet6? declaration for ([a-z\d]+) ([\(\)\d\.ia-fA-F:]+).\s*$/No subnet declaration for $1 $2/) {
       $data{'Config error'}{$line}++;
+   } elsif ($line =~ /^If this DHCP server is authoritative for that subnet,$/) {
+      $data{'Config error'}{'missing authoritative directive'}++; 
    } elsif ($line =~ s/^WARNING: (Host declarations are global).\s+.*$/\1/) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ s/Not searching LDAP\s+.*$/No support for LDAP configured/) {
@@ -167,7 +179,7 @@ while (my $line = <STDIN>) {
       if ($Detail >= 7) {
          $data{'DNS Mappings'}{$line}++;
       }
-   } elsif ($line =~ s/^Remove host declaration ([a-zA-Z\d.]+) or remove ([\d.]+)\s*$/Host $2 ($1) has static and dynamic mappings, remove other./) {
+   } elsif ($line =~ s/^Remove host declaration ([a-zA-Z\d.-]+) or remove ([\d.]+)\s*$/Host $2 ($1) has static and dynamic mappings, remove other/) {
       if ($Detail >= 3) {
          $data{'Warnings'}{$line}++;
       }
@@ -175,6 +187,12 @@ while (my $line = <STDIN>) {
       if ($Detail >= 3) {
          $data{'Warnings'}{$line}++;
       }
+   } elsif ($line =~ /^DHCPDISCOVER from .* via \S+: (.*): no free leases/) {
+      $data{'No Free Leases'}{$1}++;
+   } elsif ($line =~ /^DHCPDISCOVER from .* via (\S+): unknown network segment/) {
+      $data{'Unknown Network Segments'}{$1}++;
+   } elsif ($line =~ /^ICMP Echo Reply for ([\da-fA-F\.:]+) late or spurious/) {
+      $data{'Late or spurious Echo Reply'}{$1}++;
    } else {
       $data{'Unknown Entries'}{$line}++;
    }

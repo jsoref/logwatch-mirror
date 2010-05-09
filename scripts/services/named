@@ -2,6 +2,14 @@
 # $Id: named,v 1.58 2009/06/02 14:55:45 mike Exp $
 ##########################################################################
 # $Log: named,v $
+# Revision 1.60 2010/05/10 00:25:00  stefan
+# fix: clients-per-query, 
+# add: more lines to ignore, refused notify, client query denied, retry 
+#   limit exceeded, too many open file, no SOA, checkhints
+#
+# Revision 1.59.1 2010/05/04 22:25:00  stefan
+# More refresh: and RCODE handling
+#
 # Revision 1.58  2009/06/02 14:55:45  mike
 # Fedora patch from Ivan Varekova -mgt
 #
@@ -222,12 +230,20 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /built with/) or
       ($ThisLine =~ /'.*': TTL differs in rdataset, adjusting [0-9]* -> [0-9]*/) or
       ($ThisLine =~ /max open files \([0-9]*\) is smaller than max sockets \([0-9]*\)/) or
-      ($ThisLine =~ /clients-per-query decreased to .*/) or
+      ($ThisLine =~ /clients-per-query (?:de|in)creased to .*/) or
       ($ThisLine =~ /^must-be-secure resolving '.*': .*/) or
       ($ThisLine =~ /^no valid (DS|KEY|RRSIG) resolving '.*': .*/) or
       ($ThisLine =~ /^not insecure resolving '.*': .*/) or
-      ($ThisLine =~ /^validating \@0x[[:xdigit:]]+: .* DS: must be secure failure/)
-      # too many timeouts resolving 'ns-ext.nrt1.isc.org/AAAA' (in '.'?): disabling EDNS: 3 Time(s)
+      ($ThisLine =~ /^validating \@0x[[:xdigit:]]+: .* DS: must be secure failure/) or
+      ($ThisLine =~ /^broken trust chain resolving '.*': .*/) or
+      ($ThisLine =~ /journal file [^ ]* does not exist, creating it/) or
+      ($ThisLine =~ /serial number \(\d+\) received from master/) or
+      ($ThisLine =~ /zone is up to date/) or
+      ($ThisLine =~ /refresh in progress, refresh check queued/) or
+      ($ThisLine =~ /refresh: NODATA response from master/) or
+      ($ThisLine =~ /update with no effect/) or
+      # ignore this line because the following line describes the error
+      ($ThisLine =~ /unexpected error/)
    ) {
       # Don't care about these...
    } elsif (
@@ -274,6 +290,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneReceivedNotify{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.*): notify from .* up to date/ ) ) {
       $ZoneReceivedNotify{$Zone}++;
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\/IN: refused notify from non-master/ ) ) {
+      $ZoneRefusedNotify{$Zone}++;
    } elsif ( ($Host) = ( $ThisLine =~ /([^ ]+) has CNAME and other data \(invalid\)/ ) ) {
       push @CNAMEAndOther, $Host;
    } elsif ( ($File,$Line,$Entry,$Error) = ( $ThisLine =~ /dns_master_load: ([^:]+):(\d+): ([^ ]+): (.+)$/ ) ) {
@@ -294,6 +312,9 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: query \(cache\) denied/ ) ) {
       $FullClient = LookupIP ($Client);
       $DeniedQuery{$FullClient}++;
+   } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: query '.*\/IN' denied/ ) ) {
+      $FullClient = LookupIP ($Client);
+      $DeniedQueryNoCache{$FullClient}++;
    } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+:(?: view ([^ ]+):)? update '(.*)' denied/)) {
       $ViewName = ($ViewName ? "/$ViewName" : "");
       $UpdateDenied{"$Rhost ($Ldom$ViewName)"}++;
@@ -311,6 +332,8 @@ while (defined($ThisLine = <STDIN>)) {
       $MasterFailure{"$Zone from $Host"}{$Reason}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: non-authoritative answer from master/)) {
       $NonAuthoritative{$Zone}++;
+   } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: retry limit for master \S+ exceeded/) ) {
+      $RetryLimit{$Zone}++; 
    } elsif ( ($ThisLine =~ /unexpected RCODE \((.*)\) resolving/) ){
       $UnexpRCODE{$1}++;
    } elsif ( ($ThisLine =~ /FORMERR resolving '[^ ]+: [\.0-9a-fA-F:#]+/) ) {
@@ -328,6 +351,9 @@ while (defined($ThisLine = <STDIN>)) {
 	     (($ErrorText) = ($ThisLine =~ /^(.* REQUIRE.* failed.*)$/)) or
 	     (($ErrorText) = ($ThisLine =~ /(.*: fatal error)/)) ) {
       $NError{$ErrorText}++;
+   } elsif ( (($ErrorText) = ($ThisLine =~ /^(internal_accept: fcntl\(\) failed: Too many open files)/)) or
+             (($ErrorText) = ($ThisLine =~ /^(socket: too many open file descriptors)/)) ) {
+      $ErrOpenFiles{$ErrorText}++;
    } elsif ( ($From,$Log) = ($ThisLine =~ /invalid command from ([\.0-9a-fA-F:]*)#[0-9]*: (.*)/) ) {
       $CCMessages{"$From,$Log"}++;
    } elsif ( (($Log) = ($ThisLine =~ /(freezing .*zone.*)/)) or
@@ -341,6 +367,10 @@ while (defined($ThisLine = <STDIN>)) {
       $NUR{$Name}{$Address}++;
    } elsif (($Name,$Address) = ($ThisLine =~ /host unreachable resolving '(.*)': (.*)/)) {
       $HUR{$Name}{$Address}++;
+   } elsif (($Client) = ($ThisLine =~ /client ([\da-fA-F.:]+)(?:#\d*:)? notify question section contains no SOA/)) {
+      $NoSOA{$Client}++;
+   } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
+      $Hints{$Hint}++;
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
@@ -382,6 +412,13 @@ if ( ( $Detail >= 5 ) and (keys %ZoneReceivedNotify) ) {
    }
 }
 
+if ( ( $Detail >= 5 ) and (keys %ZoneRefusedNotify) ) {
+   print "\nZones refused notify:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %ZoneRefusedNotify) {
+      print "   $ThisOne: $ZoneRefusedNotify{$ThisOne} Time(s)\n";
+   }
+}
+
 if ( ($Detail >= 5) and (keys %ChannelAddFail) ) {
    print "\nCan't add command channel:\n";
    foreach $Channel (sort {$a cmp $b} keys %ChannelAddFail) {
@@ -397,7 +434,7 @@ if ( ($Detail >= 5) and (keys %MasterFailure) ) {
    foreach $Zone (sort {$a cmp $b} keys %MasterFailure) {
       print "   $Zone:\n";
       foreach $Reason (sort {$a cmp $b} keys %{$MasterFailure{$Zone}}) {
-         print "      $Reason: $MasterFailure{$Zone}{$Reason}++ Time(s)\n";
+         print "      $Reason: $MasterFailure{$Zone}{$Reason} Time(s)\n";
       }
    }
 }
@@ -409,7 +446,6 @@ if ( ( $Detail >= 5 ) and (keys %DeniedZoneTransfers) ) {
       foreach my $Zone (keys %{$DeniedZoneTransfers{$Host}}) {
          print "      $Zone: $DeniedZoneTransfers{$Host}{$Zone} Time(s)\n";
       }
-      print "\n";
    }
 }
 
@@ -438,9 +474,16 @@ if ( ( $Detail >= 5 ) and (keys %DeniedTCPClient) ) {
 }
 
 if ( ( $Detail >= 5 ) and (keys %DeniedQuery) ) {
-   print "\nQueries (cache) that were denied:\n";
+   print "\nQueries (cached) that were denied:\n";
    foreach $ThisOne (keys %DeniedQuery) {
       print "   from $ThisOne: $DeniedQuery{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %DeniedQueryNoCache) ) {
+   print "\nQueries (not cached) that were denied:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %DeniedQueryNoCache) {
+      print "   from $ThisOne: $DeniedQueryNoCache{$ThisOne} Time(s)\n";
    }
 }
 
@@ -472,6 +515,20 @@ if ( ( $Detail >= 10 ) and (keys %NonAuthoritative) ) {
    print "\nNon-authoritative answer from master for these zones:\n";
    foreach $ThisOne (keys %NonAuthoritative) {
       print "   " . $ThisOne . ": " . $NonAuthoritative{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( ($Detail >= 10) and (keys %RetryLimit) ) {
+   print "\nRetry limit exceeded for these zones:\n";
+   foreach $Zone (sort {$a cmp $b} keys %RetryLimit) {
+      print "   $Zone: $RetryLimit{$Zone} Time(s)\n";
+   }
+}
+
+if ( ($Detail >= 10) and (keys %NoSOA) ) {
+   print "\nNotify question sections of these clients contained no SOA:\n";
+   foreach $Client (sort {$a cmp $b} keys %NoSOA) {
+      print "   $Client: $NoSOA{$Client} Time(s)\n";
    }
 }
 
@@ -590,6 +647,14 @@ if (keys %NError) {
    }
 }
 
+if (keys %ErrOpenFiles) {
+   print "\n The following seams to be caused by the patches for CVE-2008-1447.";
+   print "\n Please update your bind.\n";
+   foreach $ThisOne (keys %ErrOpenFiles) {
+      print "   " . $ThisOne . ": " . $ErrOpenFiles{$ThisOne} . " Time(s)\n";
+   }
+}
+
 if ((keys %CCMessages) or (keys %CCMessages2)){
    print "\n Messages from control channel\n";
    foreach (keys %CCMessages) {
@@ -608,6 +673,13 @@ if ((keys %CCCommands) or (keys %UnknownCCCommands)) {
    }
    foreach $ThisOne (keys %UnknownCCCommands) {
       print "   " . $ThisOne . "(unknown command): " . $CCCommands{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (keys %Hints) {
+   print "\nCheckhints:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %Hints) {
+      print "   " .$ThisOne .": $Hints{$ThisOne} Time(s)\n";
    }
 }
 

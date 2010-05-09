@@ -19,6 +19,9 @@
 #########################################################
 #
 # $Log: postfix,v $
+# Revision 1.42  2010/05/05 11:42:53  stefan
+# fix: ignore reload
+#
 # Revision 1.41  2008/08/11 15:33:53  mike
 # Lost connection patch from Peter Johnson -mgt
 #
@@ -223,7 +226,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/^disconnect/ ) or
       ( $ThisLine =~ m/^mynetworks:/ ) or
       ( $ThisLine =~ m/^name_mask:/ ) or
-      ( $ThisLine =~ m/^reload configuration/ ) or
+      ( $ThisLine =~ m/^reload(?: -- version [\d.]+,)? configuration/ ) or
       ( $ThisLine =~ m/^setting up TLS connection (from|to)/ ) or
       ( $ThisLine =~ m/^starting TLS engine$/ ) or
       ( $ThisLine =~ m/^terminating on signal 15$/ ) or

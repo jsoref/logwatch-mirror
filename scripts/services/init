@@ -25,7 +25,8 @@ while (defined($ThisLine = <STDIN>)) {
    if (( $ThisLine =~ /open\(.*\): No such file or directory/)  or
       ( $ThisLine =~ /Id "r" respawning too fast: disabled for 5 minutes/) or
       ( $ThisLine =~ /Re-reading inittab/) or
-      ( $ThisLine =~ /.* main process ended, respawning/)) {
+      ( $ThisLine =~ /.* main process ended, respawning/) or
+      ( $ThisLine =~ /Disconnected from system bus/)) {
       # We don't care about these
    }
    elsif ( $ThisLine =~ s/Switching to runlevel: (.)\s*$/$1/ ) {
@@ -68,7 +69,7 @@ if ($ReExecInit and $Detail) {
 	print "\n\nRe-execs of init: $ReExecInit times\n";
 }
 
-if ($ReExecSbinInit) {
+if ($ReExecSbinInit and $Detail) {
         print "\n\nRe-executing \/sbin\/init/: $ReExecSbinInit times\n";
 }
 

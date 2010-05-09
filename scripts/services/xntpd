@@ -3,6 +3,9 @@
 # $Id: xntpd,v 1.22 2008/06/30 23:07:51 kirk Exp $
 ##########################################################################
 # $Log: xntpd,v $
+# Revision 1.23  2010/05/05 12:30:51  stefan
+# added: Operation not permitted, fixed: typo in Errors
+#
 # Revision 1.22  2008/06/30 23:07:51  kirk
 # fixed copyright holders for files where I know who they should be
 #
@@ -113,6 +116,7 @@ my $Kills = 0;
 my $SyncLost = 0;
 my (@TimeReset,%Interfaces,%Syncs,%TwoInst,%Errors,%OtherList);
 my %ConfErrs;
+my %Operations;
 
 # No sense in running if 'xntpd' doesn't even exist on this system...
 unless (( -f "/usr/sbin/ntpd" ) or ( -f "/usr/local/sbin/ntpd") or ( -f "/usr/lib/inet/xntpd")) {
@@ -147,7 +151,8 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ /Deleting interface \#[0-9]+ [^,]*, [^,]*, interface stats: received=.*, sent=.*, dropped=.*, active_time=.* secs/) or
         ($ThisLine =~ /Invalid argument/) or
         ($ThisLine =~ /Listening on interface .* Disabled/) or
-	($ThisLine =~ /Listening on interface .* Enabled/)
+	($ThisLine =~ /Listening on interface .* Enabled/) or
+	($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/)
     ) {
        # Ignore these
     } elsif ($ThisLine =~ m/ntpd [\d\-\.\w@]+ ... ... .. ..:..:.. /) {
@@ -194,6 +199,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $Errors{$Error}++;
     } elsif ( my ($ConfErr) = ($ThisLine =~ /configure: (keyword "[^"]*" unknown, line ignored)/ )) {
        $ConfErrs{$ConfErr}++;
+    } elsif ( my ($StepTime) = ($ThisLine =~ /(.*:) Operation not permitted/) ) {
+       $Operations{$StepTime}++
     } else {
        # Report any unmatched entries...
        $OtherList{$ThisLine} += 1;
@@ -261,10 +268,20 @@ if (keys %Errors) {
 }
 
 if (keys %ConfErrs) {
-    print "\n Errors in configuration file\n";
+    print "\nErrors in configuration file\n";
     foreach my $k (keys %ConfErrs) {
       print "  $k ". $ConfErrs{$k} . " time(s)\n";
     }
+}
+
+if (keys %Operations) {
+    print "\nOperations not permitted\n";
+    foreach my $o (keys %Operations) {
+      print "  $o ". $Operations{$o} . " time(s)\n";
+    }
+    print "\n  The clock on a VPS is inherited from the clock on the\n";
+    print "  hardware node, therefore the ntp-service must be run on\n";
+    print "  the hardware node, and not the VPS.\n";
 }
 
 if (keys %OtherList) {
