@@ -1,7 +1,10 @@
 ##########################################################################
-# $Id: named,v 1.58 2009/06/02 14:55:45 mike Exp $
+# $Id: named,v 1.61 2010/09/18 17:35:00 stefan Exp $
 ##########################################################################
 # $Log: named,v $
+# Revision 1.61 2010/09/18 17:35:00  stefan
+# add: bad zone transfer request
+#
 # Revision 1.60 2010/05/10 00:25:00  stefan
 # fix: clients-per-query, 
 # add: more lines to ignore, refused notify, client query denied, retry 
@@ -292,6 +295,9 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneReceivedNotify{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\/IN: refused notify from non-master/ ) ) {
       $ZoneRefusedNotify{$Zone}++;
+#   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\d\.a-fA-F:]+) bad zone transfer request: '(.+)': (.+)$/ ) ) {
+   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: bad zone transfer request: '(.+)\/IN': (.+)/ ) ) {
+      $BadZone{$Reason}{"$Rhost ($Ldom)"}++;
    } elsif ( ($Host) = ( $ThisLine =~ /([^ ]+) has CNAME and other data \(invalid\)/ ) ) {
       push @CNAMEAndOther, $Host;
    } elsif ( ($File,$Line,$Entry,$Error) = ( $ThisLine =~ /dns_master_load: ([^:]+):(\d+): ([^ ]+): (.+)$/ ) ) {
@@ -462,6 +468,16 @@ if ( ( $Detail >= 5 ) and (keys %AXFR) ) {
       print "   Zone: $ThisOne\n";
       foreach $Temp (keys %{$AXFR{$ThisOne}}) {
          print "      by $Temp: $AXFR{$ThisOne}{$Temp} Time(s)\n";
+      }
+   }
+}
+
+if ( ( $Detail >= 10 ) and (keys %BadZone) ) {
+   print "\nBad Zone Transfer Request:\n";
+   foreach $Reason (keys %BadZone) {
+      print "   Reason: $Reason\n";
+      foreach $ThisOne (sort {$a cmp $b} (keys %{$BadZone{$Reason}}) ) {
+         print "      $ThisOne: $BadZone{$Reason}{$ThisOne} Time(s)\n";
       }
    }
 }

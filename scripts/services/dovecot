@@ -1,7 +1,10 @@
 ########################################################
-# $Id: dovecot,v 1.17 2009/06/02 14:48:06 mike Exp $
+# $Id: dovecot,v 1.18 2010/09/18 17:41:00 stefan Exp $
 ########################################################
 # $Log: dovecot,v $
+# Revision 1.18  2010/09/18 17:41:00  stefan
+# ignore: ssl-build-param
+#
 # Revision 1.17  2009/06/02 14:48:06  mike
 # Removed some periods that were in the Fedora patch and broke the file -mgt
 #
@@ -101,7 +104,12 @@ while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
      # service name
      $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
-     if ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) {
+     if (
+       ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) or
+       ($ThisLine =~ /deliver.*/) or
+       ($ThisLine =~ /auth-worker/) or
+       ($ThisLine =~ /IMAP.* failed with mbox file/)
+) {
         # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;

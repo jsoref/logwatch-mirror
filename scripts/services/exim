@@ -1,7 +1,10 @@
 ##########################################################################
-# $Id: exim,v 1.24 2009/06/02 14:50:37 mike Exp $
+# $Id: exim,v 1.25 2010/09/18 17:31:00 stefan Exp $
 ##########################################################################
 # $Log: exim,v $
+# Revision 1.25  2010/09/18 17:31:00 stefan
+# removing unused variable $tz
+#
 # Revision 1.24  2009/06/02 14:50:37  mike
 # Patch from Fedora (Ivan Varekova) -mgt
 #
@@ -269,7 +272,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
    elsif ( $ThisLine =~ /^\d+\-\d+\-\d+\s\d+\:\d+\:\d+\s(\+\d+\s)?\w+\-\w+\-\w+\s/ ) { # inne wiadomosci przesylane przez EXIMA
     # Collect Message ID specific notes...
-    ($mdate,$mtime,$tz,$mid,$mrest) = ($ThisLine =~ /^(\d+\-\d+\-\d+)\s(\d+\:\d+\:\d+)\s(\+\d+\s)?(\w+\-\w+\-\w+)(.+)/);
+    ($mdate,$mtime,$mid,$mrest) = ($ThisLine =~ /^(\d+\-\d+\-\d+)\s(\d+\:\d+\:\d+)\s(?:\+\d+\s)?(\w+\-\w+\-\w+)(.+)/);
       # Count of individual Message Lines, used for sort
     $licze++;         # Dodaje taki licznik aby potem przy wypisaniu posortowac po nim, bo wypisywal nie po kolei
     $mmsg{$mid}{$licze.$mrest} = "$mdate $mtime";

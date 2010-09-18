@@ -48,9 +48,14 @@ while (my $line = <STDIN>) {
       ($line =~ /^dhcpd startup .*succeeded/) or
       ($line =~ /^Sending on/) or
       ($line =~ /^Dynamic and static leases present for/) or
+      # backup server pool balancing
+      ($line =~ /^balanc(?:ed|ing) pool/) or
+      # apparently these are normal with dynamic update and balancing
+      #[TD] dhcpd: bind update on 192.168.148.197 from subnet148 rejected: ...
+      ($line =~ /rejected: incoming update is less critical than outgoing update/) or
       # Remove host declaration host_name or remove 10.0.0.199
       ($line =~ /^from the dynamic address pool for/) or
-      ($line =~ /^parse_option_buffer: option unknown-\d+ \([\d:]+\) larger than buffer/) or
+      ($line =~ /^parse_option_buffer: option [\w-]+ \(\d+\) larger than buffer/) or
       ($line =~ /^BOOTREQUEST/) or
       ($line =~ /^DHCPACK/) or
       ($line =~ /^DHCPNAK/) or
@@ -123,13 +128,13 @@ while (my $line = <STDIN>) {
       if ($Detail >= 5) {
          $data{'Addresses Leased'}{$line}++;
       }
-   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) \(([^)]+)\) via (\S+)\s*$/$1 -> $2 [$3] ($4)/) {
-      if ($Detail >= 5) {
-         $data{'Addresses Declined'}{$line}++;
-      }
-   } elsif ($line =~ s/^DHCPOFFER on ([\d\.]+) to ("") \(([^)]+)\) via (\S+)\s*$/$1 -> $2 [$3] ($4)/) {
+   } elsif ($line =~ s/^DHCPOFFER on ([\d\.]+) to ("")(?: \(([^)]+)\))? via (\S+)\s*$/$1 -> $2 [$3] ($4)/) {
       if ($Detail >= 5) {
          $data{'Warnings'}{$line}++;
+      }
+   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) \(([^)]+)\) via ([\d\.]+).*$/$1 -> $2 [$3] ($4)/) {
+      if ($Detail >= 5) {
+         $data{'Addresses Declined'}{$line}++;
       }
    } elsif ( ($line =~ s/^BOOTREPLY for ([\d\.]+) to ([a-zA-Z\d_-]+) \(([a-f\d:]+)\) via (\S+)\s*$/$1 -> $3 [$2] ($4\/bootp)/)
       or ($line =~ s/^BOOTREPLY on ([\d\.]+) to ([a-f\d:]+) via (\S+)\s*$/$1 -> $2 [] ($3\/bootp)/) ) {
@@ -192,7 +197,9 @@ while (my $line = <STDIN>) {
    } elsif ($line =~ /^DHCPDISCOVER from .* via (\S+): unknown network segment/) {
       $data{'Unknown Network Segments'}{$1}++;
    } elsif ($line =~ /^ICMP Echo Reply for ([\da-fA-F\.:]+) late or spurious/) {
-      $data{'Late or spurious Echo Reply'}{$1}++;
+      $data{'Late or spurious Echo Reply for'}{$1}++;
+   } elsif ($line =~ /^ICMP Echo reply while lease ([\da-fA-F\.:]+) valid/) {
+      $data{'Echo reply while lease valid'}{$1}++;
    } else {
       $data{'Unknown Entries'}{$line}++;
    }

@@ -2,6 +2,9 @@
 # $Id: sshd,v 1.77 2009/02/20 17:49:03 mike Exp $
 ##########################################################################
 # $Log: sshd,v $
+# Revision 1.78  2010/05/10 10:49:03  stefan
+# ignoring nasty PTR records
+#
 # Revision 1.77  2009/02/20 17:49:03  mike
 # pam_winbind ignores from JT Moree -mgt
 #
@@ -282,7 +285,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /PAM 1 more authentication failure; logname= uid=0 euid=0 tty=ssh ruser= rhost=/) or
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
        ($ThisLine =~ /^Keyboard-interactive \(PAM\) userauth failed/ ) or
-       ($ThisLine =~ /^debug1: /)
+       ($ThisLine =~ /^debug1: /) or
+       ($ThisLine =~ /Nasty PTR record .* is set up for [\da-fA-F.:]+, ignoring/)
    ) {
       # Ignore these
    } elsif ( my ($Method,$User,$Host,$Port) = ($ThisLine =~ /^Accepted (\S+) for (\S+) from ([\d\.:a-f]+) port (\d+)/) ) {
@@ -398,7 +402,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $DenyUsers{$User}++;
    } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [0-9.]*)? not allowed because not in any group/)) {
       $NoGroups{$User}++;
-   } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [0-9.]*)? not allowed because a group is listed in DenyGroups/)) {
+   } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*)( from [^ ]*)? not allowed because a group is listed in DenyGroups/)) {
       $DenyGroups{$User}++;
    } elsif ( my ($User) = ($ThisLine =~ /^User ([^ ]*) from ([^ ]*) not allowed because none of user's groups are listed in AllowGroups/)) {
       $AllowGroups{$User}++;

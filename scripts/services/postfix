@@ -19,6 +19,9 @@
 #########################################################
 #
 # $Log: postfix,v $
+# Revision 1.43  2010/05/15 15:45:36  stefan
+# fix: fatal: open database <db>: No such file or directory
+#
 # Revision 1.42  2010/05/05 11:42:53  stefan
 # fix: ignore reload
 #
@@ -409,7 +412,7 @@ while (defined($ThisLine = <STDIN>)) {
       $SizeLimit{"$From -> $To"}++;
    } elsif ( ($Server) = ($ThisLine =~ /^NOQUEUE: reject: MAIL from ([^ ]*\[[^ ]*\]): 552 Message size exceeds fixed limit; proto=[^ ]* helo=<[^ ]*>$/)) {
       $SizeLimit{"MAIL from $Server"}++;
-   } elsif ( (undef,$Source) = ($ThisLine =~ /^warning: database ([^ ]*) is older than source file ([a-zA-Z0-9\/]+)$/)) {
+   } elsif ( (undef,$Source) = ($ThisLine =~ /^warning: database ([^ ]*) is older than source file ([\w\/.-]+)$/)) {
       $DatabaseGeneration{$Source}++;
    } elsif ( ($Reason) = ($ThisLine =~ /^warning: $re_MsgID: write queue file: (.*)$/)) {
       $QueueWriteError{$Reason}++;
@@ -427,6 +430,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ProcessExit{$Status}{$Process}++;
    } elsif ( ($Option,$Reason) = ($ThisLine =~ /^fatal: config variable ([^ ]*): (.*)$/)) {
       $ConfigError{$Option}{$Reason}++;
+   } elsif ( ($db,$Reason) = ($ThisLine =~ /fatal: open database (\S*): (.*)/) ) {
+      $Databases{$db}{$Reason}++;
    } elsif ( ($Warn) = ($ThisLine =~ /^warning: (.*)/)) {
       # keep this as the next to last condition
       $UnknownWarnings{$Warn}++;
@@ -493,13 +498,19 @@ if ($MsgsQueue > 0) {
    print "_______\n";
 }
 
-if (keys %ConfigError) {
-   print "\n\nWARNING!!!\n";
+if (keys %ConfigError or keys %Databases) {
+   print "\n\nFATAL!!!\n";
    print "Configuration Errors:\n";
    foreach $Option (sort {$a cmp $b} keys %ConfigError) {
       print "   Option: $Option\n";
       foreach $Reason (sort {$a cmp $b} keys %{$ConfigError{$Option}} ) {
          print "      $Reason: $ConfigError{$Option}{$Reason} Time(s)\n";
+      }
+   }
+   foreach $db (sort {$a cmp $b} keys %Databases) {
+      print "   Database: $db\n";
+      foreach $Reason (sort {$a cmp $b} keys %{$Databases{$db}} ) {
+         print "      $Reason: $Databases{$db}{$Reason} Time(s)\n";
       }
    }
 }
