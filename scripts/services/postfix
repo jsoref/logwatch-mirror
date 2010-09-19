@@ -1,5 +1,5 @@
 ##########################################################################
-# $Id: postfix,v 1.41 2008/08/11 15:33:53 mike Exp $
+# $Id: postfix,v 1.44 2010/09/19 16:40:00 stefan Exp $
 ##########################################################################
 
 #####################################################
@@ -19,6 +19,10 @@
 #########################################################
 #
 # $Log: postfix,v $
+# Revision 1.44  2010/09/19 16:40:00  stefan
+# fix: pix workaround in postfix >v2.3, (thanks kabe)
+# add: improper Pipeling (thanks kabe)
+#
 # Revision 1.43  2010/05/15 15:45:36  stefan
 # fix: fatal: open database <db>: No such file or directory
 #
@@ -354,7 +358,9 @@ while (defined($ThisLine = <STDIN>)) {
       $HostnameVerification{$Error}++;
    } elsif ( $ThisLine =~ /^$re_MsgID: removed\s*$/) {
       $RemovedFromQueue++;
-   } elsif ( ($Host) = ($ThisLine =~ /^$re_MsgID: enabling PIX <CRLF>.<CRLF> workaround for ([^ ]*\[[^ ]*\])$/)) {
+   #TD 2F38EE3341: enabling PIX <CRLF>.<CRLF> workaround for host.name[111.222.333.444]
+   #TD 2A34C1123BC4: enabling PIX workarounds: disable_esmtp delay_dotcrlf for host.name[111.222.333.444]:25
+   } elsif ( ($Host) = ($ThisLine =~ /^$re_MsgID: enabling PIX (?:<CRLF>\.<CRLF> )?workaround(?:s: [a-z_, -]+)? for ([^ ]*\[[^ ]*\])(?::\d+)?$/)) {
       $PixWorkaround{$Host}++;
    } elsif ( ($Message) = ($ThisLine =~ /warning: valid_hostname: (.*)$/)) {
       $ValidHostname{$Message}++;
@@ -368,6 +374,8 @@ while (defined($ThisLine = <STDIN>)) {
       $HeloError{$Error}{$Host}++;
    } elsif ( ($Host,$Command) = ($ThisLine =~ /warning: Illegal address syntax from ([^ ]*\[[^ ]*\]) in ([^ ]*) command:/)) {
       $IllegalAddressSyntax{$Command}{$Host}++;
+   } elsif ( ($Command,$Host) = ($ThisLine =~ /^improper command pipelining after ([^ ]*) from ([^ ]*\[[^ ]*\])/ )) {
+      $UnauthPipeline{$Command}{$Host}++;
    } elsif ( ($Error) = ($ThisLine =~ /warning: mailer loop: (.*)$/)) {
       $MailerLoop{$Error}++;
    } elsif ( ($Host) = ($ThisLine =~ /warning: ([^ ]*\[[^ ]*\]): SASL .* authentication failed/)) {
@@ -566,7 +574,7 @@ if (keys %DatabaseGeneration) {
 
 if (keys %PixWorkaround) {
    if ($Detail >= 5) {
-      print "\n\nEnabled PIX <CRLF>.<CRLF> workaround for:\n";
+      print "\n\nEnabled PIX workarounds for:\n";
       foreach $Host (sort {$a cmp $b} keys %PixWorkaround) {
          print "   $Host : $PixWorkaround{$Host} Time(s)\n";
       }
@@ -577,7 +585,7 @@ if (keys %PixWorkaround) {
       foreach $Host (keys %PixWorkaround) {
          $n+=$PixWorkaround{$Host};
       }
-      print "\n\nEnabled PIX <CRLF>.<CRLF> workaround for: $hn Host(s), $n Time(s)";
+      print "\n\nEnabled PIX workarounds for: $hn Host(s), $n Time(s)";
    }
 }
 
@@ -1077,6 +1085,28 @@ if (keys %TooManyErrors) {
          }
       }
       print "\n\nToo many errors in SMTP commands dialog: $cn Command(s), $n Time(s)";
+   }
+}
+
+if (%UnauthPipeline) {
+   if ($Detail >= 5) {
+      print "\n\nImproper SMTP command pipelining attempts:\n";
+      foreach $Command (sort {$a cmp $b} keys %UnauthPipeline) {
+         print "   In command $Command from:\n";
+         foreach $Host (sort {$a cmp $b} keys %{$UnauthPipeline{$Command}} ) {
+            print "      $Host : $UnauthPipeline{$Command}{$Host} Time(s)\n";
+         }
+      }
+   }
+   else {
+      $n=0; $hn=0;
+      foreach $Command (sort {$a cmp $b} keys %UnauthPipeline) {
+         foreach $Host (keys %{$UnauthPipeline{$Command}}) {
+            $hn++;
+            $n+=$UnauthPipeline{$Command}{$Host};
+         }
+      }
+      print "\n\nImproper SMTP command pipelining attempts: $hn Host(s), $n Time(s)\n";
    }
 }
 

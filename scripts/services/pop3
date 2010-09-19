@@ -79,8 +79,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /tpop3d startup  succeeded$/) or
       ($ThisLine =~ /^disconnected, user=/i) or
       ($ThisLine =~ /^timeout, user=/i) or
-      ($ThisLine =~ /^connection, ip=/i)
-      or ($ThisLine =~ /^Connection, ip=/o)
+      ($ThisLine =~ /^(connection|disconnected), ip=/io) 
    ) {
       # Don't care about these...
    } elsif (
@@ -125,6 +124,9 @@ while (defined($ThisLine = <STDIN>)) {
       (($User,$Host) = ( $ThisLine =~ /^authentication failed for user (.*?) - (.*)/ )) or
       (($Host,$User) = ( $ThisLine =~ /^connection_do: client `\[\d+\](.*)\/.*': username `(.*)': \d authentication failures/ ))
    ) {
+      $LoginFailed{"$Host ($User)"}++;
+   } elsif (($User,$Host) = ( $ThisLine =~ /^LOGIN FAILED, user=([^,]*), ip=\[([0-9.:a-f]*)\]/ )) {
+      $Host = LookupIPv46($Host);
       $LoginFailed{"$Host ($User)"}++;
    } elsif ( ($User,$Host) = ( $ThisLine =~ /^authentication failed: no such user: (.*?) - (.*)/ ) ) {
       $LoginFailed{"$Host (UNKNOWN: $User)"}++;
