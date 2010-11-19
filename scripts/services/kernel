@@ -70,7 +70,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    if (
       # filter out audit messages - these should be parsed by the audit
       # service
-      ($ThisLine =~ /^\s*audit\(/)
+      ($ThisLine =~ /^\s*(type=\d+\s+)?audit\(/)
       # following now in iptables service
       or ($ThisLine =~ /^Packet log: .*PROTO=/)
       or ($ThisLine =~ /IN=.*OUT=.*SRC=.*DST=.*PROTO=/)
