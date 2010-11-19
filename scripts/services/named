@@ -235,10 +235,10 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /max open files \([0-9]*\) is smaller than max sockets \([0-9]*\)/) or
       ($ThisLine =~ /clients-per-query (?:de|in)creased to .*/) or
       ($ThisLine =~ /^must-be-secure resolving '.*': .*/) or
-      ($ThisLine =~ /^no valid (DS|KEY|RRSIG) resolving '.*': .*/) or
+      ($ThisLine =~ /^(error \()?no valid (DS|KEY|RRSIG)\)? resolving '.*': .*/) or
       ($ThisLine =~ /^not insecure resolving '.*': .*/) or
       ($ThisLine =~ /^validating \@0x[[:xdigit:]]+: .* DS: must be secure failure/) or
-      ($ThisLine =~ /^broken trust chain resolving '.*': .*/) or
+      ($ThisLine =~ /^(error \()?broken trust chain\)? resolving '.*': .*/) or
       ($ThisLine =~ /journal file [^ ]* does not exist, creating it/) or
       ($ThisLine =~ /serial number \(\d+\) received from master/) or
       ($ThisLine =~ /zone is up to date/) or
@@ -340,9 +340,10 @@ while (defined($ThisLine = <STDIN>)) {
       $NonAuthoritative{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: retry limit for master \S+ exceeded/) ) {
       $RetryLimit{$Zone}++; 
-   } elsif ( ($ThisLine =~ /unexpected RCODE \((.*)\) resolving/) ){
+   } elsif ( ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving/) ){
       $UnexpRCODE{$1}++;
-   } elsif ( ($ThisLine =~ /FORMERR resolving '[^ ]+: [\.0-9a-fA-F:#]+/) ) {
+   } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
+             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) 
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
@@ -369,9 +370,9 @@ while (defined($ThisLine = <STDIN>)) {
       $UnknownCCCommands{$CCC}++;
    } elsif (($CCC) = ($ThisLine =~ /received control channel command '(.*)'/)) {
       $CCCommands{$CCC}++;
-   } elsif (($Name,$Address) = ($ThisLine =~ /network unreachable resolving '(.*)': (.*)/)) {
+   } elsif (($Name,$Address) = ($ThisLine =~ /(?:error \()?network unreachable\)? resolving '(.*)': (.*)/)) {
       $NUR{$Name}{$Address}++;
-   } elsif (($Name,$Address) = ($ThisLine =~ /host unreachable resolving '(.*)': (.*)/)) {
+   } elsif (($Name,$Address) = ($ThisLine =~ /(?:error \()?host unreachable\)? resolving '(.*)': (.*)/)) {
       $HUR{$Name}{$Address}++;
    } elsif (($Client) = ($ThisLine =~ /client ([\da-fA-F.:]+)(?:#\d*:)? notify question section contains no SOA/)) {
       $NoSOA{$Client}++;
