@@ -66,6 +66,8 @@ my %Kernel = ();
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    next if ($ThisLine eq '');
+   # Remove timestamp if present
+   $ThisLine =~ s/^\[\s*\d+\.\d+\]\s*//;
 
    if (
       # filter out audit messages - these should be parsed by the audit
