@@ -343,7 +343,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving/) ){
       $UnexpRCODE{$1}++;
    } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
-             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) {
+             ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) ) {
       chomp($ThisLine);
       $FormErr{$ThisLine}++;
    } elsif ( ($ThisLine =~ /found [0-9]* CPU(s)?, using [0-9]* worker thread(s)?/) ) {
