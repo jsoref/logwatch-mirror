@@ -3,6 +3,9 @@ use strict;
 # $Id: pam_unix,v 1.35 2008/03/24 23:31:26 kirk Exp $
 ##########################################################################
 # $Log: pam_unix,v $
+# Revision 1.36  2011/01/05 22:01:00  stefan
+# recognize: <service>[3254]: PAM <something>
+#
 # Revision 1.35  2008/03/24 23:31:26  kirk
 # added copyright/license notice to each script
 #
@@ -124,11 +127,11 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my ($service, $line, %data);
 
 while ($line = <STDIN>) {
-	chomp $line;
-	$service = $line;
+   chomp $line;
+   $service = $line;
    # for fedora and others
-	if ($line =~ s/^... .. ..:..:.. .+ .+\(pam_unix\)\[\d+\]: //) {
-		$service =~ s/^... .. ..:..:.. .+ (.+)\(pam_unix\)\[\d+\]: .*$/$1/;
+   if ($line =~ s/^... .. ..:..:.. .+ .+\(pam_unix\)\[\d+\]: //) {
+      $service =~ s/^... .. ..:..:.. .+ (.+)\(pam_unix\)\[\d+\]: .*$/$1/;
    # new fedora (fc5) version
    } elsif ( $line =~ s/^... .. ..:..:.. .+ pam_unix\(.+:.+\): //  ) {
       $service =~ s/^... .. ..:..:.. .+ pam_unix\((.+):.+\): .*$/$1/;
@@ -144,32 +147,35 @@ while ($line = <STDIN>) {
    # for Ubuntu 7.10
    } elsif ( $line =~ s/^... .. ..:..:.. .+ \S+\[\d+\]: pam_unix_\S+\(.+:.+\): //  ) {
       $service =~ s/^... .. ..:..:.. .+ \S+\[\d+\]: pam_unix_\S+\((.+):.+\): .*$/$1/;
-	} else {
-		next;
-	}
+   # for debian and others ?
+   } elsif ($line =~ s/^... .. ..:..:.. \S+ \S+\[\d+\]: PAM //) {
+      $service =~ s/^... .. ..:..:.. \S+ (\S+)\[\d+\]: PAM .*/$1/;
+   } else {
+      next;
+   }
    #lowercase the service
    $service = lc($service);
-      if (($service =~ /ssh(|d)/) or ($service eq 'login') or ($service eq 'ftp') or ($service eq 'vsftpd') or
-          ($service eq 'rsh') or ($service eq 'remote') or ($service eq 'rlogin') or ($service eq 'rexec')) {
-		if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
-			($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
+   if (($service =~ /ssh(|d)/) or ($service eq 'login') or ($service eq 'ftp') or ($service eq 'vsftpd') or
+       ($service eq 'rsh') or ($service eq 'remote') or ($service eq 'rlogin') or ($service eq 'rexec')) {
+      if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
+	 ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session opened for user ([^ ]*) by ([^ ]*)\(uid=\d+\)/$1 by $2/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
-		} elsif ($line =~ s/^session opened for user (.+) by LOGIN\(uid=\d+\)/$1/) {
-			$data{$service}{'Sessions Opened'}{$line}++;
-		} elsif ($line =~ /session closed for user/) {
-			# ignore this line
-		} elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s+user=(\S*)$/$2 ($1)/) {
-			$data{$service}{'Authentication Failures'}{$line}++;
+      } elsif ($line =~ s/^session opened for user (.+) by LOGIN\(uid=\d+\)/$1/) {
+	 $data{$service}{'Sessions Opened'}{$line}++;
+      } elsif ($line =~ /session closed for user/) {
+	# ignore this line
+      } elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s+user=(\S*)$/$2 ($1)/) {
+ 	 $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^authentication failure; .*rhost=(\S*).$/unknown ($1)/) {
          $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^authentication failure; logname=(\S*) uid=(\d+) .*user=(\S*)$/$1($2) -> $3/) {
          $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^authentication failure; logname=(\S*) .*rhost=(\S*)\s+user=(\S*)$/($3 or $1)($2): /) {
          $data{$service}{'Authentication Failures'}{$line}++;
-      } elsif ($line =~ s/^(\d+) more authentication failure; .*rhost=(\S*)\s+user=(\S*)$/$3 ($2)/) {
+      } elsif ($line =~ s/^(\d+) more authentication failures?; .*rhost=(\S*)\s+user=(\S*)$/$3 ($2)/) {
          $data{$service}{'Authentication Failures'}{$line} += $1;
-      } elsif ($line =~ s/^(\d+) more authentication failure; .*rhost=(\S*)$/unknown ($2)/) {
+      } elsif ($line =~ s/^(\d+) more authentication failures?; .*rhost=(\S*)$/unknown ($2)/) {
          $data{$service}{'Authentication Failures'}{$line} += $1;
       } elsif ($line =~ /check pass; user unknown/) {
          $data{$service}{'Invalid Users'}{'Unknown Account'}++;
@@ -188,6 +194,8 @@ while ($line = <STDIN>) {
          $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ /session closed for user/) {
          # ignore this line
+      } elsif ($line =~ /conversation failed/) {
+         # ignore this line. An other line will describe the reason.
       } elsif (my ($nam, $byid) = ($line =~ /session opened for user (.+) by (.+)$/)) {
          # resolve uid to name if possible
          my $onam;
@@ -199,6 +207,8 @@ while ($line = <STDIN>) {
            $onam = $byid;
          }
          $data{$service}{'Sessions Opened'}{"$onam -> $nam"}++;
+      } elsif ($line =~ s/auth could not identify password for \[(.*)\]/$1/) {
+         $data{$service}{'Not Identify Password For'}{$line}++;
       } elsif ($line =~ /^account root has password changed in future/) {
          #I'm not sure whether this info could not be reported
       } else {
@@ -260,6 +270,10 @@ while ($line = <STDIN>) {
 		   # ignore this line
 	   } elsif ($line =~ /^account root has password changed in future/) {
 	          #I'm not sure whether this info could not be reported
+           } elsif ($line =~ /^adding faulty module: (.+)/) {
+                  $data{$service}{'Faulty modules'}{$1}++; 
+           } elsif ($line =~ /^unable to dlopen\(.+\): (.+)$/) {
+                  $data{$service}{'Unable to dlopen'}{$1}++; 
 	   } else {
 		   $data{$service}{'Unknown Entries'}{$line}++;
 	   }

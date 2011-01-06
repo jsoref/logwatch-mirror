@@ -1,5 +1,5 @@
 ###########################################################################
-# $Id: syslog-ng,v 1.5.0.1 2010/09/16 21:07:11 general Exp $
+# $Id: syslog-ng,v 1.5.1.1 2011/01/06 21:32:01 general Exp $
 ###########################################################################
 
 ###########################################################################
@@ -35,7 +35,7 @@
 use strict;
 
 my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-my $Version	= "1.2-20100907";
+my $Version	= "1.2-20110106";
 
 # initialize logwatch variables 
 my $ThisLine	= "";
@@ -311,49 +311,49 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
     if ($Detail >= 6) {
 	if (keys %Stats_center) {
 	   print "\nCenter:";
-	   foreach my $center (keys %Stats_center) {
+	   foreach my $center (sort {$a cmp $b} keys %Stats_center) {
 		printf "\n\t%-30s %12i", $center, $Stats_center{$center};
 	   }
 	}
 	if (keys %Stats_dest) {
 	   print "\nDestination:";
-           foreach my $dest (keys %Stats_dest) {
+           foreach my $dest (sort {$a cmp $b} keys %Stats_dest) {
                 printf "\n\t%-30s %12i", $dest, $Stats_dest{$dest};
            }
         }
         if (keys %Stats_source) {
            print "\nSource:";
-           foreach my $source (keys %Stats_source) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_source) {
                 printf "\n\t%-30s %12i", $source, $Stats_source{$source};
            }
         }
         if (keys %Stats_supp) {
            print "\nSuppressed:";
-           foreach my $source (keys %Stats_supp) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_supp) {
                 printf "\n\t%-30s %12i", $source, $Stats_supp{$source};
            }
         }
         if (keys %Stats_supp_net) {
            print "\nSuppressed(net):";
-           foreach my $source (keys %Stats_supp_net) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_supp_net) {
                 printf "\n\t%-30s %12i", $source, $Stats_supp_net{$source};
            }
         }
         if (keys %Stats_dropped) {
            print "\nDropped:";
-           foreach my $source (keys %Stats_dropped) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
                 printf "\n\t%-30s %12i", $source, $Stats_dropped{$source};
            }
         }
         if (keys %Stats_dropped_net) {
            print "\nDropped(net):";
-           foreach my $source (keys %Stats_dropped_net) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
                 printf "\n\t%-30s %12i", $source, $Stats_dropped_net{$source};
            }
         }
         if (keys %Stats_global) {
            print "\nGlobal:";
-           foreach my $source (keys %Stats_global) {
+           foreach my $source (sort {$a cmp $b} keys %Stats_global) {
                 printf "\n\t%-30s %12i", $source, $Stats_global{$source};
            }
         }

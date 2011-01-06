@@ -53,6 +53,7 @@ my $ShutdownFailed = 0;
 my $StartupFailed = 0;
 my %NotInDatabase = ();
 my %CantMonitor = ();
+my $UnableToMonitor = 0;
 my %SelfTest = ();
 my %Failed = ();
 my @OtherList = ();
@@ -171,11 +172,18 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnavailableDev{$Device}++;
    } elsif ( my ($Device) = ($ThisLine =~ /Device (.*): SATA disks accessed via libata are supported by Linux kernel versions 2.6.15-rc1 and above/) ) {
       $SataDisk{"$Device"}++;
+   } elsif ($ThisLine =~ /Unable to monitor any SMART enabled devices\. Try debug \(-d\) option\. Exiting/) {
+      $UnableToMonitor++;
    } else {
       # Report any unmatched entries...
       push @OtherList,"$ThisLine\n";
    }
 
+}
+
+if ($UnableToMonitor > 0) {
+   print "\nUnable to monitor any SMART enabled devices.";
+   print "\n    Try debug (-d) option:                    $UnableToMonitor Time(s)\n";
 }
 
 if (keys %NotInDatabase) {

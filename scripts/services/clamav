@@ -29,7 +29,6 @@ my $IgnoreUnmatched = $ENV{'clamav_ignoreunmatched'} || 0;
 
 while (defined($ThisLine = <STDIN>)) {
    if (( $ThisLine =~ /^Setting connection queue length to \d+/ ) or
-       ( $ThisLine =~ /^clamd daemon/ ) or
        ( $ThisLine =~ /^Log file size limited to \d+ bytes\./ ) or
        ( $ThisLine =~ /^Exiting \(clean\)/ ) or
        ( $ThisLine =~ /^Self checking every \d+ seconds\./ ) or
@@ -64,7 +63,7 @@ while (defined($ThisLine = <STDIN>)) {
       $DatabaseViruses = $Viruses;
    } elsif (($ThisLine =~ /Stopped at/)) {
       $DaemonStop++;
-   } elsif (($ThisLine =~ /Daemon started/)) {
+   } elsif (($ThisLine =~ /(?:Daemon started|clamd daemon [\d.]{1,10})/)) {
       $DaemonStart++;
    } elsif (($ThisLine =~ /LOCAL: Unix socket file ([^ \n]*)/)) {
       $SocketFile{$1}++;
@@ -79,6 +78,8 @@ while (defined($ThisLine = <STDIN>)) {
       $RecursionLimit{$1}++;
    } elsif (($ThisLine =~ /Limits: Files limit set to (\d+)/ )) {
       $FilesLimit{$1}++;
+   } elsif (($ThisLine =~ /lstat\(\) failed on: (\S+)/ )) {
+      $lstatFail{$1}++;
    } else {
       push @OtherList,$ThisLine;
    }
@@ -95,14 +96,14 @@ if (($DaemonStart) and ($Detail >= 5)) {
 if (keys %VirusList) {
    print "\nViruses detected:\n";
    foreach $Virus (sort {$a cmp $b} keys %VirusList) {
-      print '   ' . $Virus . ": ". $VirusList{$Virus} . " Time(s)\n";
+      printf "   %-50s %5i Time(s)\n", $Virus .":", $VirusList{$Virus};
    }
 }
 
 if ((keys %SelfCheck) and ($Detail >=5)) {
    print "\nDaemon check list:\n";
    foreach $Check (sort {$a cmp $b} keys %SelfCheck) {
-      print '   ' . $Check . ": ". $SelfCheck{$Check} . " Time(s)\n";
+      printf "   %-50s %5i Time(s)\n", $Check .":", $SelfCheck{$Check};
    }
 }
 
@@ -156,6 +157,13 @@ if ($Detail > 8) {
    }
 }
    
+if (keys %lstatFail) {
+   print "\nlstat() failed on:\n";
+   foreach $file (keys %lstatFail) {
+      printf "   %-50s %5i Time(s)\n", $file .":", $lstatFail{$file};
+   }
+}
+
 if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
    print "\n**Unmatched Entries**\n";
    print @OtherList;

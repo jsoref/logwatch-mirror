@@ -59,6 +59,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Modules{$ThisLine}++;
    } elsif ( $ThisLine =~ s/^FATAL: Module (.*) not found./$1/) {
       $Modules{$ThisLine}++;
+   } elsif ( $ThisLine =~ s/^FATAL: Could not load (.*): No such file or directory/$1/) {
+      $Modules{$ThisLine}++;
    } elsif ( (undef,$Module,$Reason) = ( $ThisLine =~ /(WARNING|FATAL): Error inserting ([^ ]* \([^ ]*\)): (.*)$/ ) ) {
       $ErrorInsert{$Module}{$Reason}++;
    } elsif ( (undef,$Module) = ( $ThisLine =~ /(WARNING|FATAL): Error running install command for (.*)$/ ) ) {

@@ -1,7 +1,11 @@
 ##########################################################################
-# $Id: named,v 1.61 2010/09/18 17:35:00 stefan Exp $
+# $Id: named,v 1.62 2011/01/06 22:53:00 stefan Exp $
 ##########################################################################
 # $Log: named,v $
+# Revision 1.62 2011/01/06 22:53:00  stefan
+# add: deferred zone transfers 
+# fix: TTL differs in rdataset
+#
 # Revision 1.61 2010/09/18 17:35:00  stefan
 # add: bad zone transfer request
 #
@@ -231,7 +235,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /adjusted limit on open files from [0-9]* to [0-9]*/) or
       ($ThisLine =~ /using up to [0-9]* sockets/) or
       ($ThisLine =~ /built with/) or
-      ($ThisLine =~ /'.*': TTL differs in rdataset, adjusting [0-9]* -> [0-9]*/) or
+      ($ThisLine =~ /TTL differs in rdataset, adjusting [0-9]* -> [0-9]*/) or
       ($ThisLine =~ /max open files \([0-9]*\) is smaller than max sockets \([0-9]*\)/) or
       ($ThisLine =~ /clients-per-query (?:de|in)creased to .*/) or
       ($ThisLine =~ /^must-be-secure resolving '.*': .*/) or
@@ -267,6 +271,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ShutdownNamedFail++;
    } elsif ( ($Host, $Zone) = ( $ThisLine =~ /client ([^\#]+)#[^\:]+: zone transfer '(.+)' denied/ ) ) {
       $DeniedZoneTransfers{$Host}{$Zone}++;
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+) zone transfer deferred due to quota/ ) ) {
+      $DeferredZoneTransfers{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /cache zone \"(.*)\" loaded/ ) ) {
       $ZoneLoaded{"cache $Zone"}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /cache zone \"(.*)\" .* loaded/ ) ) {
@@ -453,6 +459,13 @@ if ( ( $Detail >= 5 ) and (keys %DeniedZoneTransfers) ) {
       foreach my $Zone (keys %{$DeniedZoneTransfers{$Host}}) {
          print "      $Zone: $DeniedZoneTransfers{$Host}{$Zone} Time(s)\n";
       }
+   }
+}
+
+if ( ( $Detail >= 5 ) and (keys %DeferredZoneTransfers) ) {
+   print "\nDeferred Zone Transfers:\n";
+   foreach my $Zone (keys %DeferredZoneTransfers) {
+      print "   $Zone: $DeferredZoneTransfers{$Zone} Time(s)\n";
    }
 }
 
