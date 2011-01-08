@@ -100,6 +100,8 @@ print STDERR "\n\nDEBUG: Inside audit filter\n\n" if ( $Debug >= 5 );
 
 while ($ThisLine = <STDIN>) {
     chomp($ThisLine);
+    # Remove timestamp if present
+    $ThisLine =~ s/^\[\s*\d+\.\d+\]\s*//;
     if (( $ThisLine =~ /initializing netlink socket \(disabled\)/) or
 	( $ThisLine =~ /audit_pid=[0-9]* old=[0-9]*(?: by auid=[0-9]*)?/) or
 	( $ThisLine =~ /(arch=[0-9]+ )?syscall=[0-9]+ (success=(no|yes) )?exit=[0-9-]+( a[0-3]=[0-9a-f]+)* items=[0-9]+ (ppid=[0-9]+ )?pid=[0-9]+ (loginuid=[0-9-]+ )?(auid=[0-9]+ )?uid=[0-9]+ gid=[0-9]+ euid=[0-9]+ suid=[0-9]+ fsuid=[0-9]+ egid=[0-9]+ sgid=[0-9]+ fsgid=[0-9]+/) or
