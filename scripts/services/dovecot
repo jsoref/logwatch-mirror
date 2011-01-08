@@ -104,13 +104,16 @@ while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
      # service name
      $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
-     if (
-       ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) or
-       ($ThisLine =~ /deliver.*/) or
-       ($ThisLine =~ /auth-worker/) or
-       ($ThisLine =~ /IMAP.* failed with mbox file/)
+          if (
+             ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) or
+             ($ThisLine =~ /deliver.*/) or
+             ($ThisLine =~ /auth-worker/) or
+             ($ThisLine =~ /auth:.*: Connected to/) or
+             ($ThisLine =~ /Connection closed/) or
+             ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
+             ($ThisLine =~ /IMAP.* failed with mbox file/)
 ) {
-        # We don't care about these
+     # We don't care about these                                                                                                    
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
      } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up$/) {
@@ -130,7 +133,22 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionIMAP{$Host}++;
          $Connection{$Host}++;
       }
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /managesieve-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
+      if ($Host !~ /$IgnoreHost/) {
+         $SieveLogin{$User}{$Host}++;
+         $LoginSieve{$User}++;
+         $ConnectionSieve{$Host}++;
+         $Connection{$Host}++;
+      }
     } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: deliver\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+      $Deliver{$User}{$Mailbox}++;
+
+#For Dovecot 2.0
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: lda\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+      $Deliver{$User}{$Mailbox}++;
+
+# For Sieve-based delivery
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: lda\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # This is for Dovecot 1.0 series
@@ -152,6 +170,8 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ /Disconnected \[/) {
       $Disconnected{"no reason"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
+      $Disconnected{$Reason}++;
+   } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top)=.*/) ) {
       $Disconnected{$Reason}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
       $Disconnected{$Reason}++;
@@ -178,13 +198,13 @@ while (defined($ThisLine = <STDIN>)) {
           (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/)) or
           (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/)) ) {
       $Disconnected{$Reason}++;
-   } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
-      $Disconnected{$2}++;
-   } elsif (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed bytes=/))  {
+   } elsif (($Reason) = ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/))  {
         $ConnectionCl{"no reason"}++;
    } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/)) or
              (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/)) ) {
-      $ConnectionCl{$Reason}++;
+       $ConnectionCl{$Reason}++;
+   } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
+      $Disconnected{$2}++;
    } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/) {
       $ConnectionCl{"no reason"}++;
    } elsif (($Error) = ($ThisLine =~ /child \d* \(login\) returned error (.*)/)) {
@@ -305,6 +325,29 @@ if ( ( $Detail >= 10 ) and (keys %Login)) {
       }
    }
    print "\n\nTotal: $LoginCount successful logins";
+}
+
+if ( ( $Detail >= 10 ) and (keys %SieveLogin)) {
+   print "\n\nDovecot ManageSieve Successful Logins:";
+   $LoginCount = 0;
+   foreach my $User (keys %SieveLogin) {
+      print "\n\n  User $User:";
+      $UserCount = 0;
+      $NumHosts = 0;
+      foreach $Host (keys %{$SieveLogin{$User}}) {
+         $NumHosts++;
+         $HostCount = $SieveLogin{$User}{$Host};
+# Cleanly display IPv4 addresses
+         $Host=~ s/::ffff://;
+         print "\n    From $Host: $HostCount Time(s)";
+         $UserCount += $HostCount;
+      }
+      $LoginCount += $UserCount;
+      if ($NumHosts > 1) {
+      print "\n  Total: $UserCount Time(s)";
+      }
+   }
+   print "\n\nTotal: $LoginCount successful ManageSieve logins";
 }
 
 if (keys %Disconnected) {
