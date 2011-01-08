@@ -140,7 +140,7 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionSieve{$Host}++;
          $Connection{$Host}++;
       }
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: deliver\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: deliver\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 #For Dovecot 2.0
