@@ -146,12 +146,14 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ m/kernel time sync (dis|en)abled /) or # startup
         ($ThisLine =~ m/frequency initialized/) or # startup
         ($ThisLine =~ m/using kernel phase-lock loop/) or # startup
+        ($ThisLine =~ m/0\.0\.0\.0 [[:xdigit:]]{4} [[:xdigit:]]{2} /) or # startup
         ($ThisLine =~ m/select([^\)]) error: Interrupted system call/) or
         ($ThisLine =~ m/signal_no_reset: signal \d+ had flags \d+/) or
         ($ThisLine =~ /Deleting interface \#[0-9]+ [^,]*, [^,]*, interface stats: received=.*, sent=.*, dropped=.*, active_time=.* secs/) or
         ($ThisLine =~ /Invalid argument/) or
         ($ThisLine =~ /Listening on interface .* Disabled/) or
-	($ThisLine =~ /Listening on interface .* Enabled/) or
+        ($ThisLine =~ /Listen and drop on /) or
+        ($ThisLine =~ /Listening on routing socket on/) or
 	($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/)
     ) {
        # Ignore these
@@ -173,6 +175,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        push @TimeReset, $TimeStep;
     # MEv end no leadin to line
     } elsif ( my ($ListenOn) = ($ThisLine =~ /Listening on interface (.*)(?: Enabled)?/ )) {
+       $Interfaces{$ListenOn}++;
+    } elsif ( my ($ListenOn) = ($ThisLine =~ /Listen normally on \d+ (.*)/ )) {
        $Interfaces{$ListenOn}++;
     } elsif ( my ($SyncTo,$Stratum) = ($ThisLine =~ /synchronized to ([^ ]+), stratum[ =]([^ ]+)/ )) {
        my $name = $SyncTo;
@@ -235,7 +239,7 @@ if (keys %Interfaces) {
     print "\nListening on interfaces:\n" if ($Detail > 5);
     foreach my $i (keys %Interfaces) {
        print "  $i - $Interfaces{$i} times\n" if ($Detail > 5);
-       unless ($i =~ m/^(wildcard|lo)/) {
+       unless ($i =~ m/^(wildcard|v[46]wildcard|lo)/) {
           $lt++;
        }
        $t++;

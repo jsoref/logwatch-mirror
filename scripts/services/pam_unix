@@ -155,8 +155,7 @@ while ($line = <STDIN>) {
    }
    #lowercase the service
    $service = lc($service);
-   if (($service =~ /ssh(|d)/) or ($service eq 'login') or ($service eq 'ftp') or ($service eq 'vsftpd') or
-       ($service eq 'rsh') or ($service eq 'remote') or ($service eq 'rlogin') or ($service eq 'rexec')) {
+   if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd rsh remote rlogin rexec/) {
       if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
 	 ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session opened for user ([^ ]*) by ([^ ]*)\(uid=\d+\)/$1 by $2/) {
@@ -188,7 +187,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'su') or ($service eq 'sudo') or ($service eq 'su-l')) {
+   } elsif (grep $_ eq $service, qw/su sudo su-l/) {
       if ( my ($logname, $uid, $ruser, $user) = ($line =~ /^authentication failure; logname=(\S*)\s+uid=(\d+) (?:.*ruser=(\S*)\s+)?.*user=(\S*)$/)) {
          $line = ($logname or $ruser)."($uid) -> $user";
          $data{$service}{'Authentication Failures'}{$line}++;
@@ -214,11 +213,11 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'passwd') || ($service eq 'propassd')) {
+   } elsif (grep $_ eq $service, qw/passwd propassd/) {
       if ($line =~ s/^password changed for (.+)/$1/) {
          ($Detail >= 5) && $data{$service}{'Password changed'}{$line}++;
       }
-   } elsif (($service eq 'gdm') || ($service eq 'kdm') || ($service eq 'kcheckpass') || ($service eq 'xdm') || ($service eq 'imap') || ($service eq 'dovecot') || ($service eq 'cups')) {
+   } elsif (grep $_ eq $service, qw/gdm gdm-password kdm kcheckpass xdm imap dovecot cups/) {
       if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^authentication failure;.* user=(.+)$/$1/) {
@@ -231,7 +230,7 @@ while ($line = <STDIN>) {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
 
-   } elsif ($service eq 'spop3d' || $service eq 'pop') {
+   } elsif (grep $_ eq $service, qw/spop3d pop/) {
 	   if ($line =~ s/^session opened for user (.+)/$1/) {
 		   $data{$service}{'Sessions Opened'}{$line}++;
 	   } elsif ($line =~ /session closed for user/) {
@@ -249,7 +248,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'pure-ftpd') || ($service eq 'vsftpd')){
+   } elsif (grep $_ eq $service, qw/pure-ftpd vsftpd/) {
       if ($line =~ s/^session opened for user (.+)/$1/) {
          $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^check pass; (.+)/$1/) {
@@ -259,7 +258,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'xscreensaver') || ($service eq 'gnome-screensaver') || ($service eq 'kscreensaver')) {
+   } elsif ((grep $_ eq $service, qw/xscreensaver gnome-screensaver kscreensaver/) {
       if ($line =~ s/^authentication failure; .*uid=(\d+) euid=(\d+) tty=(.+) ruser= rhost=  user=(.+)$/$4($1,$2) on display $3/) {
          $data{$service}{'Authentication Failures'}{$line}++;
       }
@@ -285,7 +284,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'samba') or ($service eq 'smbd')) {
+   } elsif (grep $_ eq $service, qw/samba smbd/) {
       if ($line =~ s/^session opened for user (\S+) by (.+)/$1/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session closed for user (.+)/$1/) {
@@ -293,7 +292,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif (($service eq 'runuser') or ($service eq 'runuser-l')){
+   } elsif (grep $_ eq $service, qw/runuser runuser-l/) {
      if ($line =~/^session (opened)?(\/)?(closed)? for user [a-zA-Z\d]+/) {
      } else {
          $data{$service}{'Unknown Entries'}{$line}++;

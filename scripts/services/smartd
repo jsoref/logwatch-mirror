@@ -102,6 +102,10 @@ while (defined(my $ThisLine = <STDIN>)) {
        # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), is in STANDBY mode, skipping checks/ )) {
        # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), self-test in progress, [0-9]+% remaining/ )) {
+       # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), previous self-test completed without error/ )) {
+       # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), type changed from \'\w+\' to \'\w+\'/ )) {
        # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), state (?:read from|written to)/ )) {

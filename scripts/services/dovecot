@@ -104,16 +104,15 @@ while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
      # service name
      $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
-          if (
-             ($ThisLine =~ /ssl-build-param: SSL parameters regeneration completed/) or
-             ($ThisLine =~ /deliver.*/) or
-             ($ThisLine =~ /auth-worker/) or
-             ($ThisLine =~ /auth:.*: Connected to/) or
-             ($ThisLine =~ /Connection closed/) or
-             ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
-             ($ThisLine =~ /IMAP.* failed with mbox file/)
-) {
-     # We don't care about these                                                                                                    
+     if ( ($ThisLine =~ /(?:ssl-build-param|ssl-params): SSL parameters regeneration completed/) or
+          ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
+          ($ThisLine =~ /deliver/) or
+          ($ThisLine =~ /auth-worker/) or
+          ($ThisLine =~ /auth:.*: Connected to/) or
+          ($ThisLine =~ /Connection closed/) or
+          ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
+          ($ThisLine =~ /IMAP.* failed with mbox file/) ) {
+         # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
      } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up$/) {
@@ -140,7 +139,7 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionSieve{$Host}++;
          $Connection{$Host}++;
       }
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: deliver\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: (?:deliver|lmtp)\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 #For Dovecot 2.0
@@ -195,22 +194,23 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{"no reason"}++;
    } elsif ( (($Reason) = ($ThisLine =~ /POP3.+: Disconnected: (.+) top/)) or
           (($Reason) = ($ThisLine =~ /pop3-login: Disconnected \((.+)\): /)) or
-          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/)) or
-          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/)) ) {
+          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/i)) or
+          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/i)) ) {
       $Disconnected{$Reason}++;
-   } elsif (($Reason) = ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/))  {
+   } elsif (($Reason) = ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/i))  {
         $ConnectionCl{"no reason"}++;
-   } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/)) or
-             (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/)) ) {
+   } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/i)) or
+             (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/i)) ) {
        $ConnectionCl{$Reason}++;
    } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
       $Disconnected{$2}++;
-   } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/) {
+   } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/i) {
       $ConnectionCl{"no reason"}++;
-   } elsif (($Error) = ($ThisLine =~ /child \d* \(login\) returned error (.*)/)) {
+   } elsif (($Error) = ($ThisLine =~ /child \d* (?:\(login\) )?returned error (.*)/)) {
    # dovecot: child 23747 (login) returned error 89
+   # dovecot: log: Error: service(auth): child 19654 returned error 89 (Fatal failure)
       $ChildErr{$Error}++;
-   } elsif (($Name) = ($ThisLine =~ /dovecot: IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/)) {
+   } elsif (($Name) = ($ThisLine =~ /dovecot: IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/i)) {
    # dovecot: IMAP(podracka): mkdir(/home/LF/KLINIKY/podracka/mail/.imap/saved-messages) failed: Disk quota exceeded
       $DiskQuotaExceed{$Name}++;
    } else {
