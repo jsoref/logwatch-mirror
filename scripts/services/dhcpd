@@ -188,9 +188,9 @@ while (my $line = <STDIN>) {
       if ($Detail >= 3) {
          $data{'Warnings'}{$line}++;
       }
-   } elsif ($line =~ s/^uid lease ([\da-fA-F\.:]+) for client ([\da-fA-F\.:]+) is duplicate on ([\da-fA-F\.:\/]+)/Host $2: duplicate $1 (range $3)\n      - probably both static and dynamic leases/) {
+   } elsif ($line =~ s/^uid lease ([\da-fA-F\.:]+) for client ([^ ]*) is duplicate on ([^ ]*)/uid lease $1 for client $2 is duplicate/) {
       if ($Detail >= 3) {
-         $data{'Warnings'}{$line}++;
+         $data{'Duplicate lease'}{$line}++;
       }
    } elsif ($line =~ /^DHCPDISCOVER from .* via \S+: (.*): no free leases/) {
       $data{'No Free Leases'}{$1}++;

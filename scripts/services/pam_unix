@@ -258,7 +258,7 @@ while ($line = <STDIN>) {
       } else {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
-   } elsif ((grep $_ eq $service, qw/xscreensaver gnome-screensaver kscreensaver/) {
+   } elsif (grep $_ eq $service, qw/xscreensaver gnome-screensaver kscreensaver/) {
       if ($line =~ s/^authentication failure; .*uid=(\d+) euid=(\d+) tty=(.+) ruser= rhost=  user=(.+)$/$4($1,$2) on display $3/) {
          $data{$service}{'Authentication Failures'}{$line}++;
       }
