@@ -729,6 +729,10 @@ foreach $LogFile (@LogFileList) {
    my $DestFile =  $TempDir . $LogFile . "-archive";
    my $Archive;
    foreach $Archive (@{$LogFileData{$LogFile}{'archives'}}) {
+      if ($Archive =~ /'/) {
+         print "File $Archive has invalid embedded quotes.  File ignored.\n";
+	 next;
+      }
       my $CheckTime;
       # We need to find out what's the earliest log we need
       my @time_t = TimeBuild();
@@ -756,15 +760,15 @@ foreach $LogFile (@LogFileList) {
       my @FileStat = stat($Archive);
       if ($CheckTime <= ($FileStat[9])) {
          if (($Archive =~ m/gz$/) && (-f "$Archive") && (-s "$Archive")) {
-            my $arguments = "$Archive >> $DestFile";
+            my $arguments = "'${Archive}' >> $DestFile";
             system("$Config{'pathtozcat'} $arguments") == 0
                or die "system '$Config{'pathtozcat'} $arguments' failed: $?"
          } elsif (($Archive =~ m/bz2$/) && (-f "$Archive") && (-s "$Archive")) {
-            my $arguments = "$Archive 2>/dev/null >> $DestFile";
+            my $arguments = "'${Archive}' 2>/dev/null >> $DestFile";
             system("$Config{'pathtobzcat'} $arguments") == 0
                or die "system '$Config{'pathtobzcat'} $arguments' failed: $?"
          } elsif ((-f "$Archive") && (-s "$Archive")) {
-            my $arguments = "$Archive  >> $DestFile";
+            my $arguments = "'${Archive}'  >> $DestFile";
             system("$Config{'pathtocat'} $arguments") == 0
                or die "system '$Config{'pathtocat'} $arguments' failed: $?"
          } #End if/elsif existence
@@ -776,6 +780,10 @@ foreach $LogFile (@LogFileList) {
    foreach my $ThisFile (@FileList) {
       #Existence check for files -mgt
       next unless (-f $ThisFile);
+      if ($ThisFile =~ /'/) {
+         print "File $ThisFile has invalid embedded quotes.  File ignored.\n";
+	 next;
+      }
       if (! -r $ThisFile) {
          print "File $ThisFile is not readable.  Check permissions.";
          if ($> != 0) {
@@ -785,7 +793,7 @@ foreach $LogFile (@LogFileList) {
          next;
       }
       #FIXME - We have a bug report for filenames with spaces, can be caught here needs test -mgt
-      $FileText .= ($ThisFile . " ");
+      $FileText .= ("'" . $ThisFile . "' ");
    } #End foreach ThisFile
 
    # remove the ENV entries set by previous service
