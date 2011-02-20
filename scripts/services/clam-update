@@ -120,6 +120,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        # SIGALRM, SIGUSR1, and SIGHIP signals
        ($ThisLine =~ /^Received signal \d*,? wake up$/) or
        ($ThisLine =~ /^Received signal \d*,? re-opening log file$/) or
+       # Newer versions use different syntax.  Above two lines to be deleted.
+       ($ThisLine =~ /^Received signal: wake up$/) or
+       ($ThisLine =~ /^Received signal: re-opening log file$/) or
        # temporary failure
        ($ThisLine =~ /^Trying again/) ) {
       # Do nothing for the above statements
