@@ -90,7 +90,7 @@
 #########################################################
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
-my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Detail = $ENV{'dovecot_detail'} || $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreHost = $ENV{'dovecot_ignore_host'} || "";
 
 my $Restarts = 0;
@@ -99,6 +99,9 @@ my $End = 0;
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG \n\n";
 }
+
+# Handle "dovecot: <svc>" and "dovecot: [ID yyyyy mail.info] <svc"
+my $dovecottag = qr/dovecot:(?:\s*\[[^]]+\])?/;
 
 while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
@@ -139,26 +142,39 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionSieve{$Host}++;
          $Connection{$Host}++;
       }
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: (?:deliver|lmtp)\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:deliver|lmtp)\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 #For Dovecot 2.0
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: lda\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lda\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # For Sieve-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^dovecot: lda\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lda\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
+# LMTP-based delivery
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): [^:]+: msgid=.*: saved mail to (\S+)/ ) ) {
+    # dovecot: [ID 583609 mail.info] lmtp(12782, cloyce@headgear.org): jBt1EfjCMk3uMQAAm9eMBA: msgid=<4D32DB1F.3080707@c-dot.co.uk>: saved mail to INBOX
+      $Deliver{$User}{$Mailbox}++;
+    } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Connect from/ ) {
+    # dovecot: [ID 583609 mail.info] lmtp(12782): Connect from local: 1 Time(s)
+    # IGNORE
+
+    } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Disconnect from/ ) {
+    # dovecot: [ID 583609 mail.info] lmtp(12782): Disconnect from local: Client quit: 1 Time(s)
+    # IGNORE
+
+
 # This is for Dovecot 1.0 series
-    } elsif ( ($User, $Host) = ( $ThisLine =~ /^dovecot: pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
+    } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Login{$User}{$Host}++;
          $LoginPOP3{$User}++;
          $ConnectionPOP3{$Host}++;
          $Connection{$Host}++;
       }
-   } elsif ( ($User, $Host) = ( $ThisLine =~ /^dovecot: imap-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/) ) {
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag imap-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Login{$User}{$Host}++;
          $LoginIMAP{$User}++;
@@ -180,6 +196,9 @@ while (defined($ThisLine = <STDIN>)) {
       $Aborted{$Host}++;
    } elsif (($Reason) = ($ThisLine =~ /Aborted login \((.*)\):/)) {
       $Aborted{$Reason}++;
+   } elsif (($user, $rip, $lip) = ($ThisLine =~ /Maximum number of connections.* exceeded.* user=<([^>]+)>.*rip=([^,]+), lip=([^,]+)/)) {
+     # dovecot: [ID 583609 mail.info] imap-login: Maximum number of connections from user+IP exceeded (mail_max_userip_connections=10): user=<cloyce@headgear.org>, method=CRAM-MD5, rip=102.225.17.52, lip=14.105.322.67, TLS
+      $LimitExceeded{"max_userip_connections: $user from $rip to $lip"}++;
 
 # This is for Dovecot 1.0 series
 # Overly general matches in this section -mgt
@@ -210,7 +229,7 @@ while (defined($ThisLine = <STDIN>)) {
    # dovecot: child 23747 (login) returned error 89
    # dovecot: log: Error: service(auth): child 19654 returned error 89 (Fatal failure)
       $ChildErr{$Error}++;
-   } elsif (($Name) = ($ThisLine =~ /dovecot: IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/i)) {
+   } elsif (($Name) = ($ThisLine =~ /$dovecottag IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/i)) {
    # dovecot: IMAP(podracka): mkdir(/home/LF/KLINIKY/podracka/mail/.imap/saved-messages) failed: Disk quota exceeded
       $DiskQuotaExceed{$Name}++;
    } else {
@@ -348,6 +367,13 @@ if ( ( $Detail >= 10 ) and (keys %SieveLogin)) {
       }
    }
    print "\n\nTotal: $LoginCount successful ManageSieve logins";
+}
+
+if (keys %LimitExceeded) {
+   print "\n\nDovecot limits exceeded:";
+   foreach my $Reason (sort keys %LimitExceeded) {
+      print "\n   $Reason: $LimitExceeded{$Reason} Time(s)";
+   }
 }
 
 if (keys %Disconnected) {
