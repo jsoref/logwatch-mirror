@@ -293,12 +293,12 @@ while ($line = <STDIN>) {
          $data{$service}{'Unknown Entries'}{$line}++;
       }
    } elsif (grep $_ eq $service, qw/runuser runuser-l/) {
-     if ($line =~/^session (opened)?(\/)?(closed)? for user [a-zA-Z\d]+/) {
+     if ($line =~/^session (opened)?(\/)?(closed)? for user [\w\.\-]+/) {
      } else {
          $data{$service}{'Unknown Entries'}{$line}++;
      }
    } elsif ($service eq 'atd') {
-     if ($line =~/^session (opened)?(\/)?(closed)? for user [a-zA-Z\d]+/) {
+     if ($line =~/^session (opened)?(\/)?(closed)? for user [\w\.\-]+/) {
      } elsif ($line =~ /^account root has password changed in future/) {
        #I'm not sure whether this info could not be reported
      } else {
