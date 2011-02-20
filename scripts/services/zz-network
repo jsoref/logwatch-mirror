@@ -152,6 +152,25 @@ sub routingState ()
            close(SYSCTL) || die "can't close $!";
          }
         }
+	
+	elsif ($OSname eq "SunOS") {
+	  if ( ($release eq "5.10") || ($release eq "5.11") ) {
+
+	        if ( -f $pathto_routeadm)
+        	 {
+                	open(FILE1, "$pathto_routeadm -p |")  || die "can't open $!";
+                	while (<FILE1>)
+                	{
+                         if (/ipv(\d+)-forwarding .*default=(\S+) current=(\S+)/) {
+			     print "IPv$1 fowarding is $3 (normal state is $2)\n";
+			 }
+                	}
+                	close(FILE1) || die "can't close $!";
+         	}
+
+	 }
+	}
+
         else
         {
 	 print "Unable to find routing information in your system.\n";
@@ -213,7 +232,7 @@ sub ListeningSockets ()
         else
         {
 
-        open(NET, "netstat -a |")  || die "can't run netstat: $!";
+        open(NET, "netstat -a -n |")  || die "can't run netstat: $!";
         while (<NET>)
          {
            if ($_ =~ /LISTEN/ ) {# grep LISTEN
@@ -260,7 +279,11 @@ sub NetworkStats()
 	system("netstat  -i | grep -v Kernel | awk '$awkprog' ");
 	}
 	else {
-                open(NET, "netstat -i |")  || die "can't run netstat: $!";
+		my $netstat_cmd = "netstat -i";
+		if ($OSname eq "SunOS") {
+		    $netstat_cmd .= " -a";
+		}
+                open(NET, "$netstat_cmd |")  || die "can't run netstat: $!";
                 while (<NET>)
                  {
                    print $_;
@@ -369,6 +392,51 @@ sub InterfacesCheck
             }
           }
         close(NET)                    || die "can't use $cmd_to_show_int: $!";
+
+        }
+
+        elsif ($OSname eq "SunOS") {
+
+	# Representative 'ifconfig -a' output from a local zone
+	# (global zone is similar, but has the top-level lo0, in0, etc)
+	# as well.
+	#lo0:1: flags=2001000849<UP,LOOPBACK,RUNNING,MULTICAST,IPv4,VIRTUAL> mtu 8232 index 1
+	#        inet 127.0.0.1 netmask ff000000 
+	#in0:1: flags=1000843<UP,BROADCAST,RUNNING,MULTICAST,IPv4> mtu 1500 index 2
+	#        inet 192.168.1.31 netmask ffffff00 broadcast 192.168.1.255
+	#local1:1: flags=1000843<UP,BROADCAST,RUNNING,MULTICAST,IPv4> mtu 9000 index 4
+	#        inet 172.16.0.3 netmask fffffff8 broadcast 172.16.0.7
+	#out0:1: flags=1000843<UP,BROADCAST,RUNNING,MULTICAST,IPv4> mtu 1500 index 6
+	#        inet 184.105.220.67 netmask fffffff8 broadcast 184.105.220.71
+	#lo0:1: flags=2002000849<UP,LOOPBACK,RUNNING,MULTICAST,IPv6,VIRTUAL> mtu 8252 index 1
+	#        inet6 ::1/128 
+
+	# Run through twice; a single interface plumbed with both IPv4 and IPv6
+	# can be listed separately, but shouldn't count as two interfaces
+	foreach my $ip (qw( 4 6 )) {
+	    open(NET, "/usr/sbin/ifconfig -a$ip |")  || die "can't run '/usr/sbin/ifconfig -a$ip': $!";
+	    while (<NET>)
+	     {
+	       if ($_ =~ /^(\w+\d+(?::\d+)?): flags=\d+<[^>]+> mtu (\d+)/) {
+	       		($if_name, $mtu) = ($1, $2);
+			if (! grep { $_ eq $if_name } (@ethernet_iface_list, @other_iface_list)) {
+			    # Not seen before; process it
+			    $total_iface++;
+			    if ($mtu == 1500) {
+			    	# Guess that it's ethernet
+				push @ethernet_iface_list, $if_name;
+				push @short_ethernet_iface_list, $if_name;
+				$total_ethernet_iface++;
+			    } else {
+				push @other_iface_list, $if_name;
+				push @short_other_iface_list, $if_name;
+				$total_other_iface++;
+			    }
+			}
+		}
+	      }
+	    close(NET)                    || die "can't use '/usr/sbin/ifconfig -a$ip': $!";
+	}
 
         }
         else

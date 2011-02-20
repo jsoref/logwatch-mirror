@@ -119,7 +119,7 @@ my %ConfErrs;
 my %Operations;
 
 # No sense in running if 'xntpd' doesn't even exist on this system...
-unless (( -f "/usr/sbin/ntpd" ) or ( -f "/usr/local/sbin/ntpd") or ( -f "/usr/lib/inet/xntpd")) {
+unless (( -f "/usr/sbin/ntpd" ) or ( -f "/usr/local/sbin/ntpd") or ( -f "/usr/lib/inet/xntpd") or ( -f "/usr/lib/inet/ntpd" ) ) {
    if ( $Debug >= 5 ) {
       print STDERR "\n\nDEBUG: Exiting XNTPD Filter - no ntpd binary on system\n\n";
    }
