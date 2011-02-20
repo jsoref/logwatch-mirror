@@ -279,7 +279,7 @@ my $MsgsNoRcpt =
 my $MsgsSent =           my $NoMilterFilters =    my $NoMoreSpace =
 my $NumTimeoutSend =     my $NumTimeoutSendWarnings =my $OutdatedAliasdb =
 my $OverSize =           my $OverSizeBytes =      my $RelayLocalhost =
-my $RemoteProtocolError =my $ReturnReceipt =      my $SendmailStarts =
+my $RemoteProtocolError =my $SendmailStarts =
 my $SendmailStopped =    my $TLSAcceptFailed =    my $TLSConnectFailed =
 my $TooManyRcpts =       my $XS4ALL =
 0;
@@ -300,6 +300,7 @@ $Host,                   $IP,
 $LastIndex,              $LastIndex2,
 $Load,                   $Luser,                  $MailerName,
 $MailerString,           $MailerType,             $NewQueueID,
+$NoCommonName,
 $NumRcpts,               $Owner,                  $QueueID,
 $Reason,                 $RejCmd,                 $Relay,
 $RelayDeniedCount,       $RelayHost,              $RelayName,
@@ -334,7 +335,9 @@ my (
 %MilterDeferrals,
 %MilterHeaderCount,      %Msgs,                   %NotLocal,
 %OtherList,              %PREGreeting,            %PREGreetingQueue,
-%RelayDenied,            %RelayReject,            %RuleSets,
+%Quarantined,
+%RelayDenied,            %RelayReject,            %ReturnReceipts,
+%RuleSets,
 %SaslError,              %SenderIDresults,        %SortedUsers,
 %SPFResults,             %Starttls,               %StarttlsCert,
 %StarttlsCipher,         %StatDeferred,           %StatFileError,
@@ -448,6 +451,8 @@ next unless $ThisLine;
       ( ( $ThisLine =~ /^--- 4[0-9]{2}(-| )/ ) and not
          # but note bad commands, because we'll need it later
          ( $ThisLine =~ /^--- 421 4\.7\.0 .* Too many bad commands; closing connection$/))  or
+      # status code 334 is used for STARTTLS verification
+      ( $ThisLine =~ /^--- 334 / ) or
       # status code 354 used to request data
       ( $ThisLine =~ /^--- 354 Enter mail, end with \"\.\" on a line by itself/ ) or
       # invalid smtp commands detected later ($RejCmd)
@@ -691,6 +696,9 @@ next unless $ThisLine;
           $Msgs{$NewQueueID}{"FromUser"} = "system_notify";
       } elsif ($Reason =~ /^Unable to deliver mail$/) {
           $StatRejected{"Unable to deliver mail"}{"system notify"}++;
+      # Return Receipts from successful delivery
+      } elsif ($Reason = ~/Return receipt$/) {
+	  $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
       }
 
    # These are transient errors
@@ -711,7 +719,7 @@ next unless $ThisLine;
       $TimeoutSend = $2;
       $NumTimeoutSend++;
    } elsif ($ThisLine=~ /(return to sender|sender notify|postmaster notify|DSN): Return receipt/) {
-      $ReturnReceipt++;
+      $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
    # file=main.c, LogLevel>-1, LOG_INFO
    } elsif ( $ThisLine =~ /^starting daemon/) {
       $SendmailStarts++;
@@ -925,6 +933,9 @@ next unless $ThisLine;
    # file=stats.c, LogLevel>12, LOG_INFO
    } elsif ( ($StatFile, $StatError) = ($ThisLine=~ /^poststats: (.*?): (.*)/) ) {
       $StatFileError{$StatFile}{$StatError}++;
+   # file=tls.c, LogLevel>7, LOG_INFO
+   } elsif ($ThisLine=~ /STARTTLS=.* field=cn_issuer, status=failed to extract CN/ ) {
+      $NoCommonName++;
    # file=tls.c, LogLevel>12, LOG_WARNING
    } elsif ( ($TLSFile) = ($ThisLine=~ /STARTTLS: (.* missing)/) ) {
       $TLSFileMissing{$TLSFile}++;
@@ -1008,6 +1019,11 @@ next unless $ThisLine;
             $MilterHeaderCount{$Header}++;
          }
       }
+   # file=milter.c, LogLevel>3, LOG_INFO
+   } elsif ((my $Milter,$Reason) = ($ThisLine =~ /milter\=(.*), quarantine\=(.*)/)) {
+      my $QuarantineReason = $Milter . ": " . $Reason;
+      $Quarantined{$QuarantineReason}++;
+   
    } elsif (
       # file=parseaddr.c, LogLevel>3, LOG_NOTICE
       ($Address,$Reason) = ($ThisLine =~ /^Syntax error in mailbox address "(.+)" \(([^ ]+)\)/) or
@@ -1436,6 +1452,11 @@ if ($Detail >= 10) {
         print "\n   $StarttlsCipherEntry: $StarttlsCipher{$StarttlsCipherEntry} Time(s)";
       }
    }
+   if ($NoCommonName) {
+      eval "$PrintCond";
+      # The following is a frequent occurrence, but not an error
+      print "\n\nFor STARTTLS, no CommonName given $NoCommonName time(s).";
+      }
 }
 
 if (($Detail >= 5) and (keys %ETRNs)) {
@@ -1446,9 +1467,12 @@ if (($Detail >= 5) and (keys %ETRNs)) {
    }
 }
 
-if(($Detail >= 5) and ($ReturnReceipt > 0)) {
+if(($Detail >= 10) and (keys %ReturnReceipts > 0)) {
    eval "$PrintCond";
-   print "\n\n$ReturnReceipt Return Receipt's";
+   print "\n\nSuccessful Return Receipts:";
+   foreach $ThisOne (sort keys %ReturnReceipts) {
+      print "\n    $ThisOne: $ReturnReceipts{$ThisOne} Time(s)";
+   }
 }
 
 if (($Detail >= 5) and (keys %MilterHeaderCount)) {
@@ -1839,6 +1863,23 @@ if (keys %AddressError) {
 }
 $TotalError[++$ErrorIndex] = 0;
 
+if (keys %Quarantined) {
+   eval "$PrintCond" if ($Detail >= 3);
+   #Set Threshold default
+   my $QuarantinedThreshold = $ENV{'sendmail_quarantinedthreshold'} || "1";
+   my $QuarantinedCount = CountOrder(%Quarantined);
+   print "\n\nMessages quarantined by milter: [Occurrences >= $QuarantinedThreshold]" if ($Detail >= 3);
+   foreach $ThisOne (sort $QuarantinedCount keys %Quarantined) {
+      if ($Quarantined{$ThisOne} >= $QuarantinedThreshold)  {
+         printf("\n    %s: %3i Time(s)", $ThisOne, $Quarantined{$ThisOne}) if ($Detail >= 5);
+      }
+      $TotalError[$ErrorIndex] += $Quarantined{$ThisOne};
+   }
+   print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
+}
+$TotalError[++$ErrorIndex] = 0;
+
+
 
 # Recipient errors
 
@@ -1883,7 +1924,7 @@ if (keys %UnknownUsers) {
          }
          if ($UnknownUsersCount >= $UnknownUsersThreshold) {
             print "\n    $Usr : $UnknownUsersCount Time(s)";
-            if ($Details >= 15) {
+            if ($Detail >= 15) {
                foreach $RelayHost (sort $subcount keys %{ $SortedUsers{$Usr} }) {
                   printf ("\n        from %s %3i Time(s)", PrettyHost($RelayHost, 54), $SortedUsers{$Usr}{$RelayHost});
                }
@@ -1922,7 +1963,7 @@ if (keys %UnknownUsersCheckRcpt) {
          }
          if ($UnknownUsersCount >= $UnknownUsersThreshold) {
             print "\n    $Usr : $UnknownUsersCount Time(s)";
-            if ($Details >= 15) {
+            if ($Detail >= 15) {
                foreach $RelayHost (sort $subcount keys %{ $SortedUsers{$Usr} }) {
                   printf ("\n        from %s %3i Time(s)", PrettyHost($RelayHost, 54), $SortedUsers{$Usr}{$RelayHost});
                }
