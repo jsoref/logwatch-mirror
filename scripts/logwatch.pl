@@ -1223,10 +1223,18 @@ sub initprint {
 sub parselogs {
    my $Service;
 
-   #Load our ignore file
+   #Load our ignore file order is [assume normal install]  /etc/conf, /usr/share/logwatch/dist.conf and then default.conf -mgt
    my @IGNORE;
    if ( -e "$ConfigDir/conf/ignore.conf") {
       open( IGNORE, "$ConfigDir/conf/ignore.conf" )  or return undef;
+      @IGNORE = grep {!/(^#|^\s+$)/} <IGNORE>;
+      close IGNORE;
+   } elsif ( -e "$BaseDir/dist.conf/ignore.conf") {
+      open( IGNORE, "$BaseDir/dist.conf/ignore.conf" )  or return undef;
+      @IGNORE = grep {!/(^#|^\s+$)/} <IGNORE>;
+      close IGNORE;
+   } elsif ( -e "$BaseDir/default.conf/ignore.conf") {
+      open( IGNORE, "$BaseDir/default.conf/ignore.conf" )  or return undef;
       @IGNORE = grep {!/(^#|^\s+$)/} <IGNORE>;
       close IGNORE;
    }
