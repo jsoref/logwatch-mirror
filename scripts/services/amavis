@@ -88,11 +88,12 @@ while (defined($ThisLine = <STDIN>)) {
         or ($ThisLine =~ /^LMTP/)
         or ($ThisLine =~ /^.* code[ \t]+(NOT)? loaded/)
         or ($ThisLine =~ /^tempdir being removed/)
+        or ($ThisLine =~ /^(?:Found|Internal|No) decoder for/)
         or ($ThisLine =~ /^Found primary av scanner/)
         or ($ThisLine =~ /^Found \$[\S]+[\s]+at/)
         or ($ThisLine =~ /^No \$[\S]+,[\s]+not using it/)
         or ($ThisLine =~ /^Found secondary av scanner/)
-        or ($ThisLine =~ /^Using internal av scanner code/)
+        or ($ThisLine =~ /^Using (?:primary |secondary )?internal av scanner code/)
         or ($ThisLine =~ /^mail_via_smtp/)
         or ($ThisLine =~ /^local delivery: /)
         or ($ThisLine =~ /^cached [a-zA-Z0-9]+ /)
@@ -106,7 +107,21 @@ while (defined($ThisLine = <STDIN>)) {
         or ($ThisLine =~ /mangling by .* \([0-9]\) done, new size: [0-9]*, orig [0-9]* bytes/)
         or ($ThisLine =~ /mangling by: [0-9], <.*>/)
         or ($ThisLine =~ /mangling YES: [0-9] \(orig: [0-9]\), discl_allowed=.*, <.*> -> <.*>/)
-        or ($ThisLine =~ /^starting.  amavisd at/) ) {
+        or ($ThisLine =~ /^initializing Mail::SpamAssassin/)
+        or ($ThisLine =~ /^SpamAssassin debug facilities/)
+        or ($ThisLine =~ /^SpamAssassin loaded plugins/)
+        or ($ThisLine =~ /^logging initialized,/)
+        or ($ThisLine =~ /^extra modules loaded/)
+        or ($ThisLine =~ /^INFO: no optional modules/)
+        or ($ThisLine =~ /^INFO: SA version/)
+        or ($ThisLine =~ /NOT loaded$/)
+        or ($ThisLine =~ /^(?:Local-out|AM.PDP-in) proto code loaded/)
+        or ($ThisLine =~ /^\.\.\./)
+        or ($ThisLine =~ /^Creating db in/)
+        or ($ThisLine =~ /^dkim: (?:VALID|FAILED)/)
+        or ($ThisLine =~ /^Open relay\?/)
+        or ($ThisLine =~ /^user=.*, EUID/)
+        or ($ThisLine =~ /^starting.  \S*amavisd at/) ) {
        # We don't care about these
    } elsif ($ThisLine =~ /^Passed( CLEAN)?, /) {
       $CleanMsgs++;
