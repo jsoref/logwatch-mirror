@@ -60,7 +60,8 @@ $Shutdowns = 0;
 while (defined($ThisLine = <STDIN>)) {
    if (
       ( $ThisLine =~ m/^DEBUG: / ) or
-      ( $ThisLine =~ m/^ipc_init        : listening on socket:/ )
+      ( $ThisLine =~ m/^ipc_init        : listening on socket:/ ) or
+      ( $ThisLine =~ m/^pam_unix/ )
    ) {
       # We don't care about these
    } elsif ( ($User,$Service,$Realm,$Mechanism,$Reason) = ($ThisLine =~ /^do_auth         : auth failure: \[user=(.*)\] \[service=([^ ]*)\] \[realm=([^ ]*)\] \[mech=([^ ]*)\] \[reason=(.*)\]$/) ) {
