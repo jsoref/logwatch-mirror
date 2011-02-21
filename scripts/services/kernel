@@ -53,6 +53,7 @@ use strict;
 use Logwatch ':ip';
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Ignore_faults = $ENV{'ignore_faults'};
 my %SYNflood = ();
 my %RAIDErrors = ();
 my %SegFaults = ();
@@ -135,15 +136,25 @@ if (keys %RAIDErrors) {
 }
 
 if (keys %SegFaults) {
-   print "\nWARNING:  Segmentation Faults in these executables\n";
+   my $header_printed=0;
    foreach my $Thisone ( sort {$a cmp $b} keys %SegFaults ) {
+      if ($Ignore_faults =~ /\b\Q$Thisone\E\b/i) { next; }
+      if (!$header_printed) {
+         print "\nWARNING:  Segmentation Faults in these executables\n";
+         $header_printed=1;
+      }
       print "   $Thisone :  $SegFaults{$Thisone} Time(s)\n";
    }
 }
 
 if (keys %GPFaults) {
-   print "\nWARNING:  General Protection Faults in these executables\n";
+   my $header_printed=0;
    foreach my $Thisone ( sort {$a cmp $b} keys %GPFaults ) {
+      if ($Ignore_faults =~ /\b\Q$Thisone\E\b/i) { next; }
+      if (!$header_printed) {
+         print "\nWARNING:  General Protection Faults in these executables\n";
+         $header_printed=1;
+      }
       print "   $Thisone :  $GPFaults{$Thisone} Time(s)\n";
    }
 }
