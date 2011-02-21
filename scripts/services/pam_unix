@@ -153,6 +153,11 @@ while ($line = <STDIN>) {
    } else {
       next;
    }
+   # handle password expiring globally
+   if ($line =~ /^password for user (.+) will expire in (\d+) days/) {
+      $data{"all"}{'Password Expiring'}{"$1 in $2 days"}++;
+      next;
+   }
    #lowercase the service
    $service = lc($service);
    if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd rsh remote rlogin rexec/) {
