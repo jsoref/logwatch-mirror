@@ -109,12 +109,15 @@ while (defined($ThisLine = <STDIN>)) {
      $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
      if ( ($ThisLine =~ /(?:ssl-build-param|ssl-params): SSL parameters regeneration completed/) or
           ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
-          ($ThisLine =~ /deliver/) or
           ($ThisLine =~ /auth-worker/) or
           ($ThisLine =~ /auth:.*: Connected to/) or
           ($ThisLine =~ /Connection closed/) or
           ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
-          ($ThisLine =~ /IMAP.* failed with mbox file/) ) {
+          ($ThisLine =~ /IMAP.* failed with mbox file/) or
+	  ($ThisLine =~ /discarded duplicate forward to/) or 
+	  ($ThisLine =~ /discarding vacation response/) 
+	  )
+         { 
          # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
@@ -142,21 +145,31 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionSieve{$Host}++;
          $Connection{$Host}++;
       }
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:deliver|lmtp)\((.*)\): (?:sieve: )?msgid=.*: (?:saved|stored) mail (?:in)to (\S+)/ ) ) {
-      $Deliver{$User}{$Mailbox}++;
 
-#For Dovecot 2.0
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lda\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
+# 'lda' for dovecot 2.0, 'deliver' for earlier versions
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # For Sieve-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lda\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based delivery
     } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): [^:]+: msgid=.*: saved mail to (\S+)/ ) ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782, cloyce@headgear.org): jBt1EfjCMk3uMQAAm9eMBA: msgid=<4D32DB1F.3080707@c-dot.co.uk>: saved mail to INBOX
       $Deliver{$User}{$Mailbox}++;
+
+# sieve forward
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
+      $Forwarded{$User}{$Recip}++;
+
+# sieve vacation
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* sent vacation response to \<(.*)\>/)) {
+      $VacationResponse{$User}{$Recip}++;
+
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
+      $VacationDup{$User}{$Recip}++;
+
     } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Connect from/ ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782): Connect from local: 1 Time(s)
     # IGNORE
@@ -207,6 +220,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{"Inactivity"}++;
    } elsif ($ThisLine =~ /Disconnected in IDLE/) {
       $Disconnected{"in IDLE"}++;
+   } elsif ($ThisLine =~ /Disconnected in APPEND/) {
+      $Disconnected{"in APPEND"}++;
    } elsif (($ThisLine =~ /Disconnected$/) or
             (($Reason) = ($ThisLine =~ /pop3-login: Disconnected: (.+)/)) or
             (($Reason) = ($ThisLine =~ /imap-login: Disconnected: (.+)/)) ) {
@@ -276,8 +291,8 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
       $CountSpaceLength = 10 - $CountLength;
       $IMAPLength = length("$IMAP");
       $IMAPSpaceLength = 9 - $IMAPLength;
-      $TotalLenght = length("$Total");
-      $TotalSpaceLength = 10 - $TotalLenght;
+      $TotalLength = length("$Total");
+      $TotalSpaceLength = 10 - $TotalLength;
       print "\n" ." " x $HostSpaceLength . $Host . " |" . " " x $CountSpaceLength .  $Conns .
             " |" . " " x $IMAPSpaceLength . $IMAP . " |" . " " x $TotalSpaceLength . $Total;
       $POP3Count += $Conns;
@@ -295,33 +310,80 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
                  " |" . " " x $totalSpaceLength . $TotalCount . "\n";
 }
 
-if ( ( $Detail >= 10 ) and (keys %Deliver)) {
+if ( ( $Detail >= 5 ) and (keys %Deliver)) {
    print "\n\nDovecot Deliveries:";
    $DeliverCount = 0;
-   foreach my $User (keys %Deliver) {
-      print "\n\n  User $User:";
+   foreach my $User (sort keys %Deliver) {
+      print "\n  User $User:";
       $UserCount = 0;
       $NumMailboxes = 0;
-      foreach $Mailbox (keys %{$Deliver{$User}}) {
+      foreach $Mailbox (sort keys %{$Deliver{$User}}) {
          $NumMailboxes++;
          $MailboxCount = $Deliver{$User}{$Mailbox};
-         print "\n    To $Mailbox: $MailboxCount Time(s)";
+         print "\n    To $Mailbox: $MailboxCount Time(s)" if ($Detail >= 10);
          $UserCount += $MailboxCount;
       }
       $DeliverCount += $UserCount;
-      if ($NumMailboxes > 1) {
-      print "\n  Total: $UserCount Time(s)";
+      if ($Detail >= 10) {
+         if ($NumMailboxes > 1) {
+	    print "\n  Total: $UserCount Time(s)\n";
+	 } else {
+	    print "\n";
+	 }
+      } elsif ($Detail >= 5) {
+         print " $UserCount Time(s)";
       }
    }
-   print "\n\nTotal: $DeliverCount successful deliveries";
+   print "\nTotal: $DeliverCount successful deliveries";
 }
 
-if ( ( $Detail >= 10 ) and (keys %Login)) {
+if (($Detail >= 10) and (keys %Forwarded)) {
+   $TotalForwarded = 0;
+
+   print "\n\nDovecot LDA sieve forwards:";
+   foreach $User (sort keys %Forwarded) {
+      print "\n\n  User $User";
+      foreach my $Recip (sort keys %{$Forwarded{$User}}) {
+         print "\n    To $Recip: $Forwarded{$User}{$Recip} time(s)";
+         $TotalForwarded += $Forwarded{$User}{$Recip};
+      }
+   }
+   print "\n\n  Total: $TotalForwarded Time(s)";
+}
+
+if (($Detail >= 10) and (keys %VacationResponse)) {
+   $TotalVacResp = 0;
+   print "\n\nDovecot LDA sieve vacation responses:";
+   foreach my $User (sort keys %VacationResponse) {
+      print "\n\n  User $User";
+      foreach my $Recip (sort keys %{$VacationResponse{$User}}) {
+       	 print "\n    To $Recip: $VacationResponse{$User}{$Recip} time(s)";
+ 	 $TotalVacResp += $VacationResponse{$User}{$Recip};
+      }
+   }
+   print "\n\n  Total: $TotalVacResp Time(s)";
+}
+
+if (($Detail >= 10) and (keys %VacationDup)) {
+   $TotalVacDup = 0;
+   print "\n\nDovecot LDA sieve duplicate vacation responses not sent:";
+   foreach my $User (sort keys %VacationDup) {
+      print "\n  User $User";
+      foreach my $Recip (sort keys %{$VacationDup{$User}}) {
+         print "\n    To $Recip: $VacationDup{$User}{$Recip} time(s)";
+      	 $TotalVacDup += $VacationDup{$User}{$Recip};
+      }
+   }
+   print "\n\n  Total: $TotalVacDup Time(s)";
+}
+
+
+if ( ( $Detail >= 5 ) and (keys %Login)) {
    print "\n\nDovecot IMAP and POP3 Successful Logins:";
    $LoginCount = 0;
-   foreach my $User (keys %Login) {
-      print "\n\n  User $User:";
-      if ($LoginPOP3{$User} > 0 || $LoginIMAP{$User} > 0) {
+   foreach my $User (sort keys %Login) {
+      print "\n  User $User:";
+      if ( ($Detail >= 10) and ($LoginPOP3{$User} > 0 || $LoginIMAP{$User} > 0) ) {
          print "   (";
          if ($LoginPOP3{$User} > 0) { print "$LoginPOP3{$User} POP3"; };
          if ($LoginPOP3{$User} > 0 && $LoginIMAP{$User} > 0) { print "/"; };
@@ -330,17 +392,23 @@ if ( ( $Detail >= 10 ) and (keys %Login)) {
       }
       $UserCount = 0;
       $NumHosts = 0;
-      foreach $Host (keys %{$Login{$User}}) {
+      foreach $Host (sort keys %{$Login{$User}}) {
          $NumHosts++;
          $HostCount = $Login{$User}{$Host};
 # Cleanly display IPv4 addresses
          $Host=~ s/::ffff://;
-         print "\n    From $Host: $HostCount Time(s)";
+         print "\n    From $Host: $HostCount Time(s)" if ($Detail >= 10);
          $UserCount += $HostCount;
       }
       $LoginCount += $UserCount;
-      if ($NumHosts > 1) {
-      print "\n  Total: $UserCount Time(s)";
+      if ($Detail >= 10) {
+         if ($NumHosts > 1) {
+            print "\n  Total: $UserCount Time(s)\n";
+         } else {
+	    print "\n";
+	 }
+      } elsif ($Detail >= 5) {
+         print " $UserCount Time(s)";
       }
    }
    print "\n\nTotal: $LoginCount successful logins";
@@ -349,11 +417,11 @@ if ( ( $Detail >= 10 ) and (keys %Login)) {
 if ( ( $Detail >= 10 ) and (keys %SieveLogin)) {
    print "\n\nDovecot ManageSieve Successful Logins:";
    $LoginCount = 0;
-   foreach my $User (keys %SieveLogin) {
+   foreach my $User (sort keys %SieveLogin) {
       print "\n\n  User $User:";
       $UserCount = 0;
       $NumHosts = 0;
-      foreach $Host (keys %{$SieveLogin{$User}}) {
+      foreach $Host (sort keys %{$SieveLogin{$User}}) {
          $NumHosts++;
          $HostCount = $SieveLogin{$User}{$Host};
 # Cleanly display IPv4 addresses
