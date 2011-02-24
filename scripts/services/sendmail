@@ -579,6 +579,8 @@ next unless $ThisLine;
       # check for ENOENT return codes, as others are maybe worth looking into
       # file=queue.c, LogLevel>97, LOG_DEBUG
       ( $ThisLine =~ /$QueueIDFormat: unlink-fail $ENOENT/o ) or
+      # dumpfd() output
+      ( $ThisLine =~ /\d+: fl=0x\d+, mode=\d+/ ) or
       # generic DEBUG statement
       ( $ThisLine =~ /^DEBUG: / )
 
@@ -1483,7 +1485,7 @@ if (($Detail >= 5) and (keys %MilterHeaderCount)) {
    }
 }
 
-if (($Detail >= 5) and (keys %MilterDeferrals)) {
+if (($Detail >= 3) and (keys %MilterDeferrals)) {
    eval "$PrintCond";
    print "\n\nMilter transient failures:";
    foreach $Reason (sort keys %MilterDeferrals) {
