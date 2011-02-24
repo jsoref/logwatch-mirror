@@ -24,8 +24,6 @@ use POSIX qw(uname);
 
 my (%Config);
 
-$ENV{PRINTING} = "y";
-
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $logwatch_hostname = $ENV{'LOGWATCH_ONLY_HOSTNAME'};
@@ -197,7 +195,7 @@ sub DiskFull
 #Main
 
 #Only show disk space "df" by default -mgt
-DiskSpace();
+DiskSpace() if (($ENV{PRINTING} eq 'y') or $Detail);
 
 if ( $show_disk_usage == 1 ) { DiskUsage(); }; #Turn on in zz-disk_space.conf
 
