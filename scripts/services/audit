@@ -223,7 +223,7 @@ if ( keys %InvalidContext) {
 
 
 
-if ($NumberOfDStarts+$NumberOfDStartsPid) {
+if ($Detail and $NumberOfDStarts+$NumberOfDStartsPid) {
     print "\n Number of audit daemon starts: ",$NumberOfDStarts+$NumberOfDStartsPid," \n";
 }
 
@@ -231,7 +231,7 @@ if (($Detail >9) and ($NumberOfDStartsPid)) {
     print "        starts with pid change: $NumberOfDStartsPid \n"
 }
 
-if ($NumberOfDStops)  {
+if ($Detail and $NumberOfDStops)  {
     print "\n Number of audit daemon stops: $NumberOfDStops \n";
 }
 
