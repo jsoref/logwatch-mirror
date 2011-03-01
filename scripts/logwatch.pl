@@ -1,7 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
 ##########################################################################
-# $Id: logwatch.pl,v 1.213 2009/07/29 01:56:19 mike Exp $
 ##########################################################################
 # Most current version can always be found at:
 # ftp://ftp.logwatch.org/pub/linux (tarball)
@@ -9,8 +8,8 @@ use strict;
 
 ########################################################
 # Specify version and build-date:
-my $Version = '7.3.6';
-my $VDate = '05/19/07';
+my $Version = '7.4.0';
+my $VDate = '03/01/11';
 
 #######################################################
 # Logwatch was written and is maintained by:
