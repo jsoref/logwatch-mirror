@@ -1208,7 +1208,7 @@ sub initprint {
    if ( $Config{'format'} eq "html" ) {
       &output( $index_par, "\n", "stop");
    } else {
-      &output( $index_par, " ################################################################## \n", "line");
+      &output( $index_par, "################################################################## \n", "line");
    }
 
 }
