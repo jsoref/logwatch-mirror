@@ -205,7 +205,7 @@ while (defined($ThisLine = <STDIN>))
       } else {
          push @OtherList,$ThisLine;
       }
-   } elsif ( $ThisLine =~ /\s[RECV|SCAN|SEND]\s/) {
+   } elsif ( $ThisLine =~ /\s(RECV|SCAN|SEND)\s/) {
       push @OtherList,$ThisLine;
    }
 }
