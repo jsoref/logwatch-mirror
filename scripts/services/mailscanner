@@ -168,13 +168,13 @@ while (defined($ThisLine = <STDIN>)) {
       $VirusType_BitDefender{$1}++;
       $MailScan_Virus_BitDefender++;
    } elsif ( ($ThisLine =~ m/^\/var\/spool\/MailScanner\/incoming\/.+: ([\w\_\-\.\/]+) FOUND/i) or
-           ($ThisLine =~ m/Clamd::INFECTED:: (\S+) ::/i) ) {
+           ($ThisLine =~ m/Clamd::INFECTED:: ?(\S+) ::/i) ) {
       $VirusType_ClamAv{$1}++;
       $MailScan_Virus_ClamAv++;
-   } elsif ($ThisLine =~ m/ClamAVModule::INFECTED:: (.+)::/) {
+   } elsif ($ThisLine =~ m/ClamAVModule::INFECTED:: ?(.+)::/) {
       $VirusType_ClamAVModule{$1}++;
       $MailScan_Virus_ClamAVModule++;
-   } elsif ($ThisLine =~ m/INFECTED:: (.+) (FOUND )?::/) {
+   } elsif ($ThisLine =~ m/INFECTED:: ?(.+) (FOUND )?::/) {
       $VirusType_Clamd{$1}++;
       $MailScan_Virus_Clamd++;
    } elsif ($ThisLine =~ m/\/.+ Infection: (.+)/i) {
@@ -203,7 +203,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ m/>>> Virus \'(.+)\' found/) {
       $VirusType_Sophos{$1}++;
       $MailScan_Virus_Sophos++;
-   } elsif ($ThisLine =~ m/SophosSAVI::INFECTED:: (.+)::/) {
+   } elsif ($ThisLine =~ m/SophosSAVI::INFECTED:: ?(.+)::/) {
       $VirusType_SophosSavi{$1}++;
       $MailScan_Virus_SophosSavi++;
    } elsif ($ThisLine =~ m/Commercial scanner (.+) timed out!/){
