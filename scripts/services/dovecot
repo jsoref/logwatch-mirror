@@ -195,7 +195,7 @@ while (defined($ThisLine = <STDIN>)) {
          $Connection{$Host}++;
        }
 
-   } elsif ($ThisLine =~ /Disconnected \[/) {
+   } elsif ($ThisLine =~ /Disconnected (\[|top)/) {
       $Disconnected{"no reason"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
       $Disconnected{$Reason}++;
