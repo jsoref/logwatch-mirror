@@ -46,8 +46,9 @@ while (defined($ThisLine = <STDIN>)) {
        # We do not care about these.
    } elsif (($ThisLine =~ /clean message from/)) {
       $CleanMessage++;
-   } elsif (($Virus) = ($ThisLine =~ /.*: (.+?) Intercepted virus/i )) {
-      $VirusList{$Virus}++;
+   } elsif (($ThisLine =~ /.*: (.+?) Intercepted virus/i ) or
+            ($ThisLine =~ /Message from .* to .* infected by (.+)/)) {
+      $VirusList{$1}++;
    } elsif (($ChildLimit) = ($ThisLine =~ /hit max-children limit \((\d+ >= \d+)\): waiting for some to exit/)) {
       $MaxChildrenLimit{$ChildLimit}++;
    } elsif (($ThisLine =~ /^Stopping/)) {
