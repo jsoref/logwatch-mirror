@@ -1126,6 +1126,8 @@ next unless $ThisLine;
       $WUnsafe{$Directory}{$Cause}++;
 
    # the following is the catch-all:
+   } elsif ( ($Milter,$Error) = ($ThisLine =~ /^Milter \((.*)\): (.+)/) ) {
+      $MilterErrors{$Milter}{$Error}++;
    } else {
       $ThisLine =~ s/.*\: (DSN\: .*)/$1/;
       $ThisLine =~ s/.*\: (postmaster notify\: .*)/$1/;
@@ -2158,6 +2160,17 @@ if ($TotalCount > 0) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nTotal SMTP Session, Message, and Recipient Errors handled by Sendmail:  $TotalCount"
       if ($Detail >= 3);
+}
+
+if (keys %MilterErrors) {
+   eval "$PrintCond";
+   print "\n\nMilter Errors:\n";
+   foreach $Milter (sort {$a cmp $b} keys %MilterErrors) {
+      print "   $Milter:\n";
+      foreach $Error (sort {$a cmp $b} keys %{$MilterErrors{$Milter}}) {
+         print "      $Error: $MilterErrors{$Milter}{$Error} Time(s)\n";
+      }
+   }
 }
 
 if (keys %OtherList) {
