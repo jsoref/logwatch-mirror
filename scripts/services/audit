@@ -118,6 +118,10 @@ while ($ThisLine = <STDIN>) {
         ( $ThisLine =~ /auditd[ ]+S [0-9A-F]+  [0-9]+  [0-9]+[ ]+[0-9]([ ]*[0-9]+[ ]*|[ ]*)[0-9]+  [0-9]+ \(NOTLB\)/) or
         ( $ThisLine =~ /Started dispatcher: \/sbin\/audispd pid: [0-9]+/) or
         ( $ThisLine =~ /audit\([0-9.]*:[0-9]*\): bool=.* val=.* old_val=.* auid=[0-9]*/) or
+        ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): audit_enabled=[0-9]* old=[0-9]* auid=[0-9]* ses=[0-9]* subj=system_u:system_r:.*:s0 res=[0-9]*/) or
+        ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): auid=[0-9]* ses=[0-9]* subj=system_u:system_r:.*:s0 op=.* key=.* list=[0-9]* res=[0-9]*/) or
+        ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\):  cwd=".*"/) or
+        ( $ThisLine =~ /audit_printk_skb: [0-9]* callbacks suppressed/) or
 	( $ThisLine =~ /item=[0-9] name="\S*" inode=[0-9]+ dev=\S* mode=[0-9]* ouid=[0-9]* ogid=[0-9]* rdev=[0-9:]* obj=\S*/)
     ) {
 	# Ignore these entries
