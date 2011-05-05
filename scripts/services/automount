@@ -74,6 +74,9 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ( ($ThisMount) = ($ThisLine =~ /^shutting down, path = (.*)$/) ) {
       $StartStop{$ThisMount}{'stop'}++;
    }
+   elsif ( ($Key) = ( $ThisLine =~ /^key "(.*)" not found in map source\(s\)\.$/) ) {
+      $KeyNotFound{$Key}++;
+   }
    else {
       # Report any unmatched entries...
       chomp($ThisLine);
@@ -103,6 +106,13 @@ if (keys %Failed) {
       if ($Failed{$ThisOne}{'program'}) {
          print "Program Lookup Failure $Failed{$ThisOne}{'program'} Time(s)"; }
       print "\n";
+   }
+}
+
+if ( ($Detail >= 5) and (keys %KeyNotFound) ) {
+   print "\nKeys not found:\n";
+   foreach $Key (keys %KeyNotFound) {
+      print "   $Key: $KeyNotFound{$Key} Time(s)\n";
    }
 }
 
