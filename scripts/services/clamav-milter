@@ -59,7 +59,7 @@ while (defined($ThisLine = <STDIN>)) {
       $DatabaseReloads++;
       $DatabaseViruses = $Viruses;
    } else {
-      push @OtherList,$ThisLine;
+      $OtherList{$ThisLine}++;
    }
 }
 
@@ -97,9 +97,11 @@ if (keys %VirusList) {
    print "  Total: $Total\n";
 }
 
-if (($#OtherList >= 0) and (not $IgnoreUnmatched)){
+if ((keys %OtherList) and (not $IgnoreUnmatched)){
    print "\n**Unmatched Entries**\n";
-   print @OtherList;
+   foreach my $line (sort {$OtherList{$b}<=>$OtherList{$a} } keys %OtherList) {
+      print "\n   $line: $OtherList{$line} Time(s)";
+   }
 }
 
 exit(0);
