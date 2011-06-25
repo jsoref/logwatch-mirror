@@ -121,7 +121,7 @@ while (defined($ThisLine = <STDIN>)) {
          # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
-     } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up$/) {
+     } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up( \(core dumps disabled\))?$/) {
          $Restarts++;
          $End = 0;
      } elsif ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Login: (.*?) \[(.*)\]/ ) ) {
@@ -261,7 +261,7 @@ if ( $End ) {
 }
 
 if ( ( $Detail >=5 ) and $Restarts ) {
-   print "\nDovecot restarted $Restarts time(s).";
+   print "\nDovecot restarted $Restarts time(s).\n";
 }
 
 if ( ( $Detail >= 5 ) and (keys %Connection)) {
@@ -411,7 +411,7 @@ if ( ( $Detail >= 5 ) and (keys %Login)) {
          print " $UserCount Time(s)";
       }
    }
-   print "\n\nTotal: $LoginCount successful logins";
+   print "\nTotal: $LoginCount successful logins";
 }
 
 if ( ( $Detail >= 10 ) and (keys %SieveLogin)) {

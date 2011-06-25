@@ -22,7 +22,9 @@ use Logwatch ':dates';
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 
-$SearchDate = TimeFilter('%b %e %H:%M:%S');
+# customize the Timefilter by appending a string:
+# *ApplyStdDate = "%H:%M %d/%m/%Y"
+$SearchDate = TimeFilter($ARGV[0] || '%b %e %H:%M:%S');
 
 # The date might be "Dec 09", but it needs to be "Dec  9"...
 #$SearchDate =~ s/ 0/  /;
