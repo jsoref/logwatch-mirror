@@ -154,7 +154,10 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ /Listening on interface .* Disabled/) or
         ($ThisLine =~ /Listen and drop on /) or
         ($ThisLine =~ /Listening on routing socket on/) or
-	($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/)
+	($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/) or
+	($ThisLine =~ /peers refreshed$/) or
+	($ThisLine =~ /restrict: error in address/) or
+	($ThisLine =~ /syntax error in .+ line \d+, column \d+$/)
     ) {
        # Ignore these
     } elsif ($ThisLine =~ m/ntpd [\d\-\.\w@]+ ... ... .. ..:..:.. /) {
@@ -203,6 +206,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $Errors{$Error}++;
     } elsif ( my ($ConfErr) = ($ThisLine =~ /configure: (keyword "[^"]*" unknown, line ignored)/ )) {
        $ConfErrs{$ConfErr}++;
+    } elsif ( my ($ConfErr) = ($ThisLine =~ /line \d+ column \d+ syntax error, (.+)$/ )) {
+       $ConfErrs{$ConfErr}++;
     } elsif ( my ($StepTime) = ($ThisLine =~ /(.*:) Operation not permitted/) ) {
        $Operations{$StepTime}++
     } else {
@@ -244,7 +249,7 @@ if (keys %Interfaces) {
        }
        $t++;
     }
-    print "\nTotal interfaces $t (non-local: $lt)\n";
+    print "\nTotal interfaces: $t (non-local: $lt)\n";
 }
 
 if (keys %Syncs) {
@@ -272,7 +277,7 @@ if (keys %Errors) {
 }
 
 if (keys %ConfErrs) {
-    print "\nErrors in configuration file\n";
+    print "\nErrors in configuration file:\n";
     foreach my $k (keys %ConfErrs) {
       print "  $k ". $ConfErrs{$k} . " time(s)\n";
     }
