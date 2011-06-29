@@ -48,7 +48,7 @@ $ServiceName = $ARGV[0];
 
 while (defined($ThisLine = <STDIN>)) {
    $linesin++;
-   unless ($ThisLine =~ m/^... .. ..:..:.. \w+ \w+ \w+\t\d+\t$ServiceName\t\d/oi) {
+   unless ($ThisLine =~ m/^... .. ..:..:.. .* MSWinEventLog(\t\d+\t|\[\d+\]:)$ServiceName\t/oi) {
       $linesout++;
       print $ThisLine;
    }

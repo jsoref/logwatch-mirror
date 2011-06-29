@@ -34,9 +34,17 @@ use URI::URL;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 while (defined($ThisLine = <STDIN>)) {
-   #Parse
-   my ($Hostname,$Criticality,$SourceName,$DateTime,$EventID,$Application,$UserName,$SIDType,$EventLogType,$ComputerName,$CategoryString,$DataString,$ExpandedString,$Extra) =
-      ($ThisLine =~ /(\w+)\sMSWinEventLog\t(\d+)\t(\w+)\t\d+\t([^\t]+)\t(\d+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)/);
+   my ($Criticality,$SourceName,$DateTime,$EventID,$Application,$UserName,$SIDType,$EventLogType,$Hostname,$CategoryString,$DataString,$ExpandedString,$Extra);
+   #Determine format
+   if ($ThisLine =~ /MSWinEventLog\[/) {  # Snare 4
+      #Parse
+      ($Criticality,$SourceName,$DateTime,$EventID,$Application,$UserName,$SIDType,$EventLogType,$Hostname,$CategoryString,$DataString,$ExpandedString,$Extra) =
+         ($ThisLine =~ /(\S+)\sMSWinEventLog\[(\d+)\]:(\w+)\t\d+\t([^\t]+)\t(\d+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)/);
+   } elsif ($ThisLine =~ /MSWinEventLog\t/) { # Snare 3
+      #Parse
+      ($Criticality,$SourceName,$DateTime,$EventID,$Application,$UserName,$SIDType,$EventLogType,$Hostname,$CategoryString,$DataString,$ExpandedString,$Extra) =
+         ($ThisLine =~ /MSWinEventLog\t(\d+)\t(\w+)\t\d+\t([^\t]+)\t(\d+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)/);
+   }
    if (!defined($Hostname)) {
       print STDERR "Cannot parse $ThisLine";
       next;

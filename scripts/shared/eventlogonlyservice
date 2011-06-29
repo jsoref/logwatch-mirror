@@ -38,7 +38,7 @@ if ( $ENV{'LOGWATCH_DEBUG'} > 5 ) {
 }
 
 while (defined($ThisLine = <STDIN>)) {
-    if ($ThisLine =~ m/^... .. ..:..:.. \w+ \w+ \w+\t\d+\t$ServiceName\t\d/oi) {
+    if ($ThisLine =~ m/^... .. ..:..:.. .* MSWinEventLog(\t\d+\t|\[\d+\]:)$ServiceName\t/oi) {
       print $ThisLine;
     }
 }

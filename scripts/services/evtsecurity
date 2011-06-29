@@ -32,9 +32,17 @@
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 while (defined($ThisLine = <STDIN>)) {
-   #Parse
-   my ($Hostname,$Criticality,$SourceName,$DateTime,$EventID,$SourceName2,$UserName,$SIDType,$EventLogType,$ComputerName,$CategoryString,$DataString,$ExpandedString,$Extra) =
-      ($ThisLine =~ /(\w+) MSWinEventLog\t(\d+)\t(\w+)\t\d+\t([^\t]+)\t(\d+)\t(\w+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]*)\t([^\t]*)\t([^\t]*)/);
+   my ($Hostname,$Criticality,$SourceName,$DateTime,$EventID,$SourceName2,$UserName,$SIDType,$EventLogType,$CategoryString,$DataString,$ExpandedString,$Extra);
+   #Determine format
+   if ($ThisLine =~ /MSWinEventLog\[/) {  # Snare 4
+      #Parse
+      ($Criticality,$SourceName,$DateTime,$EventID,$SourceName2,$UserName,$SIDType,$EventLogType,$Hostname,$CategoryString,$DataString,$ExpandedString,$Extra) =
+         ($ThisLine =~ /MSWinEventLog\[(\d+)\]:(\w+)\t\d+\t([^\t]+)\t(\d+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)/);
+   } elsif ($ThisLine =~ /MSWinEventLog\t/) { # Snare 3
+      #Parse
+      ($Criticality,$SourceName,$DateTime,$EventID,$SourceName2,$UserName,$SIDType,$EventLogType,$Hostname,$CategoryString,$DataString,$ExpandedString,$Extra) =
+         ($ThisLine =~ /MSWinEventLog\t(\d+)\t(\w+)\t\d+\t([^\t]+)\t(\d+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t([^\t]+)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)\t?([^\t]*)/);
+   }
    if (!defined($Hostname)) {
       print STDERR "Cannot parse $ThisLine";
       next;
