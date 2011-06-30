@@ -1,0 +1,1180 @@
+###########################################################################
+# $Id: citadel,v 1.3 2011/06/30 13:05:28 general Exp $
+###########################################################################
+
+###########################################################################
+# This was written and is maintained by:
+#    Stefan Jakobs <logwatch at localside.net>
+#
+# Please send all comments, suggestions, bug reports,
+#    etc, to logwatch at localside.net.
+###########################################################################
+# Copyright (c) 2011 Stefan Jakobs
+# Covered under the included MIT/X-Consortium License:
+#    http://www.opensource.org/licenses/mit-license.php
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+###########################################################################
+
+#use warnings;
+use strict;
+
+my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Version	= "0.1-20110109";
+
+# initialize logwatch variables 
+my $ThisLine	= "";
+my %OtherList 	= ();
+
+# initialize variables which save the stats
+my ($Starts,%Stops,$Reloads);
+my (%Warnings);
+my (%RSSfeeds);
+my (%SMTPclientRelay, %SMTPclientStats, %SMTPclientCMDS);
+my (%SMTPclientDelivery, %SMTPclientBounce, %SMTPclientConnect);
+my ($SMTPclient_queuerun, $SMTPclient_messages, $SMTPclientBounces) = (0, 0, 0);
+my (%SMTPserverStats, %SMTPserverRelay, %SMTPserverCMDS);
+my (%SMTPserverHELO, %SMTPserverRCPT, %SMTPserverFROM);
+my (%SMTPServerEval, %SMTPserverAuth, %SMTPSSLError);
+my ($SMTPserverNumRCPTs) = (0);
+my ($serv_extnotify_queuerun) = (0);
+my (%Threads);
+my (%IMAPCmds, %IMAPexpunge, %IMAPUserLogin);
+my ($IMAPCompletedCmds, $IMAPCmdDuration) = (0, 0);
+my (%Ctdlcmds, %CtdlCleanup, %Ctdlqp_encode, %CtdlValRcpt, %CtdlMsgCorrupted);
+my (%CtdlReplChecks, %CtdlAddContact, %CtdlFileOp);
+my ($CtdlMsgDeleted) = (0);
+my (@CtdlLogDeleted);
+my ($NetProcessingTime, $NetProcessingCount) = (0, 0);
+my (%NetStarts, %NetNodes, %NetProc, %NetNoConnect);
+my (%WebClientEngine, %WebClientHost, %WebLoginFailure, %WebUserLogin);
+my ($SieveMsgID, $SieveName, $SieveStarts);
+my (%SieveMsg, %SieveExecute, %SieveProcFor);
+my (%POPCmds, %POPClientConnects, %POPErrors);
+my ($POPCompletedCmds, $POPClientStarted, $POPClientEnded) = (0, 0, 0);
+my (%POPDauth);
+my (%SessionStarted);
+
+### Parse the lines ###
+
+while (defined($ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+
+   # ignore general messages
+   if ( ($ThisLine =~ /^-- db checkpoint --$/) ||
+        ($ThisLine =~ /^$/) ||
+        ($ThisLine =~ /^This program is distributed under the terms/) ||
+        ($ThisLine =~ /^Copyright \(C\) [-\d]+ by the Citadel/) ||
+        ($ThisLine =~ /^<.*> \d+ new of \d+ total messages$/) ||
+        ($ThisLine =~ /^(?:TDAP_)?AdjRefCount\(\) msg \d+/) 
+   ) {
+      # ignore these lines
+   }
+
+   ### Start, Stop, Reload ###
+   elsif ($ThisLine =~ /^\*\*\* Citadel server engine/) {
+      $Starts++;
+   }
+   
+   #TD: citserver: Exiting with status 15
+   elsif ($ThisLine =~ /^citserver: Exiting with status (\d+)$/) {
+     $Stops{$1}++;
+   }
+
+
+   ### Thread processing ###
+   elsif ($ThisLine =~ /^(?:Thread|Created a new thread|Garbage Collection for thread)/) {
+ 
+      #TD: Created a new thread "SMTP Send" (0x40504950).
+      if ($ThisLine =~ /Created a new thread "(.+)" \(([x0-9a-fA-F]+)\)/) {
+         $Threads{"created"}{$1}{$2}++;
+      }
+
+      #TD: Thread "SMTP Send" (0x40504950) exited.
+      #TD: Thread "RSS Client" (0x40605950) exited.
+      elsif ($ThisLine =~ /^Thread "(.+)" \(([x0-9a-fA-F]+)\) exited/) {
+         $Threads{"exited"}{$1}{$2}++;
+      }
+
+      #TD: Garbage Collection for thread "RSS Client" (0x40605950).
+      elsif ($ThisLine =~ /^Garbage Collection for thread "(.+)" \(([x0-9a-fA-F]+)\)/) {
+         $Threads{"garbage collection"}{$1}{$2}++;
+      }
+
+      else {
+         # Report any unmatched entries...
+         chomp($ThisLine);
+         $OtherList{$ThisLine}++;
+      }
+   }
+
+   ### Sessions ###
+   elsif ( ($ThisLine =~ /^\[[ \d]+\] Session ended/) ||
+           ($ThisLine =~ /^Client disconnected: ending session\.$/) ||
+           ($ThisLine =~ /^New client socket \d+$/) ||
+           ($ThisLine =~ /^Terminated \d+ idle sessions$/) 
+   ) {
+      # ignore these lines
+   }
+   #TD: Session (IMAPS) started from myhost (192.168.36.150)
+   #TD: Session (citadel-TCP) started from localhost.localdomain (127.0.0.1).
+   #TD: Session (LMTP) started via local socket UID:101.
+   elsif ($ThisLine =~ /^Session \(([\w-]+)\) started (?:from (\S+) \(([\da-fA-F.:]+)\)|via (local socket) (UID:-?\d+))/) { 
+      $SessionStarted{$1}{"$2$4 [$3$5]"}++;
+   }
+
+
+   ### RSS feed processing ###
+   elsif ( ($ThisLine =~ /^\S+ has already been seen/) ||
+           ($ThisLine =~ /^RSS: XML Status \[\(null\)\]/) ||
+           ($ThisLine =~ /^RSS: This is an (?:RSS|RDF) feed/) ||
+           ($ThisLine =~ /^RSS: saving item/) ||
+           ($ThisLine =~ /^rssclient (?:started|ended)/)
+   ) {
+      # ignore these lines
+   }
+
+   #TD: Fetching RSS feed <http://www.heise.de/open/news/news.rdf>
+   elsif ($ThisLine =~ /Fetching RSS feed <(\S+)>/) {
+      $RSSfeeds{$1}++;
+   }
+
+   ### serv_something processing ###
+   elsif ($ThisLine =~ /^serv_extnotify: queue run completed/)
+   {
+      # ignore these lines
+   }
+
+   elsif ($ThisLine =~ /^serv_extnotify: processing notify queue/) {
+      $serv_extnotify_queuerun++;
+   }
+
+
+   ### SMTP Client ###
+   elsif ( ($ThisLine =~ /^SMTP client: processing outbound queue/) ||
+           ($ThisLine =~ /^SMTP client: smtp_do_procmsg\(\d+\)$/) ||
+           ($ThisLine =~ /^SMTP client: Trying <.*>$/) ||
+           ($ThisLine =~ /^SMTP client: Attempting delivery to /) ||
+           ($ThisLine =~ /^SMTP client: connected!/) ||
+           ($ThisLine =~ /Number of MX hosts for /) ||
+           ($ThisLine =~ /^<?\d{3} \w/) ||
+           ($ThisLine =~ /^smtp_do_bounce\(\) called$/) ||
+           ($ThisLine =~ /^key=<(?:msgid|submitted)?> addr=<.*> status=\d+ dsn=<.*>$/) ||
+           ($ThisLine =~ /^Done processing bounces$/)
+   ) {
+      # ignore these lines
+   }
+
+   #TD: SMTP client: connecting to localhost : 25 ...
+   elsif ($ThisLine =~ /^SMTP client: connecting to (\S+) : (\d+)/) {
+      $SMTPclientConnect{"$1:$2"}++;
+   }
+
+   #TD: >EHLO valaskjalf.localside.net
+   #TD: >MAIL FROM:<stefan@localside.net>
+   #TD: >QUIT
+   elsif ($ThisLine =~ /^>([A-Z ]+)(?::<(.+)>)?/) {
+      $SMTPclientCMDS{$1}{$2}++;
+   }
+ 
+   #TD: SMTP client: delivery to <useraddr> @ <gmail.com> (user) succeeded
+   elsif ($ThisLine =~ /SMTP client: delivery to <(.*)> @ <(.*)> \(.*\) (\w+)$/) {
+      $SMTPclientDelivery{$3}{$2}{$1}++;
+   }
+
+   #TD: 108319: to=<stephencoxmail@gmail.com>, relay=localhost, stat=2.0.0 Ok, id=10168-06, from MTA([127.0.0.1]:10025): 250 2.0.0 Ok: queued as 2901498D0082
+   elsif ($ThisLine =~ /^\d+: to=<(.*)>, relay=(\S*), stat=([\d\.]{3,5}.*?),/) {
+      if ($2 != "") { $SMTPclientRelay{$2}{$1}++; }
+      $SMTPclientStats{$3}++;
+   }
+
+   #TD: key=<bounceto> addr=<Stefan@valaskjalf> status=0 dsn=<>
+   elsif ($ThisLine =~ /^key=<bounceto> addr=<(.*)> status=(\d+) dsn=<(.*)>$/) {
+      $SMTPclientBounce{$1}{"$2: $3"}++;
+   }
+
+   #TD: num_bounces = 0
+   elsif ($ThisLine =~ /^num_bounces = (\d+)$/) {
+      $SMTPclientBounces += $1;
+   }
+
+   elsif ($ThisLine =~ /^SMTP client: queue run completed; \d+ messages processed/) {
+      $SMTPclient_queuerun++;
+      $SMTPclient_messages++;
+   }
+
+   ### SMTP Server ###
+   elsif ( ($ThisLine =~ /^Directory key is <.*>$/) ||
+           ($ThisLine =~ /is being forwarded to/) ||
+           ($ThisLine =~ /^[:\[] get \S*\]?$/) ||
+           ($ThisLine =~ /^<\d{3}[ -]\w+/) ||
+           ($ThisLine =~ /^SSL\/TLS using /) ||
+           ($ThisLine =~ /Ending SSL\/TLS$/) ||
+           ($ThisLine =~ /^(?:Performing|Finished) SMTP cleanup hook$/) ||
+           ($ThisLine =~ /^sending \d+ [A-Z]+ for the room/) 	# this belongs to validate_recipients()
+   ) {
+      # ignore these lines
+   }
+
+   elsif ($ThisLine =~ /^SMTP server:/) {
+
+      #TD: SMTP server: LHLO vs243073.vserver.de
+      if ($ThisLine =~ /^SMTP server: (?:LHLO|HELO|EHLO) (\S+)/) {
+         $SMTPserverHELO{$1}++;
+      }
+ 
+      #TD: SMTP server: RCPT TO:<room_spamassassin-user@localside.net>
+      elsif ($ThisLine =~ /^SMTP server: RCPT TO:<(.+)>$/) {
+         $SMTPserverRCPT{$1}++;
+      }
+
+      #TD: SMTP server: MAIL FROM:<users@spamassassin.apache.org> SIZE=2982 BODY=7BIT
+      elsif ($ThisLine =~ /^SMTP server: MAIL FROM:<(.+)> SIZE=(\d+)(?: BODY=(.*))?$/) {
+         my $body = "no BODY";
+         if ($3 != "") { $body = $3; }
+         $SMTPserverFROM{$1}{$body}{$2}++;
+      }
+
+      #TD: SMTP server: DATA
+      elsif ($ThisLine =~ /^SMTP server: (DATA|QUIT|STARTTLS|AUTH PLAIN)/) {
+         $SMTPserverCMDS{$1}++;
+      }
+
+      else {
+         # Report any unmatched entries...
+         chomp($ThisLine);
+         $OtherList{$ThisLine}++;
+      }
+   }
+
+   #TD: SMTP authenticated Stefan
+   elsif ($ThisLine =~ /^SMTP authenticated (.*)$/) {
+      $SMTPserverAuth{$1}++;
+   }
+
+   #TD: 108347: from=<postfix@postfix.org>, nrcpts=1, relay= [], stat=250 Message accepted
+   elsif ($ThisLine =~ /^\d+: from=<(.*)>, nrcpts=(\d+), relay=(.*) \[(\S*)\], stat=(\d{3}.*)\.$/) {
+      $SMTPserverNumRCPTs += $2;
+      if ($4 != "") { $SMTPserverRelay{"$4 ($3)"}{$1}++; }
+      $SMTPserverStats{$5}++;
+   }
+
+   #TD: Evaluating recipient #0: stefan@localside.net
+   elsif ($ThisLine =~ /^Evaluating recipient #\d+: (\S+)$/) {
+      $SMTPServerEval{$1}++;
+   }
+
+   #TD: SSL_read got error 5
+   elsif ($ThisLine =~ /^SSL_(\S+) got error (\d+)$/) {
+      $SMTPSSLError{$1}{$2}++;
+   }
+
+   ### IMAP processing ###
+   elsif ( ($ThisLine =~ /^\(That translates to/) ||
+           ($ThisLine =~ /^imap_do_expunge\(\) called/) ||
+           ($ThisLine =~ /^Section is: \[\(empty\)\]/) ||
+           ($ThisLine =~ /^[\w ]+ already exists\.$/) ||
+           ($ThisLine =~ /^(?:before| after) update:/) ||
+           ($ThisLine =~ /^(?:Performing|Finished) IMAP cleanup hook$/) ||
+           ($ThisLine =~ /^Converting CRLF to LF$/) 
+   ) {
+      # ignore these lines
+   }
+ 
+   elsif ($ThisLine =~ /^IMAP/) {
+   
+      if ( ($ThisLine =~ /^IMAP: <plain_auth>$/) 
+      ) {
+         # ignore these lines
+      }
+   # improve: IMAPCmdDuration per Command.
+      #TD: IMAP command completed in 0.1437 seconds
+      elsif ($ThisLine =~ /^IMAP command completed in (\d+\.\d+) seconds/)
+      {
+         $IMAPCompletedCmds++;
+         $IMAPCmdDuration += $1;
+      }
+
+      #TD: IMAP: 10117 NOOP
+      #TD: IMAP: 10120 LIST "" "Server Level/%"
+      #TD: IMAP: a003 LOGOUT
+      elsif ($ThisLine =~ /^IMAP: a?\d+ ([A-Z ]+)/) {
+         $IMAPCmds{$1}++;
+      }
+  
+      #TD: IMAP: LOGIN...
+      elsif ($ThisLine =~ /^IMAP: (LOGIN)/) {
+         $IMAPCmds{$1}++;
+      }
+
+      else {
+         # Report any unmatched entries...
+         chomp($ThisLine);
+         $OtherList{$ThisLine}++;
+      }
+   }
+
+   #TD: <Stefan> logged in
+   elsif ($ThisLine =~ /<(.+)> logged in$/) {
+      $IMAPUserLogin{$1}++;
+   }
+
+   #TD: Expunged 0 messages from <SpamAssassin-user>
+   elsif ($ThisLine =~ /^Expunged (\d+) messages from <(.+)>/) {
+      if ($1 > 0) { $IMAPexpunge{$2} += $1; } 
+   }
+
+   ### Citadel internal processing ###
+   elsif ( ($ThisLine =~ /^Selected room/) ||
+           ($ThisLine =~ /^Performing before-save hooks$/) ||
+           ($ThisLine =~ /^Saving to disk$/) ||
+           ($ThisLine =~ /^Creating MetaData record$/) ||
+           ($ThisLine =~ /^Storing pointers$/) ||
+           ($ThisLine =~ /^Updating user$/) ||
+           ($ThisLine =~ /^\d+ unique messages to be merged$/) ||
+           ($ThisLine =~ /^Performing room hooks for <.+>$/) ||
+           ($ThisLine =~ /^Performing after-save hooks$/) ||
+           ($ThisLine =~ /^Wordbreaking message \d+/) ||
+           ($ThisLine =~ /^Purge use table: /) ||
+           ($ThisLine =~ /^Purge (?:euid|EUID) index: /) ||
+           ($ThisLine =~ /^Changed to <.*>$/) ||
+           ($ThisLine =~ /^do_fulltext_indexing\(\)/) ||
+           ($ThisLine =~ /^Indexed \d+ of \d+ messages/) ||
+           ($ThisLine =~ /^ft_index_message\(\) (?:adding|removing) msg/) ||
+           ($ThisLine =~ /^fixed_output(?:_pre|_post)?\(\) (?:part|type)/) ||
+           ($ThisLine =~ /^Skipping part \d+/) ||
+           ($ThisLine =~ /^Indexing message \d+ \[\d+ tokens\]/) || 
+           ($ThisLine =~ /^Indexing message #\d+ <.*>/) ||
+           ($ThisLine =~ /^Flush(?:ing|ed) index cache to disk/) ||
+           ($ThisLine =~ /^Delivering to room <.*>$/) ||
+           ($ThisLine =~ /^Returning to original room/) ||
+           ($ThisLine =~ /^User \d+ maps to/) ||
+           ($ThisLine =~ /^Auto-purger: (?:starting|finished)/) ||
+           ($ThisLine =~ /^Delivering private local mail to <.*>$/) ||
+           ($ThisLine =~ /^Final selection: /) ||
+           ($ThisLine =~ /^Processed \d+ message reference count adjustments/) ||
+           ($ThisLine =~ /^Generating delivery instructions$/) 
+   ) {
+      # ignore these lines
+   }
+
+   #TD: validate_recipients()
+   #TD:  local: 1 <Stefan>
+   #TD:   room: 0 <>
+   #TD:   inet: 0 <>
+   #TD:  ignet: 0 <>
+   #TD:  error: -1 <No recipient specified>
+   elsif ($ThisLine =~ /^(validate_recipients)\(\)$/) {
+      $Ctdlcmds{$1}++;
+   }
+
+   elsif ($ThisLine =~ /^\s{1,2}(local|room|inet|ignet|error): -?(\d+) <(.*)>$/) {
+      if ($2 > 0) { $CtdlValRcpt{$1}{$3} += $2; }
+   }
+
+   #TD: Deleting message <103425>
+   elsif ($ThisLine =~ /Deleting message <(\d+)>$/) {
+      $CtdlMsgDeleted++; 
+   }
+   #TD: 7 message(s) deleted.
+   elsif ($ThisLine =~ /(\d+) message\(s\) deleted\.$/) {  # This belongs to CtdlDeleteMessages
+      if ($1 > 0) { $CtdlMsgDeleted += $1; }
+   }
+
+   #TD: Expired 147 messages.
+   #TD: Expired 0 rooms.
+   #TD: Purged 0 visits.
+   elsif ($ThisLine =~ /^(Expired|Purged) (\d+) (messages|rooms|visits|users|entries from the EUID index|stale OpenID associations|entries from the use table)/) {
+      $CtdlCleanup{$1}{$3} += $2;
+   }
+
+   #TD: Deleting log: /var/lib/citadel/data/log.0000004270
+   elsif ($ThisLine =~ /Deleting log: (.*)$/) {
+      push(@CtdlLogDeleted, $1);
+   }
+
+   #TD: PurgeMessages() called
+   elsif ($ThisLine =~ /(Purge(?:Messages|Rooms|Users))\(\) called$/) {
+      $Ctdlcmds{$1}++;
+   }
+
+   #TD: qp_encode_email_addrs: [postfix-users@postfix.org]
+   elsif ($ThisLine =~ /qp_encode_email_addrs: \[(.+)\]$/) {
+      $Ctdlqp_encode{$1}++;
+   }
+
+   #TD: Message 0 appears to be corrupted
+   elsif ($ThisLine =~ /Message (\d+) appears to be corrupted/) {
+      $CtdlMsgCorrupted{$1}++;
+   }
+
+   #TD: Performing replication checks in <0000000007.Contacts>
+   elsif ($ThisLine =~ /Performing replication checks in <(\d+)\.(.+)>$/) {
+      $CtdlReplChecks{$1}{$2}++;
+   }
+
+   #TD: Adding contact: "Full Name" <user@example.com>
+   elsif ($ThisLine =~ /Adding contact: (.*)$/) {
+      $CtdlAddContact{$1}++;  
+   } 
+
+   elsif ($ThisLine =~ /^Ctdl/) {
+
+      if ($ThisLine =~ /^$/) 
+      {
+         # ignore these lines
+      }
+
+      # ToDo: This can be done better
+      #TD: CtdlFetchMessage(108265, 1)
+      #TD: CtdlOutputPreLoadedMsg(TheMessage=not null, 1, 0, 0, 1
+      #TD: CtdlDeleteMessages(SpamAssassin-user, 1 msgs, )
+      elsif ($ThisLine =~ /^Ctdl(\w+)\(/) {
+         $Ctdlcmds{$1}++;
+      }
+
+   }
+
+   #TD: chmod(/srv/citadel/data//cdb.03, 0600) returned 0
+   #TD: chown(/var/lib/citadel/data//cdb.08, CTDLUID, -1) returned 0
+   elsif ($ThisLine =~ /^(chown|chmod)\((.*), [A-Z0-9]+(?:, -?\d+)?\) returned (\d+)/) {
+      $CtdlFileOp{$1}{$2}++;
+   }
+
+   ### IGnet Networking ###
+   elsif ( ($ThisLine =~ /^network: (?:running|loading) outbound queue$/) ||
+           ($ThisLine =~ /^network: nothing in inbound queue/) ||
+           ($ThisLine =~ /^network: queue run completed/) ||
+           ($ThisLine =~ /^>[0-9]{3} \w+ (?:Citadel|as network)/) ||
+           ($ThisLine =~ /^nttlist=</) 
+   ) {
+      # ignore these lines
+   }
+
+   #TD: Networking started for <0000000007.Mail>
+   elsif ($ThisLine =~ /^Networking started for <(.+)>$/) {
+      $NetStarts{$1}++;
+   }
+
+   #TD: Network full processing in 1021 seconds.
+   elsif ($ThisLine =~ /^Network full processing in (\d+) seconds/) {
+      $NetProcessingCount++;
+      $NetProcessingTime += $1;
+   }
+
+   #TD: Network node <valaskjalf> logged in from example.com [10.0.0.1]
+   elsif ($ThisLine =~ /^Network node <(.+)> logged in from (.*)/) {
+      $NetNodes{"Logins from"}{$1}{$2}++;
+   }
+
+   #TD: Connecting to <valaskjalf> at example.com:504
+   elsif ($ThisLine =~ /^Connecting to <(.+)> at (.*)/) {
+      $NetNodes{"Connects to"}{$1}{$2}++;
+   }
+
+   #TD: Sent 0 octets to <valaskjalf> 
+   elsif ($ThisLine =~ /^Sent (\d+) octets to <(.+)>/) {
+      $NetNodes{"Sent"}{"Octets from"}{$2} += $1;
+   }
+
+   #TD: Can't connect to example.com:504: Connection timed out
+   elsif ($ThisLine =~ /^Can't connect to (.+): (.+)$/) {
+      $NetNoConnect{"Can't connect to"}{$1}{$2}++;
+   }
+
+   #TD: Can't get example.com host entry: Connection timed out
+   elsif ($ThisLine =~ /^Can't get (.+) host entry: (.+)$/) {
+      $NetNoConnect{"Can't get host entry"}{$1}{$2}++;
+   }
+
+   #TD: network: processing 0 bytes from /var/spool/citadel/network/spoolin//genux.0e73.012a
+   elsif ($ThisLine =~ /^network: processing (\d+) bytes from \/\S+\/spool\/citadel\/network\/(\S+)\/(\w+)\.[\.0-9a-f]{9}$/) {
+      $NetProc{$2}{$3} += $1
+   }
+
+   ### web access ###
+   elsif ( ($ThisLine =~ /^New client socket \d+/) ||
+           ($ThisLine =~ /^Closing socket -?\d+/) ||
+           ($ThisLine =~ /^Checking whether [0-9a-fA-F:.]+ is a local or public client/) ||
+           ($ThisLine =~ /^\.\.\. yes it is/) ||
+           ($ThisLine =~ /^Looking up hostname '/) ||
+           ($ThisLine =~ /^Client \d\/\d\/[\d.]+ \(.*\)/) ||
+           ($ThisLine =~ /^<password command hidden from log>$/) ||
+           ($ThisLine =~ /^cmd_user\(\S+\)$/) ||
+           ($ThisLine =~ /^username: /) ||
+           ($ThisLine =~ /^Setting chosen part: <[\.\d]+>$/) ||
+           # ToDo: these are commands from webcit, count them ??
+           ($ThisLine =~ /^(?:ICAL|INFO|MSGP|QUIT|GOTO|MSGS|MSG\d|EUID|MESG|CHEK|READ|OPEN|SEEN|NOOP|DLAT|RDIR|MOVE|OIMG|NDOP|NETP|GTSN|LKR[AN]|LFLR|RWHO|CLOS|UCLS|SLRP|TIME|NUOP|RINF)/) ||
+           ($ThisLine =~ /^Done with RemoveContext\(\)/) ||
+           ($ThisLine =~ /^RemoveContext\(\) session/) ||
+           ($ThisLine =~ /^Purging session \d+/) ||
+           ($ThisLine =~ /^Searching for EUID/) || 
+           ($ThisLine =~ /^returning msgnum = -?\d+/) 
+   ) {
+      # ignore these lines
+   }
+
+   elsif ($ThisLine =~ /^IDEN \d\|\d\|\d+\|(.*)\|(.*)/) {
+      $WebClientEngine{$1}++;
+      $WebClientHost{$2}++;
+   }
+
+   #TD: Bad password specified for <Stefan>
+   elsif ($ThisLine =~ /^Bad password specified for <(.*)>$/) {
+      $WebLoginFailure{$1}++;
+   }
+
+   #TD: USER stefan
+   elsif ($ThisLine =~ /^USER (\S+)$/) {
+      $WebUserLogin{$1}++;
+   }
+
+   ### XMPP ###
+   elsif ( ($ThisLine =~ /^xmpp_queue_event/)
+   ) {
+      # ignore these lines
+   }
+
+   ### Sieve processing ###
+   elsif ( ($ThisLine =~ /^Calling sieve2_execute/) ||
+           ($ThisLine =~ /^ctdl_getscript\(\) is using script/) ||
+           ($ThisLine =~ /^ctdl_getheaders\(\) was called$/) ||
+           ($ThisLine =~ /^<.*> queued for Sieve processing$/) 
+   ) {
+      # ignore these lines
+   }
+
+   #TD: Begin Sieve processing
+   elsif ($ThisLine =~ /^Begin Sieve processing$/) {
+      $SieveStarts++;
+   }
+
+   #TD: Rules found.  Performing Sieve processing for <0000000007.Mail>
+   elsif ($ThisLine =~ /^Rules found.  Performing Sieve processing for <(\d+)\.(\S+)>$/ ) {
+      $SieveProcFor{$1}{$2}++
+   }
+
+   #TD: sieve2_execute() returned 11: Sieve Error: header could not be parsed
+   elsif ($ThisLine =~ /^sieve2_execute\(\) returned \d+: (.+)$/) {
+      $SieveExecute{$1}++;
+   }
+
+   #TD: Performing sieve processing on msg <108269>
+   elsif ($ThisLine =~ /^Performing sieve processing on msg <(\d+)>$/) {
+      $SieveMsgID = $1;
+   }
+
+   #TD: Completed sieve processing on msg <108269>
+   elsif ($ThisLine =~ /^Completed sieve processing on msg <\d+>$/) {
+      undef $SieveMsgID;
+   }
+
+   elsif ($ThisLine =~ /^Sieve: /) {
+
+      if ( ($ThisLine =~ /^Sieve: Prepending a new headerlist and header struct$/) ||
+           ($ThisLine =~ /^Sieve: (?:Begin|body:|header:) (?:NAME|TEXT|WRAP)/) ||
+           ($ThisLine =~ /^Sieve: (?:body: body )?WRAP: /) ||
+           ($ThisLine =~ /^Sieve: Entering name and body into header struct/) ||
+           ($ThisLine =~ /^Sieve: Prepending a new headerlist and header struct/) ||
+           ($ThisLine =~ /^Sieve: starting into libsieve_eval$/) ||
+           ($ThisLine =~ /^Sieve: the commandlist type is \[\d+\]$/) ||
+           ($ThisLine =~ /^Sieve: top of the eval loop$/) ||
+           ($ThisLine =~ /^Sieve: Doing a header comparison$/) ||
+           ($ThisLine =~ /^Sieve: Header parse error, returning null$/) ||
+           ($ThisLine =~ /^Sieve: Relation is \[\d+\]$/) || 
+           ($ThisLine =~ /^Sieve: the commandlist is null$/) ||
+           ($ThisLine =~ /^Sieve: Eat some whitespace and return COLON, forget TEXT$/) ||
+           ($ThisLine =~ /^Sieve: Doing a fileinto$/) ||
+           ($ThisLine =~ /^Sieve: Testing \[Yes\] \[\d+\] \[NO\]/)
+      ) {
+         # ignore these lines
+      }
+
+      #TD: Sieve: NAME: Content-type
+      elsif ($ThisLine =~ /^Sieve: NAME: (\S+)/) {
+         $SieveName = $1;
+      }
+      #TD: Sieve: TEXT: WebCit 7.85
+      elsif ($ThisLine =~ /^Sieve: TEXT: (.*)$/) {
+         $SieveMsg{$SieveMsgID}{"Items"}{$SieveName} = $1;
+      }
+      #TD: Sieve: Asking for header [X-Spam-Flag]
+      elsif ($ThisLine =~ /^Sieve: Asking for header \[(\S+)\]$/) {
+         $SieveMsg{$SieveMsgID}{"Checks"}{$1}++;
+      }
+      #TD: Sieve: test HEADER comparing [room_Citadel@uncensored.citadel.org] with [stefan.jakobs@gmx.de]
+      elsif ($ThisLine =~ /^Sieve: test HEADER comparing (\[.+\]) with (\[.+\])$/) {
+         $SieveMsg{$SieveMsgID}{"Header tests"}{$1} = $2;
+      }
+      #TD: Sieve: Header parse error on line 56: syntax error, unexpected NAME, expecting COLON
+      elsif ($ThisLine =~ /^Sieve: Header parse error on (.+)$/) {
+         $SieveMsg{$SieveMsgID}{"Header parse error"}{$1}++;
+      }
+
+      else {
+         # Report any unmatched entries...
+         chomp($ThisLine);
+         $OtherList{$ThisLine}++;
+      }
+   }
+   
+   #TD: Action is FILEINTO, destination is <Citadel Support>
+   elsif ($ThisLine =~ /^Action is ([A-Z]+), destination is <(.+)>$/) {
+      $SieveMsg{$SieveMsgID}{"Action"}{$1} = $2;
+   }
+
+   #TD: keep is 0 -- deleting message from inbox
+   elsif ($ThisLine =~ /^keep is 0 -- deleting message from (.*)/) {
+      $SieveMsg{$SieveMsgID}{"deleting from"}{$1}++;
+   }
+
+   ### POP3 server ###
+   elsif ( ($ThisLine =~ /^$/)
+   ) {
+      # ignore these lines
+   }
+
+   #TD: POP3 authenticated stefan
+   elsif ($ThisLine =~ /^POP3 authenticated (.+)$/) {
+      $POPDauth{$1}++;
+   }
+
+   ### POP3 client ###
+   elsif ( ($ThisLine =~ /^>\d+ \d+$/) ||
+           ($ThisLine =~ /^>\+OK(?: \d+| POP server ready| mailbox)?/) ||
+           ($ThisLine =~ /^>\.$/) ||
+           ($ThisLine =~ /^Converting message/) ||
+           ($ThisLine =~ /^Converted to <\S*>/) ||
+           ($ThisLine =~ /^POP3: .* <password>$/) ||
+           ($ThisLine =~ /^Could not connect:/) ||
+           ($ThisLine =~ /^Connected!$/)
+   ) {
+      # ignore these lines
+   }
+
+   #TD: pop3client started
+   elsif ($ThisLine =~ /^pop3client started$/) {
+      $POPClientStarted++;
+   }
+
+   #TD: pop3client started
+   elsif ($ThisLine =~ /^pop3client ended$/) {
+      $POPClientEnded++;
+   }
+
+   #TD: Connecting to <pop3.web.de>
+   elsif ($ThisLine =~ /^Connecting to <(\S+)>$/) {
+      $POPClientConnects{$1}++;
+   }
+ 
+   elsif ($ThisLine =~ /^<([A-Z]+)/) {
+      $POPCompletedCmds++;
+      $POPCmds{$1}++;
+   }
+
+   elsif ($ThisLine =~ /^>-ERR (.*)$/) {
+      $POPErrors{$1}++;
+   }
+
+
+   else {
+      # Report any unmatched entries...
+      chomp($ThisLine);
+      $OtherList{$ThisLine}++;
+   }
+
+}
+
+### generate the output ###
+
+# \t = 8 chars
+# %-56s: %5i Time(s)
+
+if ($Starts) {
+    printf "\n%-47s: %5i Time(s)", "Citadel started", $Starts;
+}
+
+if (keys %Stops) {
+    print "\nCitadel exited with:";
+    foreach my $status (sort {$a > $b} keys %Stops) {
+       printf "\n  Status %2i\t\t\t\t\t: %5i Time(s)", $status, $Stops{$status};
+    }
+}
+
+if ($Reloads) {
+    printf "\nCitadel reloaded:\t\t%5i Time(s)", $Reloads;
+}
+if ($Starts or keys %Stops or $Reloads) { print "\n"; }
+
+if (keys %Threads) {
+   print "\nTHREADS:";
+   print "\n--------";
+   foreach my $action (sort {$a cmp $b} keys %Threads) {
+      printf "\n  %s", $action;
+      foreach my $thread (sort {$a cmp $b} keys %{$Threads{$action}}) {
+         printf "\n     %-50s", $thread;
+         my $sum = 0;
+         foreach my $nr (sort {$a cmp $b} keys %{$Threads{$action}{$thread}}) {
+            if ($Detail >= 10) { 
+               printf "\n\t%-40s: %5i Time(s)", $nr, $Threads{$action}{$thread}{$nr};
+            } else { $sum += $Threads{$action}{$thread}{$nr} };
+         }
+         if ($Detail < 10 ) {
+            printf ": %5i Time(s)", $sum;
+         }
+      }
+   }
+   print "\n\n";
+}
+
+if (keys %RSSfeeds) {
+   print "  RSS feeds fetched:\n";
+   foreach my $feed (sort {$a cmp $b} keys %RSSfeeds) {
+      printf "\t%-48s: %5i Time(s)\n", $feed, $RSSfeeds{$feed};
+   }
+   print "\n";
+}
+
+if (keys %SessionStarted) {
+   print "SESSIONS:\n";
+   print "---------\n";
+   foreach my $session (sort {$a cmp $b} keys %SessionStarted) {
+      printf "  %-11s started from:\n", $session;
+      foreach my $addr (sort {$a cmp $b} keys %{$SessionStarted{$session}}) {
+         printf "     %-50s: %5i Time(s)\n", $addr, $SessionStarted{$session}{$addr};
+#         foreach my $nr (sort {$a cmp $b} keys %{$Threads{$action}{$thread}}) {
+#            printf "\t\t%-40s: %5i Time(s)\n", $nr, $Threads{$action}{$thread}{$nr};
+#         }
+      }
+   }
+   print "\n";
+}
+
+if (keys %SMTPserverHELO or keys %SMTPServerEval) {
+   print "SMPT server:\n";
+   print "------------\n";
+   print "  Connects from:\n";
+   foreach my $helo (sort {$a cmp $b} keys %SMTPserverHELO) {
+      printf "\t%-48s: %5i Time(s)\n", $helo, $SMTPserverHELO{$helo};
+   }
+   print "  Messages from: \n";
+   foreach my $from (sort {$a cmp $b} keys %SMTPserverFROM) {
+      my $sum = 0;
+      if ($Detail > 0) { printf "\t%s\n", $from; }
+      foreach my $code (sort {$a cmp $b} keys %{$SMTPserverFROM{$from}}) {
+         if ($Detail > 0) { printf "\t   %s\n", $code; }
+         foreach my $size (sort {$a cmp $b} keys %{$SMTPserverFROM{$from}{$code}}) {
+            if ($Detail > 0) {
+               printf "\t\t%-40i: %5i Time(s)\n", $size, $SMTPserverFROM{$from}{$code}{$size};
+            } else {
+               $sum += $SMTPserverFROM{$from}{$code}{$size};
+            }
+         }
+      }
+      if ($Detail == 0) { printf "\t%-48s: %5i Time(s)\n", $from, $sum; }
+   }
+   print "  Recipients to: \n";
+   foreach my $rcpt (sort {$a cmp $b} keys %SMTPserverRCPT) {
+      printf "\t%-48s: %5i Time(s)\n", $rcpt, $SMTPserverRCPT{$rcpt};
+   }
+   print "  Other Commands:\n";
+   foreach my $cmd (sort {$a cmp $b} keys %SMTPserverCMDS) {
+      printf "\t%-48s: %5i Time(s)\n", $cmd, $SMTPserverCMDS{$cmd};
+   }
+   print "\n";
+   printf "  %-53s: %5i\n", "Number of recipients in total", $SMTPserverNumRCPTs;
+   print "\n";
+   if (keys %SMTPserverRelay) {
+      print "  Messages relayed:\n";
+      foreach my $relay (sort {$a cmp $b} keys %SMTPserverRelay) {
+         printf "     %-50s\n", $relay;
+         foreach my $rcpt (sort {$a cmp $b} keys %{$SMTPserverRelay{$relay}}) {
+            printf "\t%-48s: %5i\n", $rcpt, $SMTPserverRelay{$relay}{$rcpt};
+         }
+      }
+   }
+   if (keys %SMTPserverStats) {
+      print "  Message status:\n";
+      foreach my $stat (sort {$a cmp $b} keys %SMTPserverStats) {
+         printf "\t%-48s: %5i Time(s)\n", $stat, $SMTPserverStats{$stat};
+      }
+   }
+   if (keys %SMTPServerEval) {
+      print "  Recipient verification:\n";
+      foreach my $rcpt (sort {$a cmp $b} keys %SMTPServerEval) {
+         printf "\t%-48s: %5i Time(s)\n", $rcpt, $SMTPServerEval{$rcpt};
+      }
+   }
+   if (keys %SMTPserverAuth) {
+      print "  User authenticated:\n";
+      foreach my $user (sort {$a cmp $b} keys %SMTPserverAuth) {
+         printf "\t%-48s: %5i Time(s)\n", $user, $SMTPserverAuth{$user};
+      }
+   }
+   if (keys %SMTPSSLError) {
+      print "  SSL Errors:\n";
+      foreach my $state (sort {$a cmp $b} keys %SMTPSSLError) {
+         printf "\t%-48s\n", $state;
+         foreach my $nr (sort {$a cmp $b} keys %{$SMTPSSLError{$state}}) {
+            printf "\t   %-45s: %5i Time(s)\n", $nr, $SMTPSSLError{$state}{$nr};
+         }
+      }
+   }
+   print "\n";
+} 
+
+if ($SMTPclient_queuerun or $SMTPclient_messages or 
+    keys %SMTPclientCMDS or keys %SMTPclientDelivery) {
+   print "SMTP client:\n";
+   print "------------\n";
+   printf "  %-53s: %5i\n", "queue runs", $SMTPclient_queuerun;
+   printf "  %-53s: %5i\n", "messages processed", $SMTPclient_messages;
+   print "\n";
+   print "  Client connected to:\n";
+   foreach my $host (sort {$a cmp $b} keys %SMTPclientConnect) {
+      printf "     %-50s: %5i Time(s)\n", $host, $SMTPclientConnect{$host};
+   }
+   if (keys %SMTPclientDelivery) {
+      print "  Message delivery:\n";
+      foreach my $status (sort {$a cmp $b} keys %SMTPclientDelivery) {
+         printf "     %-50s: %5i Time(s)\n", $status, scalar keys %{$SMTPclientDelivery{$status}};
+         foreach my $domain (sort {$a cmp $b} keys %{$SMTPclientDelivery{$status}}) {
+            printf "\t%-48s: %5i Time(s)\n", $domain, scalar keys %{$SMTPclientDelivery{$status}{$domain}};
+            foreach my $user (sort {$a cmp $b} keys %{$SMTPclientDelivery{$status}{$domain}}) {
+               printf "\t  %-46s: %5i Time(s)\n", $user, $SMTPclientDelivery{$status}{$domain}{$user};
+            }
+         }
+      }
+   }
+   print "  Commands send:\n";
+   foreach my $cmd (sort {$a cmp $b} keys %SMTPclientCMDS) {
+      printf "     %-50s: %5i\n", $cmd, scalar keys %{$SMTPclientCMDS{$cmd}};
+      foreach my $addr (sort {$a cmp $b} keys %{$SMTPclientCMDS{$cmd}}) {
+         if ($addr != "") { printf "\t%-48s: %5i\n"; $addr, $SMTPclientCMDS{$cmd}{$addr}; }
+      } 
+   }
+   if (keys %SMTPclientRelay) {
+      print "  Messages relayed:\n";
+      foreach my $relay (sort {$a cmp $b} keys %SMTPclientRelay) {
+         printf "     %-50s\n", $relay;
+         foreach my $rcpt (sort {$a cmp $b} keys %{$SMTPclientRelay{$relay}}) {
+            printf "\t%-48s: %5i\n", $rcpt, $SMTPclientRelay{$relay}{$rcpt};
+         }
+      }
+   }
+   if (keys %SMTPclientStats) {
+      print "  Message status:\n";
+      foreach my $stat (sort {$a cmp $b} keys %SMTPclientStats) {
+         printf "\t%-48s: %5i Time(s)\n", $stat, $SMTPclientStats{$stat};
+      }
+   }
+   if ($SMTPclientBounces) {
+      printf "  %-53s: %5i\n", "Messaged bounced", $SMTPclientBounces;
+      foreach my $bounce (sort {$a cmp $b} keys %SMTPclientBounce) {
+         printf "     %-50s: %5i Time(s)\n", $bounce, scalar keys %{$SMTPclientBounce{$bounce}};
+         foreach my $status (sort {$a cmp $b} keys %{$SMTPclientBounce{$bounce}}) {
+            printf "\t%-48s: %5i Time(s)\n", $status, $SMTPclientBounce{$bounce}{$status};
+         }
+      }
+   }
+   print "\n";
+}
+
+if (keys %IMAPCmds or keys %IMAPexpunge or keys %IMAPUserLogin) {
+   print "IMAP processing:\n";
+   print "----------------\n";
+   if (keys %IMAPUserLogin) {
+      print "Users logged in:\n";
+      foreach my $user (sort {$a cmp $b} keys %IMAPUserLogin) {
+         printf "\t%-48s: %5i Time(s)\n", $user, $IMAPUserLogin{$user};
+      }
+   }
+   if ($IMAPCompletedCmds > 0) {
+      printf "  %-53s: %5i\n", "IMAP commands processed", $IMAPCompletedCmds;
+      foreach my $cmd (sort {$a cmp $b} keys %IMAPCmds) {
+         printf "\t%-48s: %5i Time(s)\n", $cmd, $IMAPCmds{$cmd};
+      }
+      printf "  %-53s: %5.3f sec\n", "avg time per IMAP command", $IMAPCmdDuration/$IMAPCompletedCmds;
+   }
+   if (keys %IMAPexpunge) {
+      printf "\n  Messages expunged from:\n"; 
+      foreach my $msg (sort {$a cmp $b} keys %IMAPexpunge) {
+         printf "\t%-48s: %5i Time(s)\n", $msg, $IMAPexpunge{$msg};
+      }
+   }
+   print "\n";
+}
+
+if (keys %POPDauth) {
+   print "POP3 Server:\n";
+   print "------------\n";
+   print "  Users authenticated:\n";
+   foreach my $user (sort {$a cmp $b} keys %POPDauth) {
+      printf "\t%-48s: %5i Time(s)\n", $user, $POPDauth{$user};
+   }
+   print "\n";
+}
+
+if (keys %POPCmds or keys %POPErrors) {
+   print "POP3 client:\n";
+   print "------------\n";
+   printf "  %-53s: %5i Time(s)\n", "POP3 client started", $POPClientStarted;
+   printf "  %-53s: %5i Time(s)\n", "POP3 client ended", $POPClientEnded;
+   print  "  POP3 client connected to\n";
+   foreach my $addr (sort {$a cmp $b} keys %POPClientConnects) {
+      printf "\t%-48s: %5i Time(s)\n", $addr, $POPClientConnects{$addr};
+   }
+   printf "  %-53s: %5i\n", "POP commands processed", $POPCompletedCmds;
+   foreach my $cmd (sort {$a cmp $b} keys %POPCmds) {
+      printf "\t%-48s: %5i Time(s)\n", $cmd, $POPCmds{$cmd};
+   }
+   if (keys %POPErrors) {
+      print  "  Errors:\n";
+      foreach my $err (sort {$a cmp $b} keys %POPErrors) {
+         printf "\t%-48s: %5i Time(s)\n", $err, $POPErrors{$err};
+      }
+   }
+   print "\n";
+}
+
+if (keys %Ctdlcmds or keys %CtdlMsgCorrupted or keys %CtdlReplChecks or
+    keys %CtdlAddContact or %CtdlFileOp) {
+   print "Citadel internal messages:\n";
+   print "--------------------------\n";
+   foreach my $cleanup (sort {$a cmp $b} keys %CtdlCleanup) {
+      print "\n  $cleanup:";
+      foreach my $item (sort {$a cmp $b} keys %{$CtdlCleanup{$cleanup}}) {
+         printf "\n\t%-48s: %5i", $item, $CtdlCleanup{$cleanup}{$item};   
+      }
+   }
+   if ($CtdlMsgDeleted) {
+      printf "\n  %-53s: %5i", "Messages deleted", $CtdlMsgDeleted;
+   }
+   if (@CtdlLogDeleted) {
+      printf "\n  %-53s: %5i", "Logs deleted", scalar @CtdlLogDeleted;
+      foreach my $log (sort {$a cmp $b} @CtdlLogDeleted) {
+         print "\n\t$log"; 
+      }
+   }
+   if (keys %CtdlCleanup or $CtdlMsgDeleted or @CtdlLogDeleted) { print "\n"; }
+   if (keys %Ctdlcmds) {
+      print "\n  Commands processed:\n";
+      foreach my $cmd (sort {$a cmp $b} keys %Ctdlcmds) {
+         printf "     %-50s: %5i Time(s)\n", $cmd, $Ctdlcmds{$cmd};
+      }
+   }
+   if (keys %CtdlFileOp) {
+      print "\n  File operations:";
+      foreach my $op (sort {$a cmp $b} keys %CtdlFileOp) {
+         if ($Detail > 5) {
+            print  "\n     $op on:";
+         } else {
+            printf "\n     %s on %5i %-35s", $op, scalar keys %{$CtdlFileOp{$op}}, "files";
+         }
+         my $sum = 0;
+         foreach my $file (sort {$a cmp $b} keys %{$CtdlFileOp{$op}}) {
+            if ($Detail > 5) {
+               printf "\n\t%-48s: %5i", $file, $CtdlFileOp{$op}{$file};
+            } else { $sum += $CtdlFileOp{$op}{$file} };
+         }
+         if ($Detail <= 5) {
+            printf ": %5i Time(s)", $sum;
+         }
+      }
+      print "\n";
+   }
+   if (keys %CtdlMsgCorrupted) {
+      print "  Corrupted messages:\n";
+      foreach my $msg (sort {$a cmp $b} keys %CtdlMsgCorrupted) {
+         printf "\t%-48s: %5i\n", $msg, $CtdlMsgCorrupted{$msg};
+      }
+   }
+   if (keys %Ctdlqp_encode) {
+      printf "\n  %-54s", "qp_encode addresses";
+      my $sum = 0;
+      foreach my $addr (sort {$a cmp $b} keys %Ctdlqp_encode) {
+         if ($Detail >= 10) {
+            printf "\n     %-50s: %5i Time(s)\n", $addr, $Ctdlqp_encode{$addr};
+         } else { $sum += $Ctdlqp_encode{$addr}; }
+      }
+      if ($Detail < 10) { printf ": %5i Time(s)\n", $sum; }
+   }
+   if (keys %CtdlValRcpt) {
+      print "\n  Recipients validated:\n";
+      foreach my $dest (sort {$a cmp $b} keys %CtdlValRcpt) {
+         printf "     %-50s: %5i Time(s)\n", $dest, scalar keys %{$CtdlValRcpt{$dest}};
+         foreach my $rcpt (sort {$a cmp $b} keys %{$CtdlValRcpt{$dest}}) {
+            printf "\t%-48s: %5i Time(s)\n", $rcpt, $CtdlValRcpt{$dest}{$rcpt};
+         }
+      }
+   }
+   if (keys %CtdlReplChecks) {
+      print "\n  Replication checks:\n";
+      foreach my $user (sort {$a cmp $b} keys %CtdlReplChecks) {
+         printf "     %s\n", $user;
+         foreach my $mbox (sort {$a cmp $b} keys %{$CtdlReplChecks{$user}}) {
+            printf "\t%-48s: %5i Time(s)\n", $mbox, $CtdlReplChecks{$user}{$mbox}; 
+         }
+      }
+   }
+   if (keys %CtdlAddContact) {
+      print "\n  Contacts added:\n";
+      foreach my $contact (sort {$a cmp $b} keys %CtdlAddContact) {
+         printf "     %-50s: %5i Time(s)\n", $contact , $CtdlAddContact{$contact};
+      }
+   }
+   if ($serv_extnotify_queuerun) {
+      printf "\n  %-53s: %5i\n", "serv extnotify queue run", $serv_extnotify_queuerun;
+   }
+   print "\n";
+}
+
+if ($NetProcessingTime or $NetProcessingCount or keys %NetNodes or
+    keys %NetProc or keys %NetNoConnect) {
+   print "Network processing\n";
+   print "------------------\n";
+   if ($NetProcessingTime or $NetProcessingCount) {
+      printf "  %-53s: %5i\n", "Full processings completed", $NetProcessingCount;
+      printf "  Full processing took %5.3f sec\n\n", $NetProcessingTime;
+   }
+   if (keys %NetStarts) {
+      print  "  Networking started for:\n";
+      foreach my $net (sort {$a cmp $b} keys %NetStarts) {
+         printf "\t%-48s: %5i Time(s)\n", $net, $NetStarts{$net};
+      }
+   }
+   if (keys %NetNodes) {
+      print "\n";  
+      foreach my $cat (sort {$a cmp $b} keys %NetNodes) {
+         print "  $cat:\n";
+         foreach my $node (sort {$a cmp $b} keys %{$NetNodes{$cat}}) {
+            printf "     %-50s:\n", $node;
+            foreach my $host (sort {$a cmp $b} keys %{$NetNodes{$cat}{$node}}) {
+               printf "\t%-48s: %5i Time(s)\n", $host, $NetNodes{$cat}{$node}{$host};
+            }
+         }
+      }
+   }
+   if (keys %NetProc) {
+      print "  Processing:\n";
+      foreach my $dir (sort {$a cmp $b} keys %NetProc) {
+         print "     $dir:\n";
+         foreach my $file (sort {$a cmp $b} keys %{$NetProc{$dir}}) {
+            printf "\t%-48s: %-5i Byte(s)\n", $file, $NetProc{$dir}{$file};
+         }
+      }
+   }
+   if (keys %NetNoConnect) {
+      foreach my $what (sort {$a cmp $b} keys %NetNoConnect) {
+         print "  $what:\n";
+         foreach my $host (sort {$a cmp $b} keys %{$NetNoConnect{$what}}) {
+            print "     $host:\n";
+            foreach my $reason (sort {$a cmp $b} keys %{$NetNoConnect{$what}{$host}}) {
+               printf "\t%-48s: %-5i Time(s)\n", $reason, $NetNoConnect{$what}{$host}{$reason};
+            }
+         }
+      }
+   }
+   print "\n";
+}
+
+if (keys %WebClientHost or keys %WebClientEngine or keys %WebUserLogin) {
+   print "Webcit:\n";
+   print "-------\n";
+   if (keys %WebUserLogin) {
+      print "  User logged in:\n";
+      foreach my $user (sort {$a cmp $b} keys %WebUserLogin) {
+         printf "\t%-48s: %5i Time(s)\n", $user, $WebUserLogin{$user};
+      }
+   }
+   if (keys %WebLoginFailure) {
+      print "  Login failures:\n";
+      foreach my $user (sort {$a cmp $b} keys %WebLoginFailure) {
+         printf "\t%-48s: %5i Time(s)\n", $user, $WebLoginFailure{$user};
+      }
+   }
+   if (keys %WebClientHost) {
+      print "  Connects from hosts:\n";
+      foreach my $host (sort {$a cmp $b} keys %WebClientHost) {
+         printf "\t%-48s: %5i Time(s)\n", $host, $WebClientHost{$host};
+      }
+   }
+   if (keys %WebClientEngine) {
+      printf "  Connects with engines:\n";
+      foreach my $engine (sort {$a cmp $b} keys %WebClientEngine) {
+         printf "\t%-48s: %5i Time(s)\n", $engine, $WebClientEngine{$engine};
+      }
+   }
+   print "\n";
+}
+
+
+if (keys %SieveMsg or keys %SieveExecute or %SieveProcFor) {
+   print "Sieve processing:\n";
+   print "-----------------\n";
+   printf "  %-53s: %5i Time(s)\n", "Sieve processing started", $SieveStarts;
+   printf "  %-53s: %5i\n\n", "Messages processed", scalar keys %SieveMsg;
+   if (keys %SieveExecute) {
+      print "  Sieve execute returned:\n";
+      foreach my $error (sort {$a cmp $b} keys %SieveExecute) {
+         printf "\t%-48s: %5i Time(s)\n", $error, $SieveExecute{$error};
+      }
+   }
+   if ($Detail > 5) {
+   if (keys %SieveProcFor) {
+      print  "  Sieve processed for user:\n";
+      foreach my $user (sort {$a cmp $b} keys %SieveProcFor) {
+         print "     $user:";
+         my $val = 0;
+         foreach my $mbox (sort {$a cmp $b} keys %{$SieveProcFor{$user}}) {
+            if ($Detail >= 10) {
+               printf "\n\t%-48s: %5i Time(s)\n", $mbox, $SieveProcFor{$user}{$mbox};
+            } else {
+               $val = $SieveProcFor{$user}{$mbox} + $val;
+            }
+         }
+         if ($Detail < 10) { printf " with %5i room(s) \t\t\t: %5i Time(s)\n", scalar keys %{$SieveProcFor{$user}}, $val; }
+      }
+   }
+   foreach my $id (sort {$a cmp $b} keys %SieveMsg) {
+      printf "  Message %8i:\n", $id;
+      foreach my $stage (sort {$a cmp $b} keys %{$SieveMsg{$id}}) {
+         if ($Detail >= 10 || ($stage ne "Header tests" && $stage ne "Items") ) {
+            printf "     %s:\n", $stage;
+            foreach my $item (sort {$a cmp $b} keys %{$SieveMsg{$id}{$stage}}) {
+               printf "\t%-48s: %s\n", $item, $SieveMsg{$id}{$stage}{$item};
+            }
+         }
+      }
+   }
+   }
+   print "\n";
+}
+
+if (keys %OtherList) {
+   print "\n**** Unmatched entries ****\n";
+   foreach my $Error (keys %OtherList) {
+      print "    $Error : $OtherList{$Error} Time(s)\n";
+   }
+}
+
+### return without a failure ###
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+
