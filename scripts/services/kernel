@@ -102,6 +102,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SkipError = 1 if $ThisLine =~ /smb_open: .* open failed, error=-13/;
       # filter out error_exit in stack traces caused by OOM conditions
       $SkipError = 1 if $ThisLine =~ /\[<[\da-f]+>\] error_exit\+0x/;
+      # These are informative, not errors
+      $SkipError = 1 if $ThisLine =~ /PCIe errors handled by OS/;
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
    }
    # OTHER
