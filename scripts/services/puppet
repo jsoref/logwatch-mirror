@@ -35,6 +35,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Caching catalog for /) or
       ($ThisLine =~ /Caching node for /) or
       ($ThisLine =~ /Caught TERM; calling stop/) or
+      ($ThisLine =~ /[sS]hutting down/) or
       ($ThisLine =~ /Reopening log files/) or
       ($ThisLine =~ /Starting Puppet client version /) or
       ($ThisLine =~ /Restarting with.+puppetd/) or
@@ -61,18 +62,26 @@ while (defined($ThisLine = <STDIN>)) {
       $ChangedFiles{$1}++;
    } elsif ($ThisLine =~ /File\[.+\].+created/) {
       $ThisLine =~ /File\[(.+)\].+created/;
-      $ChangedFiles{$1}++;
+      $CreatedFiles{$1}++;
    } elsif ($ThisLine =~ /File\[.+\].+removed/) {
       $ThisLine =~ /File\[(.+)\].+removed/;
-      $ChangedFiles{$1}++;
-   } elsif ($ThisLine =~ /Failed to retrieve current state of resource/) {
+      $RemovedFiles{$1}++;
+   } elsif (
+      ($ThisLine =~ /Failed to retrieve current state of resource/) or
+      ($ThisLine =~ /Package.+ensure.+Could not find package/) or
+      ($ThisLine =~ /File\[.+\].+ Could not describe /) or
+      ($ThisLine =~ /File\[.+\].+ No specified sources exist/)
+   ) {
       $ResourceFailures++;
    } elsif ($ThisLine =~ /Package\[.+\].+ensure changed/) {
       $ThisLine =~ /Package\[(.+)\].+ensure changed/;
       $ChangedPackages{$1}++;
    } elsif ($ThisLine =~ /Package\[.+\].+ensure\) created/) {
       $ThisLine =~ /Package\[(.+)\].+ensure\) created/;
-      $ChangedPackages{$1}++;
+      $InstalledPackages{$1}++;
+   } elsif ($ThisLine =~ /Package\[.+\].+ensure\) removed/) {
+      $ThisLine =~ /Package\[(.+)\].+ensure\) removed/;
+      $RemovedPackages{$1}++;
    } elsif ($ThisLine =~ /Exec\[.+\].+executed successfully/) {
       $ThisLine =~ /Exec\[(.+)\].+executed successfully/;
       $ExecRuns{$1}++;
@@ -85,7 +94,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ /Service\[.+\].+Triggering 'refresh' from [0-9]+ dependencies/) {
       $ThisLine =~ /Service\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/;
       $ServiceStarts{$1}++;
-   } elsif ($ThisLine =~ /Dependency .+\[.+\].+ has [0-9]+ failure/) {
+   } elsif ($ThisLine =~ /Dependency .+\[.+\] has [0-9]+ failure/) {
       $DependencyFailures++;
    } else {
       # Report any unmatched entries...
@@ -95,10 +104,19 @@ while (defined($ThisLine = <STDIN>)) {
 
 #######################################
 
-print "\nSuccessful runs: $SuccessfulRuns\n" if $Detail;
+if ($SuccessfulRuns > 0 && $Detail > 0) {
+   print "\nSuccessful runs: $SuccessfulRuns\n";
+}
 
 if ($FailedRuns > 0) {
    print "\nFailed runs: $FailedRuns\n";
+}
+
+if (keys %CreatedFiles) {
+   print "\nCreated files:\n";
+   foreach $ThisOne (keys %CreatedFiles) {
+      print "$ThisOne: $CreatedFiles{$ThisOne} Time(s)\n";
+   }
 }
 
 if (keys %ChangedFiles) {
@@ -108,10 +126,31 @@ if (keys %ChangedFiles) {
    }
 }
 
+if (keys %RemovedFiles) {
+   print "\nRemoved files:\n";
+   foreach $ThisOne (keys %RemovedFiles) {
+      print "$ThisOne: $RemovedFiles{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %InstalledPackages) {
+   print "\nInstalled packages:\n";
+   foreach $ThisOne (keys %InstalledPackages) {
+      print "$ThisOne: $InstalledPackages{$ThisOne} Time(s)\n";
+   }
+}
+
 if (keys %ChangedPackages) {
    print "\nChanged packages:\n";
    foreach $ThisOne (keys %ChangedPackages) {
       print "$ThisOne: $ChangedPackages{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %RemovedPackages) {
+   print "\nRemoved packages:\n";
+   foreach $ThisOne (keys %RemovedPackages) {
+      print "$ThisOne: $RemovedPackages{$ThisOne} Time(s)\n";
    }
 }
 

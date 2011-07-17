@@ -287,6 +287,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneLoaded{"secondary $Zone"}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /slave zone \"(.+)\" .* loaded/ ) ) {
       $ZoneLoaded{"secondary $Zone"}++;
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\/IN\: expired/ ) ) {
+      $ZoneExpired{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\: loaded serial/ ) ) {
       $ZoneLoaded{$Zone}++;
    } elsif ( (undef,$Addr,undef,$Server) = ( $ThisLine =~ /ame server (on|resolving) '(.+)' \(in .+\):\s+(\[.+\]\.\d+)?\s*'?(.+)'?:?/ ) ) {
@@ -589,6 +591,13 @@ if ( ( $Detail >= 10 ) and (keys %HUR) ) {
        foreach $Host (sort {$a cmp $b} keys %{$HUR{$ThisOne}}) {
           print "      $Host: $HUR{$ThisOne}{$Host} Time(s)\n";
        }
+   }
+}
+
+if ( keys %ZoneExpired ) {
+   print "\nZones expired:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %ZoneExpired) {
+      print "   $ThisOne: $ZoneExpired{$ThisOne} Time(s)\n";
    }
 }
 

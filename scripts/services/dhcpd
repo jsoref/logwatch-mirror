@@ -56,6 +56,7 @@ while (my $line = <STDIN>) {
       # Remove host declaration host_name or remove 10.0.0.199
       ($line =~ /^from the dynamic address pool for/) or
       ($line =~ /^parse_option_buffer: option [\w-]+ \(\d+\) larger than buffer/) or
+      ($line =~ /xid mismatch/) or
       ($line =~ /^BOOTREQUEST/) or
       ($line =~ /^DHCPACK/) or
       ($line =~ /^DHCPNAK/) or
@@ -196,6 +197,8 @@ while (my $line = <STDIN>) {
       $data{'No Free Leases'}{$1}++;
    } elsif ($line =~ /^DHCPDISCOVER from .* via (\S+): unknown network segment/) {
       $data{'Unknown Network Segments'}{$1}++;
+   } elsif ($line =~ /^DHCPDISCOVER from .* via (\S+): load balance to peer/) {
+      $data{'Load balance to peer'}{$1}++
    } elsif ($line =~ /^ICMP Echo Reply for ([\da-fA-F\.:]+) late or spurious/) {
       $data{'Late or spurious Echo Reply for'}{$1}++;
    } elsif ($line =~ /^ICMP Echo reply while lease ([\da-fA-F\.:]+) valid/) {
