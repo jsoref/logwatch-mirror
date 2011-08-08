@@ -151,7 +151,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Deliver{$User}{$Mailbox}++;
 
 # For Sieve-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda\(|deliver\(|lmtp\(\d+, )(.*)\): (?:[^:]+: )?sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based delivery
