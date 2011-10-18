@@ -497,7 +497,9 @@ while (my $line = <STDIN>) {
    if (!$ignore_error_hacks) {
       for (my $i = 0; $i < @exploits; $i++) {
          # print "$i $exploits[$i] $field{lc_url} \n";
-         if ($field{lc_url} =~ /$exploits[$i]/i) {
+         if ( ($field{lc_url} =~ /$exploits[$i]/i) &&
+              !((defined $ignoreURLs) && ($field{url} =~ /$ignoreURLs/)) &&
+              !((defined $ignoreIPs) && ($field{client_ip} =~ /$ignoreIPs/)) ) {
             $hacks{$field{client_ip}}{$exploits[$i]}++;
             $total_hack_count += 1;
             $ban_ip{$field{client_ip}} = " ";
