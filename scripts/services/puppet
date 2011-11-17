@@ -19,8 +19,11 @@
 ## copyright please contact logwatch-devel@logwatch.org.
 #########################################################
 
-# Detail level is currently not used
+# Detail level
 $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+
+# Config
+my $offline = $ENV{'puppet_offline_ok'};
 
 # Init counters
 $FailedRuns = 0;
@@ -42,7 +45,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Caught HUP; calling restart/) or
       ($ThisLine =~ /Skipping because of failed dependencies/) or
       ($ThisLine =~ /Failed to generate additional resources/) or
-      ($ThisLine =~ /Could not retrieve catalog from remote server/) or
+      ($ThisLine =~ /Could not evaluate: getaddrinfo: Name or service not known/) or
       ($ThisLine =~ /replacing from source .+ with contents /) or
       ($ThisLine =~ /Starting catalog run/) or
       ($ThisLine =~ /Applying configuration version/) or
@@ -50,6 +53,12 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Retrieving plugin/)
    ) {
       # Ignore
+   } elsif (($reason) = ($ThisLine =~ /Could not retrieve catalog from remote server: (.*)/)) {
+      if ($reason == "getaddrinfo: Name or service not known" && $offline) {
+         $FailedRuns--;
+      } else {
+         $CatalogFailures{$reason}++;
+      }
    } elsif ($ThisLine =~ /Finished catalog run in [0-9]+\.[0-9]+ seconds/) {
       $SuccessfulRuns++;
    } elsif ($ThisLine =~ /skipping run/) {
@@ -112,59 +121,66 @@ if ($FailedRuns > 0) {
    print "\nFailed runs: $FailedRuns\n";
 }
 
+if (keys %CatalogFailures) {
+   print "\nCould not retrieve catalog from remote server:\n";
+   foreach $ThisOne (keys %CatalogFailures) {
+      print "    $ThisOne: $CatalogFailures{$ThisOne} Time(s)\n";
+   }
+}
+
 if (keys %CreatedFiles) {
    print "\nCreated files:\n";
    foreach $ThisOne (keys %CreatedFiles) {
-      print "$ThisOne: $CreatedFiles{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $CreatedFiles{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %ChangedFiles) {
    print "\nChanged files:\n";
    foreach $ThisOne (keys %ChangedFiles) {
-      print "$ThisOne: $ChangedFiles{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $ChangedFiles{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %RemovedFiles) {
    print "\nRemoved files:\n";
    foreach $ThisOne (keys %RemovedFiles) {
-      print "$ThisOne: $RemovedFiles{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $RemovedFiles{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %InstalledPackages) {
    print "\nInstalled packages:\n";
    foreach $ThisOne (keys %InstalledPackages) {
-      print "$ThisOne: $InstalledPackages{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $InstalledPackages{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %ChangedPackages) {
    print "\nChanged packages:\n";
    foreach $ThisOne (keys %ChangedPackages) {
-      print "$ThisOne: $ChangedPackages{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $ChangedPackages{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %RemovedPackages) {
    print "\nRemoved packages:\n";
    foreach $ThisOne (keys %RemovedPackages) {
-      print "$ThisOne: $RemovedPackages{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $RemovedPackages{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %ExecRuns) {
    print "\nExec runs:\n";
    foreach $ThisOne (keys %ExecRuns) {
-      print "$ThisOne: $ExecRuns{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $ExecRuns{$ThisOne} Time(s)\n";
    }
 }
 
 if (keys %ServiceStarts) {
    print "\nService starts:\n";
    foreach $ThisOne (keys %ServiceStarts) {
-      print "$ThisOne: $ServiceStarts{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $ServiceStarts{$ThisOne} Time(s)\n";
    }
 }
 
@@ -179,7 +195,7 @@ if ($DependencyFailures > 0) {
 if (keys %OtherList) {
    print "\n**Unmatched Entries**\n";
    foreach $ThisOne (keys %OtherList) {
-      print "$ThisOne: $OtherList{$ThisOne} Time(s)\n";
+      print "    $ThisOne: $OtherList{$ThisOne} Time(s)\n";
    }
 }
 
