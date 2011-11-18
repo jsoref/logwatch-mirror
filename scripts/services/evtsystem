@@ -60,6 +60,32 @@ while (defined($ThisLine = <STDIN>)) {
       next if $ExpandedString =~ /Microsoft \(R\) Windows \(R\) \d+\.\d+\. \d+ Service Pack \d/;
       next if $ExpandedString =~ /The Event log service was started./;
       next if $ExpandedString =~ /The Event log service was stopped./;
+      next if $ExpandedString =~ /The system uptime is \d+ seconds/;
+   }
+
+   if ($System =~ /Microsoft-Windows-Kernel-Power/) {
+      #High Detail
+      next if $ExpandedString =~ /The system is entering sleep/ and $Detail < 10;
+   }
+
+   if ($System =~ /Microsoft-Windows-Power-Troubleshooter/) {
+      #High Detail
+      next if $ExpandedString =~ /The system has resumed from sleep/ and $Detail < 10;
+   }
+
+   if ($System =~ /Microsoft-Windows-Time-Service/) {
+      #High Detail
+      next if $ExpandedString =~ /The time provider NtpClient is currently receiving valid time data from/ and $Detail < 10;
+   }
+
+   if ($System =~ /Microsoft-Windows-Winlogon/) {
+      #High Detail
+      next if $ExpandedString =~ /User \w+ Notification for Customer Experience Improvement Program/ and $Detail < 10;
+   }
+
+   if ($System =~ /Virtual Disk Service/) {
+      #High Detail
+      next if $ExpandedString =~ /Service (started|stopped)/ and $Detail < 10;
    }
 
    if ($System =~ /Service Control Manager/) {
