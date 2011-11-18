@@ -50,7 +50,8 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Starting catalog run/) or
       ($ThisLine =~ /Applying configuration version/) or
       ($ThisLine =~ /Loading facts in/) or
-      ($ThisLine =~ /Retrieving plugin/)
+      ($ThisLine =~ /Retrieving plugin/) or
+      ($ThisLine =~ /FileBucket adding/)
    ) {
       # Ignore
    } elsif (($reason) = ($ThisLine =~ /Could not retrieve catalog from remote server: (.*)/)) {
@@ -75,6 +76,8 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ /File\[.+\].+removed/) {
       $ThisLine =~ /File\[(.+)\].+removed/;
       $RemovedFiles{$1}++;
+   } elsif (($fileinfo) = ($ThisLine =~ /Filebucketed (.*)/)) {
+      $FileBucketed{$1}++;
    } elsif (
       ($ThisLine =~ /Failed to retrieve current state of resource/) or
       ($ThisLine =~ /Package.+ensure.+Could not find package/) or
@@ -146,6 +149,13 @@ if (keys %RemovedFiles) {
    print "\nRemoved files:\n";
    foreach $ThisOne (keys %RemovedFiles) {
       print "    $ThisOne: $RemovedFiles{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %FileBucketed and $Detail >= 5) {
+   print "\nFileBucketed files:\n";
+   foreach $ThisOne (keys %FileBucketed) {
+      print "    $ThisOne\n";
    }
 }
 
