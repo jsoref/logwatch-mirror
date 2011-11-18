@@ -64,17 +64,13 @@ while (defined($ThisLine = <STDIN>)) {
       $SuccessfulRuns++;
    } elsif ($ThisLine =~ /skipping run/) {
       $FailedRuns++;
-   } elsif ($ThisLine =~ /File\[.+\].+checksum changed/) {
-      $ThisLine =~ /File\[(.+)\].+checksum changed/;
+   } elsif ($ThisLine =~ /File\[(.+)\].+checksum changed/) {
       $ChangedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[.+\].+content changed/) {
-      $ThisLine =~ /File\[(.+)\].+content changed/;
+   } elsif ($ThisLine =~ /File\[(.+)\].+content changed/) {
       $ChangedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[.+\].+created/) {
-      $ThisLine =~ /File\[(.+)\].+created/;
+   } elsif ($ThisLine =~ /File\[(.+)\].+created/) {
       $CreatedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[.+\].+removed/) {
-      $ThisLine =~ /File\[(.+)\].+removed/;
+   } elsif ($ThisLine =~ /File\[(.+)\].+removed/) {
       $RemovedFiles{$1}++;
    } elsif (($fileinfo) = ($ThisLine =~ /Filebucketed (.*)/)) {
       $FileBucketed{$1}++;
@@ -85,26 +81,19 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /File\[.+\].+ No specified sources exist/)
    ) {
       $ResourceFailures++;
-   } elsif ($ThisLine =~ /Package\[.+\].+ensure changed/) {
-      $ThisLine =~ /Package\[(.+)\].+ensure changed/;
+   } elsif ($ThisLine =~ /Package\[(.+)\].+ensure changed/) {
       $ChangedPackages{$1}++;
-   } elsif ($ThisLine =~ /Package\[.+\].+ensure\) created/) {
-      $ThisLine =~ /Package\[(.+)\].+ensure\) created/;
+   } elsif ($ThisLine =~ /Package\[(.+)\].+ensure\) created/) {
       $InstalledPackages{$1}++;
-   } elsif ($ThisLine =~ /Package\[.+\].+ensure\) removed/) {
-      $ThisLine =~ /Package\[(.+)\].+ensure\) removed/;
+   } elsif ($ThisLine =~ /Package\[(.+)\].+ensure\) removed/) {
       $RemovedPackages{$1}++;
-   } elsif ($ThisLine =~ /Exec\[.+\].+executed successfully/) {
-      $ThisLine =~ /Exec\[(.+)\].+executed successfully/;
+   } elsif ($ThisLine =~ /Exec\[(.+)\].+executed successfully/) {
       $ExecRuns{$1}++;
-   } elsif ($ThisLine =~ /Exec\[.+\].+Triggering 'refresh' from [0-9]+ dependencies/) {
-      $ThisLine =~ /Exec\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/;
+   } elsif ($ThisLine =~ /Exec\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/) {
       $ExecRuns{$1}++;
-   } elsif ($ThisLine =~ /Service\[.+\].+ensure changed \'.+\' to \'running\'/) {
-      $ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'running\'/;
+   } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'running\'/) {
       $ServiceStarts{$1}++;
-   } elsif ($ThisLine =~ /Service\[.+\].+Triggering 'refresh' from [0-9]+ dependencies/) {
-      $ThisLine =~ /Service\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/;
+   } elsif ($ThisLine =~ /Service\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/) {
       $ServiceStarts{$1}++;
    } elsif ($ThisLine =~ /Dependency .+\[.+\] has [0-9]+ failure/) {
       $DependencyFailures++;
