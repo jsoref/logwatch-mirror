@@ -114,7 +114,7 @@ while ($ThisLine = <STDIN>) {
 	( $ThisLine =~ /: enforcing=[0-9]+ old_enforcing=[0-9]+ auid=[0-9]+/) or
 	( $ThisLine =~ /: policy loaded auid=[0-9]+/) or
 	( $ThisLine =~ /: user pid=[0-9]+ uid=[0-9]+ auid=[0-9]+ subj=system_u:system_r:system_dbusd_t:[0-9a-z:.\-]+ msg=/) or
-	( $ThisLine =~ /audit\([0-9.]+:[0-9]+\): (selinux=[0-9]+|auid=[0-9]+|prom=[0-9]+|old_prom=[0-9]+|dev=[^ ]+| )+$/) or
+	( $ThisLine =~ /audit\([0-9.]+:[0-9]+\): (selinux=[0-9]+|auid=[0-9]+|prom=[0-9]+|old_prom=[0-9]+|dev=[^ ]+|ses=[0-9]+| )+$/) or
         ( $ThisLine =~ /auditd[ ]+S [0-9A-F]+  [0-9]+  [0-9]+[ ]+[0-9]([ ]*[0-9]+[ ]*|[ ]*)[0-9]+  [0-9]+ \(NOTLB\)/) or
         ( $ThisLine =~ /Started dispatcher: \/sbin\/audispd pid: [0-9]+/) or
         ( $ThisLine =~ /audit\([0-9.]*:[0-9]*\): bool=.* val=.* old_val=.* auid=[0-9]*/) or
