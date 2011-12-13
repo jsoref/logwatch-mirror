@@ -95,6 +95,7 @@ my %BugLog = ();
 my $UELimit = 10;
 my $ThisLine;
 my %Warning = ();
+my %AuditctlStatus = ();
 
 print STDERR "\n\nDEBUG: Inside audit filter\n\n" if ( $Debug >= 5 );
 
@@ -123,7 +124,8 @@ while ($ThisLine = <STDIN>) {
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\):  cwd=".*"/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): user/) or
         ( $ThisLine =~ /audit_printk_skb: [0-9]* callbacks suppressed/) or
-	( $ThisLine =~ /item=[0-9] name="\S*" inode=[0-9]+ dev=\S* mode=[0-9]* ouid=[0-9]* ogid=[0-9]* rdev=[0-9:]* obj=\S*/)
+	( $ThisLine =~ /item=[0-9] name="\S*" inode=[0-9]+ dev=\S* mode=[0-9]* ouid=[0-9]* ogid=[0-9]* rdev=[0-9:]* obj=\S*/) or
+	( $ThisLine =~ /^No rules$/ )
     ) {
 	# Ignore these entries
     } elsif ( $ThisLine =~ /audit\([0-9]{10}.[0-9]{3}:[0-9]\): initialized$/) {
@@ -148,6 +150,8 @@ while ($ThisLine = <STDIN>) {
     } elsif (( $ThisLine =~ /Audit daemon is low on disk space for logging/)  or
              ( $ThisLine =~ /Audit daemon is suspending logging due to low disk space./)) {
       $Warning{$ThisLine}++;
+    } elsif ( my ($status) = ( $ThisLine =~ /AUDIT_STATUS: (.*)/ ) ) {
+      $AuditctlStatus{$status}++; 
     } elsif ( $Detail > 9 ) {
 	if ( $ThisLine =~ /avc:\s*denied\s*{\s*([^}]+).*scontext=(\S+)\s*tcontext=(\S+)\s*tclass=(\S+)/ ) {
 	    $denials{$2.' '.$3.' ('.$1.$4 . ')'}++;
@@ -236,8 +240,15 @@ if (($Detail >9) and ($NumberOfDStartsPid)) {
     print "        starts with pid change: $NumberOfDStartsPid \n"
 }
 
-if ($Detail and $NumberOfDStops)  {
+if ($Detail and $NumberOfDStops) {
     print "\n Number of audit daemon stops: $NumberOfDStops \n";
+}
+
+if ($Detail and keys(%AuditctlStatus)) {
+    print "\n Auditctl status:\n";
+    foreach my $key (sort keys %AuditctlStatus) {
+        print "    $key: ". $AuditctlStatus{$key} . " times\n";
+    }
 }
 
 if ($NumberOfLostMessages) {
