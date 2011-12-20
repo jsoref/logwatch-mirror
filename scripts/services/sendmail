@@ -1760,7 +1760,7 @@ if (keys %Abuse) {
       print "\n        Total per host: $TotalAbuse" if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $TotalAbuse;
    }
-   print "\n\tTota: l $TotalError[$ErrorIndex]" if ($Detail >= 3);
+   print "\n\tTotal: $TotalError[$ErrorIndex]" if ($Detail >= 3);
 }
 $TotalError[++$ErrorIndex] = 0;
 
