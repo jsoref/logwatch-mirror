@@ -54,10 +54,12 @@ use Logwatch ':ip';
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Ignore_faults = $ENV{'ignore_faults'};
+my $Ignore_rpcsec_expired = $ENV{'ignore_rpcsec_expired'} || 0;
 my %SYNflood = ();
 my %RAIDErrors = ();
 my %SegFaults = ();
 my %GPFaults = ();
+my %TrapInt3s = ();
 my %UnalignedErrors = ();
 my %FPAssists = ();
 my %OOM = ();
@@ -88,6 +90,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SegFaults{$1}++;
    } elsif ($ThisLine =~ /([^(]*)\[\d+\] general protection/) {
       $GPFaults{$1}++;
+   } elsif ($ThisLine =~ /([^(]*)\[\d+\] trap int3 /) {
+      $TrapInt3s{$1}++;
    } elsif ($ThisLine =~ /([^(]*)\(\d+\): unaligned access to/) {
       $UnalignedErrors{$1}++;
    } elsif ($ThisLine =~ /([^(]*)\(\d+\): floating-point assist fault at ip/) {
@@ -105,6 +109,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       # These are informative, not errors
       $SkipError = 1 if $ThisLine =~ /PCIe errors handled by OS/;
       $SkipError = 1 if $ThisLine =~ /GHES: Generic hardware error source: \d notified via .* is not supported/;
+      # These happen when kerberos tickets expire, which can be normal
+      $SkipError = 1 if $ThisLine =~ /Error: state manager encountered RPCSEC_GSS session expired against NFSv4 server/ && $Ignore_rpcsec_expired;
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
    }
    # OTHER
@@ -159,6 +165,18 @@ if (keys %GPFaults) {
          $header_printed=1;
       }
       print "   $Thisone :  $GPFaults{$Thisone} Time(s)\n";
+   }
+}
+
+if (keys %TrapInt3s) {
+   my $header_printed=0;
+   foreach my $Thisone ( sort {$a cmp $b} keys %TrapInt3s ) {
+      if ($Ignore_faults =~ /\b\Q$Thisone\E\b/i) { next; }
+      if (!$header_printed) {
+         print "\nWARNING:  Trap int3 in these executables\n";
+         $header_printed=1;
+      }
+      print "   $Thisone :  $TrapInt3s{$Thisone} Time(s)\n";
    }
 }
 
