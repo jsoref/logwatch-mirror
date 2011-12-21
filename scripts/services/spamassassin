@@ -41,6 +41,7 @@ use Logwatch ':sort';
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $Ignore_connections = $ENV{'ignore_connections'};
 
 $StillRoot = 0;
 $CleanTotal = 0;
@@ -50,6 +51,7 @@ my %Child;
 my %Clean;
 my %Spam;
 my %Users;
+my %Connections;
 
 #Todo
 #    meta test DIGEST_MULTIPLE has undefined dependency 'DCC_CHECK' : 2 Time(s)
@@ -74,6 +76,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/^server successfully spawned child process, / ) or
       ( $ThisLine =~ m/^removing stderr method/ ) or
       ( $ThisLine =~ m/^server pid:/ ) or
+      ( $ThisLine =~ m/^adjust: \d+ idle children (less|more) than \d+ (min|max)imum idle children/ ) or
       0  # Always last in the list, so all above can say "or" at the end
    ) {
       ; # We don't care about these
@@ -85,6 +88,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Users{ $User}++;
    } elsif ( $ThisLine =~ m/still running as root: / ) {
       $StillRoot++;
+   } elsif ( $ThisLine =~ m/^connection from (.*) at port / ) {
+      $Connections{$1}++;
    } elsif ( $ThisLine =~ m/\bchild\b/ ) {
       chomp($ThisLine);
       # Many perl errors report pseudo-line-numbers, e.g.
@@ -137,6 +142,18 @@ if (keys %Child) {
    print "\nChild-related errors\nn";
    foreach $line (sort {$Child{$b}<=>$Child{$a} } keys %Child) {
       print "   $line: $Child{$line} Time(s)\n";
+   }
+}
+
+if (keys %Connections) {
+   my $header_printed = 0;
+   foreach my $connection ( sort {$a cmp $b} keys %Connections ) {
+      if ($Ignore_connections && $connection =~ /$Ignore_connections/) { next; }
+      if (!$header_printed) {
+         print "\nConnections from:\n";
+         $header_printed = 1;
+      }
+      print "   $connection : $Connections{$connection} Time(s)\n";
    }
 }
 
