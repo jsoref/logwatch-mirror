@@ -99,7 +99,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       $FPAssists{$1}++;
    } elsif ($ThisLine =~ /Out of memory: Killed process \d+ \((.*)\)/) {
       $OOM{$1}++;
-   } elsif ($ThisLine =~ /(EDAC .*)/) {
+   } elsif ($ThisLine =~ /(EDAC (MC|PCI)\d:.*)/) {
+      # Standard boot messages
+      next if $ThisLine =~ /Giving out device to /;
       $EDACs{$1}++;
    } elsif ( ( my $errormsg ) = ( $ThisLine =~ /(.*?[Ee]rror.{0,17})/ ) ) {
       # filter out smb open/read errors cased by insufficient permissions
