@@ -63,20 +63,19 @@ my %Connections;
 #    meta test SARE_SPEC_PROLEO_M2a has dependency 'MIME_QP_LONG_LINE' with a zero score : 1 Time(s)
 
 while (defined($ThisLine = <STDIN>)) {
-   $ThisLine =~ s/^[a-zA-Z0-9]+: //;
    if ( # We don't care about these
       # Note that we DO care about "connection from" non-localhost
       ( $ThisLine =~ m/connection from localhost / ) or
       ( $ThisLine =~ m/setuid to / ) or
       ( $ThisLine =~ m/processing message / ) or
-      ( $ThisLine =~ m/^result: / ) or
-      ( $ThisLine =~ m/^child states: / ) or
-      ( $ThisLine =~ m/^alarm *$/ ) or
-      ( $ThisLine =~ m/^handled cleanup of child / ) or
-      ( $ThisLine =~ m/^server successfully spawned child process, / ) or
-      ( $ThisLine =~ m/^removing stderr method/ ) or
-      ( $ThisLine =~ m/^server pid:/ ) or
-      ( $ThisLine =~ m/^adjust: \d+ idle children (less|more) than \d+ (min|max)imum idle children/ ) or
+      ( $ThisLine =~ m/^spamd: result: / ) or
+      ( $ThisLine =~ m/^prefork: child states: / ) or
+      ( $ThisLine =~ m/^spamd: alarm *$/ ) or
+      ( $ThisLine =~ m/^spamd: handled cleanup of child / ) or
+      ( $ThisLine =~ m/^spamd: server successfully spawned child process, / ) or
+      ( $ThisLine =~ m/^logger: removing stderr method/ ) or
+      ( $ThisLine =~ m/^spamd: server pid:/ ) or
+      ( $ThisLine =~ m/^prefork: adjust: \d+ idle children (less|more) than \d+ (min|max)imum idle children/ ) or
       0  # Always last in the list, so all above can say "or" at the end
    ) {
       ; # We don't care about these
@@ -88,7 +87,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Users{ $User}++;
    } elsif ( $ThisLine =~ m/still running as root: / ) {
       $StillRoot++;
-   } elsif ( $ThisLine =~ m/^connection from (.*) at port / ) {
+   } elsif ( $ThisLine =~ m/^spamd: connection from (.*) at port / ) {
       $Connections{$1}++;
    } elsif ( $ThisLine =~ m/\bchild\b/ ) {
       chomp($ThisLine);
