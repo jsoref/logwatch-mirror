@@ -1,0 +1,923 @@
+.TH AMAVIS-LOGWATCH 1 
+.ad
+.fi
+.SH NAME
+amavis-logwatch
+\-
+An Amavisd-new log parser and analysis utility
+.SH "SYNOPSIS"
+.na
+.nf
+.fi
+\fBamavis-logwatch\fR [\fIoptions\fR] [\fIlogfile ...\fR]
+.SH DESCRIPTION
+.ad
+.fi
+The \fBamavis-logwatch\fR(1) utility is an Amavisd-new log parser
+that produces summaries, details, and statistics regarding
+the operation of Amavisd-new (henceforth, simply called Amavis).
+.PP
+This utility can be used as a
+standalone program, or as a Logwatch filter module to produce
+Amavisd-new summary and detailed reports from within Logwatch.
+.PP
+\fBAmavis-logwatch\fR is able to produce
+a wide range of reports with data grouped and sorted as much as possible
+to reduce noise and highlight patterns.
+Brief summary reports provide a
+quick overview of general Amavis operations and message
+delivery, calling out warnings that may require attention.
+Detailed reports provide easy to scan, hierarchically-arranged
+and organized information, with as much or little detail as
+desired.
+.PP
+Much of the interesting data is available when Amavis'
+$log_level is set to at least 2.
+See \fBAmavis Log Level\fR below.
+.PP
+\fBAmavis-logwatch\fR outputs two principal sections: a \fBSummary\fR section
+and a \fBDetailed\fR section.
+For readability and quick scanning, all event or hit counts appear in the left column,
+followed by brief description of the event type, and finally additional
+statistics or count representations may appear in the rightmost column.
+
+The following segment from a sample Summary report illustrates:
+.RS 4
+.nf
+
+****** Summary ********************************************
+
+       9   Miscellaneous warnings 
+
+   20313   Total messages scanned ----------------  100.00%
+1008.534M  Total bytes scanned                1,057,524,252
+========   ================================================
+
+    1190   Blocked -------------------------------    5.86%
+      18     Malware blocked                          0.09%
+       4     Banned name blocked                      0.02%
+     416     Spam blocked                             2.05%
+     752     Spam discarded (no quarantine)           3.70%
+
+   19123   Passed --------------------------------   94.14%
+      47     Bad header passed                        0.23%
+   19076     Clean passed                            93.91%
+========   ================================================
+
+      18   Malware -------------------------------    0.09%
+      18     Malware blocked                          0.09%
+
+       4   Banned --------------------------------    0.02%
+       4     Banned file blocked                      0.02%
+
+    1168   Spam ----------------------------------    5.75%
+     416     Spam blocked                             2.05%
+     752     Spam discarded (no quarantine)           3.70%
+
+   19123   Ham -----------------------------------   94.14%
+      47     Bad header passed                        0.23%
+   19076     Clean passed                            93.91%
+========   ================================================
+
+    1982   SpamAssassin bypassed 
+      32   Released from quarantine 
+       2   DSN notification (debug supplemental) 
+       2   Bounce unverifiable   
+    2369   Whitelisted           
+       2   Blacklisted           
+      12   MIME error            
+      58   Bad header (debug supplemental) 
+      40   Extra code modules loaded at runtime 
+
+.fi
+.RE 0
+The report indicates there were 9 general warnings, and
+\fBAmavis\fR scanned a total of 20313 messages
+for a total of 1008.53 megabytes or 1,057,524,252 bytes.
+The next summary groups shows the Blocked / Passed overview, 
+with 1190 Blocked messages (broken down as 18 messages blocked as malware,
+4 messages with banned names, 416 spam messages, and 752 discarded
+messages), and 19123 Passed messages (47 messages with bad headers
+and 19076 clean messages).
+
+The next (optional) summary grouping shows message disposition by contents category.  
+There were 18 malware messages and 4 banned file messages (all blocked), 
+1168 Spam messages, of which 416 were blocked (quarantined) and 752 discarded.
+Finally, there were 19123 messages consdidered to be Ham (i.e. not spam), 47
+of which contained bad headers.
+
+Additional count summaries for a variety of events are also listed.
+.PP
+There are dozens of sub-sections available in the \fBDetailed\fR report, each of
+whose output can be controlled in various ways.
+Each sub-section attempts to group and present the most meaningful data at superior levels,
+while pushing less useful or \fInoisy\fR data towards inferior levels.
+The goal is to provide as much benefit as possible from smart grouping of
+data, to allow faster report scanning, pattern identification, and problem solving.
+Data is always sorted in descending order by count, and then numerically by IP address
+or alphabetically as appropriate.
+.PP
+The following Spam blocked segment from a sample \fBDetailed\fR report
+illustrates the basic hierarchical level structure of \fBamavis-logwatch\fR:
+.RS 4
+.nf
+
+****** Detailed *******************************************
+
+   19346   Spam blocked -----------------------------------
+     756      from@example.com
+      12         10.0.0.2
+      12            <>
+      12         192.168.2.2
+      12            <>
+       5         192.168.2.1
+     ...
+
+.fi
+.RE 0
+.PP
+The \fBamavis-logwatch\fR utility reads from STDIN or from the named Amavis
+\fIlogfile\fR.
+Multiple \fIlogfile\fR arguments may be specified, each processed
+in order.
+The user running \fBamavis-logwatch\fR must have read permission on
+each named log file.
+.PP
+.SS Options
+The options listed below affect the operation of \fBamavis-logwatch\fR.
+Options specified later on the command line override earlier ones.
+Any option may be abbreviated to an unambiguous length.
+
+.IP "\fB--[no]autolearn\fR"
+.PD 0
+.IP "\fB--show_autolearn \fIboolean\fR"
+.PD
+Enables (disables) output of the autolearn report.
+This report is only available if the default Amavis \fB$log_templ\fR
+has been modified to provide autolearn results in log entries.
+This can be done by uncommenting two lines in the Amavis program itself (where the
+default log templates reside), or by correctly adding the \fB$log_templ\fR
+variable to the \fBamavisd.conf\fR file.
+See Amavis' \fBREADME.customize\fR and search near the end
+of the Amavisd program for "autolearn".
+.IP "\fB--[no]by_ccat_summary\fR"
+.PD 0
+.IP "\fB--show_by_ccat_summary \fIboolean\fR"
+.PD
+Enables (disables) the by contents category summary in the \fBSummary\fR section.
+Default: enabled.
+.IP "\fB-f \fIconfig_file\fR"
+.PD 0
+.IP "\fB--config_file \fIconfig_file\fR"
+.PD
+Use an alternate configuration file \fIconfig_file\fR instead of
+the default.
+This option may be used more than once.
+Multiple configuration files will be processed in the order presented on the command line.
+See \fBCONFIGURATION FILE\fR below.
+.IP "\fB--debug \fIkeywords\fR"
+Output debug information during the operation of \fBamavis-logwatch\fR.
+The parameter \fIkeywords\fR is one or more comma or space separated keywords.
+To obtain the list of valid keywords, use --debug xxx where xxx is any invalid keyword.
+.IP "\fB--detail \fIlevel\fR"
+Sets the maximum detail level for \fBamavis-logwatch\fR to \fIlevel\fR.
+This option is global, overriding any other output limiters described below.
+
+The \fBamavis-logwatch\fR utility
+produces a \fBSummary\fR section, a \fBDetailed\fR section, and
+additional report sections.
+With \fIlevel\fR less than 5, \fBamavis-logwatch\fR will produce
+only the \fBSummary\fR section.
+At \fIlevel\fR 5 and above, the \fBDetailed\fR section, and any
+additional report sections are candidates for output.
+Each incremental increase in \fIlevel\fR generates one additional
+hierarchical sub-level of output in the \fBDetailed\fR section of the report.
+At \fIlevel\fR 10, all levels are output.
+Lines that exceed the maximum report width (specified with 
+\fBmax_report_width\fR) will be cut.
+Setting \fIlevel\fR to 11 will prevent lines in the report from being cut (see also \fB--line_style\fR).
+.IP "\fB--[no]first_recip_only\fR"
+.PD 0
+.IP "\fB--show_first_recip_only \fIboolean\fR"
+.PD
+Specifies whether or not to sort by, and show, only the first
+recipient when a scanned messages contains multiple recipients.
+.IP "\fB--help\fR"
+Print usage information and a brief description about command line options.
+.IP "\fB--ipaddr_width \fIwidth\fR"
+Specifies that IP addresses in address/hostname pairs should be printed
+with a field width of \fIwidth\fR characters.
+Increasing the default may be useful for systems using long IPv6 addresses.
+.IP "\fB-l limiter=levelspec\fR"
+.PD 0
+.IP "\fB--limit limiter=levelspec\fR"
+.PD
+Sets the level limiter \fIlimiter\fR with the specification \fIlevelspec\fR.
+.IP "\fB--line_style \fIstyle\fR"
+Specifies how to handle long report lines.
+Three styles are available: \fBfull\fR, \fBtruncate\fR, and \fBwrap\fR.
+Setting \fIstyle\fR to \fBfull\fR will prevent cutting lines to \fBmax_report_width\fR; 
+this is what occurs when \fBdetail\fR is 11 or higher.
+When \fIstyle\fR is \fBtruncate\fR (the default), 
+long lines will be truncated according to \fBmax_report_width\fR.
+Setting \fIstyle\fR to \fBwrap\fR will wrap lines longer than \fBmax_report_width\fR such that
+left column hit counts are not obscured.
+This option takes precedence over the line style implied by the \fBdetail\fR level.
+The options \fB--full\fR, \fB--truncate\fR, and \fB--wrap\fR are synonyms.
+
+.IP "\fB--nodetail\fR"
+Disables the \fBDetailed\fR section of the report, and all supplemental reports.
+This option provides a convenient mechanism to quickly disable all sections
+under the \fBDetailed\fR report, where subsequent command line
+options may re-enable one or more sections to create specific reports.
+
+.PD 0
+.IP "\fB--sarules \fR\`\fIS,H\fR\'"
+.IP "\fB--sarules default"
+.PD
+Enables the SpamAssassin Rules Hit report.
+The comma-separated \fIS\fR and \fIH\fR arguments are top N values for the Spam and Ham
+reports, respectively, and can be any integer greater than or equal to 0, or the keyword \fBall\fR.
+The keyword \fBdefault\fR uses the built-in default values.
+.IP "\fB--nosarules\fR"
+Disables the SpamAssassin Rules Hit report.
+
+.PD 0
+.IP "\fB--sa_timings \fR\fInrows\fR"
+Enables the SpamAssassin Timings percentiles report.
+The report can be limited to the top N rows with the \fInrows\fR argument.
+This report requires Amavis 2.6+ and SpamAssassin 3.3+.
+.PD
+.IP "\fB--sa_timings_percentiles \fR\`\fIP1 [P2 ...]\fR\'"
+Specifies the percentiles shown in the SpamAssassin Timings report.
+The arguments \fIP1 ...\fR are integers from 0 to 100 inclusive.
+Their order will be preserved in the report.
+.IP "\fB--nosa_timings\fR"
+Disables the SpamAssassin Timings report.
+.IP "\fB--version\fR"
+Print \fBamavis-logwatch\fR version information.
+
+.PD 0
+.IP "\fB--score_frequencies \fR\`\fIB1 [B2 ...]\fR\'"
+.IP "\fB--score_frequencies default"
+.PD
+Enables the Spam Score Frequency report.
+The arguments \fIB1 ...\fR are frequency distribution buckets, and can be any real numbers.
+Their order will be preserved in the report.
+The keyword \fBdefault\fR uses the built-in default values.
+.IP "\fB--noscore_frequencies\fR"
+Disables the Spam Score Frequency report.
+
+.PD 0
+.IP "\fB--score_percentiles \fR\`\fIP1 [P2 ...]\fR\'"
+.IP "\fB--score_percentiles default"
+.PD
+Enables the Spam Score Percentiles report.
+The arguments \fIP1 ...\fR specify the percentiles shown in the report,
+and are integers from 0 to 100 inclusive.
+The keyword \fBdefault\fR uses the built-in default values.
+.IP "\fB--noscore_percentiles\fR"
+Disables the Spam Score Percentiles report.
+
+.IP "\fB--[no]sect_vars\fR"
+.PD 0
+.IP "\fB--show_sect_vars \fIboolean\fR"
+.PD
+Enables (disables) supplementing each \fBDetailed\fR section title
+with the name of that section's level limiter.
+The name displayed is the command line option (or configuration
+file variable) used to limit that section's output.
+.
+With the large number of level limiters available in \fBamavis-logwatch\fR,
+this a convenient mechanism for determining exactly which level limiter
+affects a section.
+.IP "\fB--[no]startinfo\fR"
+.PD 0
+.IP "\fB--show_startinfo \fIboolean\fR"
+.PD
+Enables (disables) the Amavis startup report showing most recent Amavis startup details.
+.IP "\fB--[no]summary\fR"
+.IP "\fB--show_summary\fR"
+Enables (disables) displaying of the the \fBSummary\fR section of the report.
+The variable Amavis_Show_Summary in used in a configuration file.
+.IP "\fB--syslog_name \fInamepat\fR"
+Specifies the syslog service name that \fBamavis-logwatch\fR uses
+to match syslog lines.
+Only log lines whose service name matches
+the perl regular expression \fInamepat\fR will be used by
+\fBamavis-logwatch\fR; all non-matching lines are silently ignored.
+This is useful when a pre-installed Amavis package uses a name
+other than the default (\fBamavis\fR).
+
+\fBNote:\fR if you use parenthesis in your regular expression, be sure they are cloistering
+and not capturing: use  \fB(?:\fIpattern\fB)\fR instead of \fB(\fIpattern\fB)\fR.
+
+.PD 0
+.IP "\fB--timings \fR\fIpercent\fR"
+Enables the Amavis Scan Timings percentiles report.
+The report can be top N-percent limited with the \fIpercent\fR argument.
+.PD
+.IP "\fB--timings_percentiles \fR\`\fIP1 [P2 ...]\fR\'"
+Specifies the percentiles shown in the Scan Timings report.
+The arguments \fIP1 ...\fR are integers from 0 to 100 inclusive.
+Their order will be preserved in the report.
+.IP "\fB--notimings\fR"
+Disables the Amavis Scan Timings report.
+.IP "\fB--version\fR"
+Print \fBamavis-logwatch\fR version information.
+
+.SS Level Limiters
+.PP
+The output of every section in the \fBDetailed\fR report is controlled by a level limiter.
+The name of the level limiter variable will be output when the \fBsect_vars\fR option is set.
+Level limiters are set either via command line in standalone mode with \fB--limit \fIlimiter\fB=\fIlevelspec\fR option,
+or via configuration file variable \fB$amavis_\fIlimiter\fB=\fIlevelspec\fR.
+Each limiter requires a \fIlevelspec\fR argument, which is described below in \fBLEVEL CONTROL\fR.
+
+The list of level limiters is shown below.
+
+.de TQ
+.  br
+.  ns
+.  TP \\$1
+..
+
+.PD 0
+.PP
+Amavis major contents category (ccatmajor) sections, listed in order of priority:
+VIRUS, BANNED, UNCHECKED, SPAM, SPAMMY, BADH, OVERSIZED, MTA, CLEAN.
+
+.IP "\fBMalwareBlocked"
+.IP "\fBMalwarePassed"
+Blocked or passed messages that contain malware (ccatmajor: VIRUS).
+
+.IP "\fBBannedNameBlocked"
+.IP "\fBBannedNamePassed"
+Blocked or passed messages that contain banned names in MIME parts (ccatmajor: BANNED).
+
+.IP "\fBUncheckedBlocked"
+.IP "\fBUncheckedPassed"
+Blocked or passed messages that were not checked by a virus scanner or SpamAssassin (Amavis ccatmajor: UNCHECKED).
+
+.IP "\fBSpamBlocked"
+.IP "\fBSpamPassed"
+Blocked or passed messages that were considered spam that reached kill level (Amavis ccatmajor: SPAM)
+
+.IP "\fBSpammyBlocked"
+.IP "\fBSpammyPassed"
+Blocked or passed messages that were considered spam, but did not reach kill level (Amavis ccatmajor: SPAMMY)
+
+.IP "\fBBadHeaderBlocked"
+.IP "\fBBadHeaderPassed"
+Blocked or passed messages that contain bad mail headers (ccatmajor: BAD-HEADER).
+
+.IP "\fBOversizedBlocked"
+.IP "\fBOversizedPassed"
+Blocked or passed messages that were considered oversized (Amavis ccatmajor: OVERSIZED).
+
+.IP "\fBMtaBlocked"
+.IP "\fBMtaPassed"
+Blocked or passed messages due to failure to re-inject to MTA (Amavis ccatmajor: MTA-BLOCKED).
+Occurrences of this event indicates a configuration problem.
+[ note: I don't believe mtapassed occurs, but exists for completeness.]
+
+.IP "\fBOtherBlocked"
+.IP "\fBOtherPassed"
+Blocked or passed messages that are not any of other major contents categories (Amavis ccatmajor: OTHER).
+
+
+.IP "\fBTempFailBlocked"
+.IP "\fBTempfailPassed"
+Blocked or passed messages that had a temporary failure (Amavis ccatmajor: TEMPFAIL)
+
+.IP "\fBCleanBlocked"
+.IP "\fBCleanPassed "
+Messages blocked or passed which were considered clean (Amavis ccatmajor: CLEAN; i.e. non-spam, non-viral).
+
+.PP
+Other sections, arranged alphabetically:
+
+.IP "\fBAvConnectFailure"
+Problems connecting to Anti-Virus scanner(s).
+
+.IP "\fBAvTimeout"
+Timeouts awaiting responses from Anti-Virus scanner(s).
+
+.IP "\fBArchiveExtract"
+Archive extraction problems.
+
+.IP "\fBBadHeaderSupp"
+Supplemental debug information regarding messages containing bad mail headers.
+
+.IP "\fBBayes"
+Messages frequencies by Bayesian probability buckets.
+
+.IP "\fBBadAddress"
+Invalid mail address syntax.
+
+.IP "\fBBlacklisted"
+Messages that were (soft-)blacklisted.  See also Whitelisted below.
+
+.IP "\fBBounceKilled"
+.IP "\fBBounceRescued"
+.IP "\fBBounceUnverifiable"
+Disposition of incoming bounce messages (DSNs).
+
+.IP "\fBContentType"
+MIME attachment breakdown by type/subtype.
+
+.IP "\fBDccError"
+Errors encountered with or returned by DCC.
+
+.IP "\fBDefangError"
+Errors encountered during defang process.
+
+.IP "\fBDefanged"
+Messages defanged (rendered harmless).
+
+.IP "\fBDsnNotification"
+Errors encountered during attempt to send delivery status notification.
+
+.IP "\fBDsnSuppressed"
+Delivery status notification (DSN) intentionally suppressed.
+
+.IP "\fBExtraModules"
+Additional code modules Amavis loaded during runtime.
+
+.IP "\fBFakeSender"
+Forged sender addresses, as determimed by Amavis.
+
+.IP "\fBFatal"
+Fatal events.  These are presented at the top of the report, as they may require attention.
+
+.IP "\fBLocalDeliverySkipped"
+Failures delivering to a local address.
+
+.IP "\fBMalwareByScanner"
+Breakdown of malware by scanner(s) that detected the malware.
+
+.IP "\fBMimeError"
+Errors encountered during MIME extraction.
+
+.IP "\fBPanic"
+Panic events.  These are presented at the top of the report, as they may require attention.
+
+.IP "\fBp0f"
+Passive fingerprint (p0f) hits, grouped by mail contents type (virus, unchecked, banned, spam, ham),
+next by operating system genre, and finally by IP address.
+Note: Windows systems are refined by Windows OS version, whereas versions of other operating systems
+are grouped generically.
+
+.IP "\fBReleased"
+Messages that were released from Amavis quarantine.
+
+.IP "\fBSADiags"
+Diagnostics as reported from SpamAssassin.
+
+.IP "\fBSmtpResponse"
+SMTP responses received during dialog with MTA.  These log entries are primarly debug.
+
+.IP "\fBTmpPreserved"
+Temporary directories preserved by Amavis when some component encounters a problem or failure.
+Directories listed and their corresponding log entries should be evaluated for problems.
+
+.IP "\fBVirusScanSkipped"
+Messages that could not be scanned by a virus scanner.
+
+.IP "\fBWarning"
+Warning events not categorized in specific warnings below.
+These are presented at the top of the report, as they may require attention.
+
+.IP "\fBWarningAddressModified"
+Incomplete email addresses modified by Amavis for safety.
+
+.IP "\fBWarningNoQuarantineId"
+Attempts to release a quarantined message that did not contain an X-Quarantine-ID header.
+
+.IP "\fBWarningSecurity \fIlevelspec\fR"
+Insecure configuration or utility used by Amavis.
+
+.IP "\fBWarningSmtpShutdown"
+Failures during SMTP conversation with MTA.
+
+.IP "\fBWarningSql"
+Failures to communicate with, or error replies from, SQL service.
+
+.IP "\fBWhitelisted"
+Messages that were (soft-)whitelisted.  See also Blacklisted above.
+
+.PD
+.SH LEVEL CONTROL
+.ad
+.fi
+The \fBDetailed\fR section of the report consists of a number of sub-sections,
+each of which is controlled both globally and independently.
+Two settings influence the output provided in the \fBDetailed\fR report: 
+a global detail level (specified with \fB--detail\fR) which has final (big hammer)
+output-limiting control over the \fBDetailed\fR section,
+and sub-section specific detail settings (small hammer), which allow further limiting
+of the output for a sub-section.
+Each sub-section may be limited to a specific depth level, and each sub-level may be limited with top N or threshold limits.
+The \fIlevelspec\fR argument to each of the level limiters listed above is used to accomplish this.
+
+It is probably best to continue explanation of sub-level limiting with the following well-known outline-style hierarchy, and
+some basic examples:
+.nf
+
+    level 0
+       level 1
+          level 2
+             level 3
+                level 4
+                level 4
+          level 2
+             level 3
+                level 4
+                level 4
+                level 4
+             level 3
+                level 4
+             level 3
+       level 1
+          level 2
+             level 3
+                level 4
+.fi
+.PP
+The simplest form of output limiting suppresses all output below a specified level.
+For example, a \fIlevelspec\fR set to "2" shows only data in levels 0 through 2.
+Think of this as collapsing each sub-level 2 item, thus hiding all inferior levels (3, 4, ...),
+to yield:
+.nf
+
+    level 0
+       level 1
+          level 2
+          level 2
+       level 1
+          level 2
+.fi
+.PP
+Sometimes the volume of output in a section is too great, and it is useful to suppress any data that does not exceed a certain threshold value.
+Consider a dictionary spam attack, which produces very lengthy lists of hit-once recipient email or IP addresses.
+Each sub-level in the hierarchy can be threshold-limited by setting the \fIlevelspec\fR appropriately.
+Setting \fIlevelspec\fR to the value "2::5" will suppress any data at level 2 that does not exceed a hit count of 5.
+.PP
+Perhaps producing a top N list, such as top 10 senders, is desired.
+A \fIlevelspec\fR of "3:10:" limits level 3 data to only the top 10 hits.
+.PP
+With those simple examples out of the way, a \fIlevelspec\fR is defined as a whitespace- or comma-separated list of one or more of the following:
+.IP "\fIl\fR"
+Specifies the maximum level to be output for this sub-section, with a range from 0 to 10.
+if \fIl\fR is 0, no levels will be output, effectively disabling the sub-section
+(level 0 data is already provided in the Summary report, so level 1 is considered the first useful level in the \fBDetailed\fR report).
+Higher values will produce output up to and including the specified level.
+.IP "\fIl\fB.\fIn\fR"
+Same as above, with the addition that \fIn\fR limits this section's level 1 output to
+the top \fIn\fR items.
+The value for \fIn\fR can be any integer greater than 1.
+(This form of limiting has less utility than the syntax shown below. It is provided for
+backwards compatibility; users are encouraged to use the syntax below).
+.IP "\fIl\fB:\fIn\fB:\fIt\fR"
+This triplet specifies level \fIl\fR, top \fIn\fR, and minimum threshold \fIt\fR.
+Each of the values are integers, with \fIl\fR being the level limiter as described above, \fIn\fR being
+a top \fIn\fR limiter for the level \fIl\fR, and \fIt\fR being the threshold limiter for level \fIl\fR.
+When both \fIn\fR and \fIt\fR are specified, \fIn\fR has priority, allowing top \fIn\fR lists (regardless of
+threshold value).
+If the value of \fIl\fR is omitted, the specified values for \fIn\fR and/or \fIt\fR are used for
+all levels available in the sub-section.
+This permits a simple form of wildcarding (eg. place minimum threshold limits on all levels).
+However, specific limiters always override wildcard limiters.
+The first form of level limiter may be included in \fIlevelspec\fR to restrict output, regardless of how many triplets are present.
+.PP
+All three forms of limiters are effective only when \fBamavis-logwatch\fR's detail level is 5
+or greater (the \fBDetailed\fR section is not activated until detail is at least 5).
+.PP
+See the \fBEXAMPLES\fR section for usage scenarios.
+.SH CONFIGURATION FILE
+.ad
+\fBAmavis-logwatch\fR can read configuration settings from a configuration file.
+Essentially, any command line option can be placed into a configuration file, and
+these settings are read upon startup.
+
+Because \fBamavis-logwatch\fR can run either standalone or within Logwatch,
+to minimize confusion, \fBamavis-logwatch\fR inherits Logwatch's configuration
+file syntax requirements and conventions.
+These are:
+.IP \(bu 4'. 
+White space lines are ignored.
+.IP \(bu 4'. 
+Lines beginning with \fB#\fR are ignored
+.IP \(bu 4'. 
+Settings are of the form:
+.nf
+
+        \fIoption\fB = \fIvalue\fR
+
+.fi
+.IP \(bu 4'. 
+Spaces or tabs on either side of the \fB=\fR character are ignored.
+.IP \(bu 4'. 
+Any \fIvalue\fR protected in double quotes will be case-preserved.
+.IP \(bu 4'. 
+All other content is reduced to lowercase (non-preserving, case insensitive).
+.IP \(bu 4'. 
+All \fBamavis-logwatch\fR configuration settings must be prefixed with "\fB$amavis_\fR" or
+\fBamavis-logwatch\fR will ignore them.
+.IP \(bu 4'. 
+When running under Logwatch, any values not prefixed with "\fB$amavis_\fR" are
+consumed by Logwatch; it only passes to \fBamavis-logwatch\fR (via environment variable)
+settings it considers valid.
+.IP \(bu 4'. 
+The values \fBTrue\fR and \fBYes\fR are converted to 1, and \fBFalse\fR and \fBNo\fR are converted to 0.
+.IP \(bu 4'. 
+Order of settings is not preserved within a configuration file (since settings are passed
+by Logwatch via environment variables, which have no defined order).
+.PP
+To include a command line option in a configuration file,
+prefix the command line option name with the word "\fB$amavis_\fR".
+The following configuration file setting and command line option are equivalent:
+.nf
+
+        \fB$amavis_Line_Style = Truncate\fR
+
+        \fB--line_style Truncate\fR
+
+.fi
+Level limiters are also prefixed with \fB$amavis_\fR, but on the command line are specified with the \fB--limit\fR option:
+.nf
+
+        \fB$amavis_SpamBlocked = 2\fR
+
+        \fB--limit SpamBlocked=2\fR
+
+.fi
+
+
+The order of command line options and configuration file processing occurs as follows:
+1) The default configuration file is read if it exists and no \fB--config_file\fR was specified on a command line.
+2) Configuration files are read and processed in the order found on the command line.
+3) Command line options override any options already set either via command line or from any configuration file.
+
+Command line options are interpreted when they are seen on the command line, and later options will override previously set options.
+
+
+.SH "EXIT STATUS"
+.na
+.nf
+.ad
+.fi
+The \fBamavis-logwatch\fR utility exits with a status code of 0, unless an error
+occurred, in which case a non-zero exit status is returned.
+.SH "EXAMPLES"
+.na
+.nf
+.ad
+.fi
+.SS Running Standalone
+\fBNote:\fR \fBamavis-logwatch\fR reads its log data from one or more named Amavis log files, or from STDIN.
+For brevity, where required, the examples below use the word \fIfile\fR as the command line
+argument meaning \fI/path/to/amavis.log\fR.
+Obviously you will need to substitute \fIfile\fR with the appropriate path.
+.nf
+.PP
+To run \fBamavis-logwatch\fR in standalone mode, simply run:
+.nf
+.RS 4
+.PP
+\fBamavis-logwatch \fIfile\fR
+.RE 0
+.nf
+.PP
+A complete list of options and basic usage is available via:
+.nf
+.RS 4
+.PP
+\fBamavis-logwatch --help\fR
+.RE 0
+.nf
+.PP
+To print a summary only report of Amavis log data:
+.nf
+.RS 4
+.PP
+\fBamavis-logwatch --detail 1 \fIfile\fR
+.RE 0
+.fi
+.PP
+To produce a summary report and a one-level detail report for May 25th:
+.nf
+.RS 4
+.PP
+\fBgrep 'May 25' \fIfile\fB | amavis-logwatch --detail 5\fR
+.RE 0
+.fi
+.PP
+To produce only a top 10 list of Sent email domains, the summary report and detailed reports
+are first disabled. Since commands line options are read and enabled left-to-right,
+the Sent section is re-enabled to level 1 with a level 1 top 10 limiter:
+.nf
+.RS 4
+.PP
+\fBamavis-logwatch --nosummary --nodetail \\
+   --limit spamblocked '1 1:10:' \fIfile\fR
+.RE 0
+.fi
+.PP
+The following command and its sample output shows a more complex level limiter example.
+The command gives the top 4 spam blocked recipients (level 1), and under with each recipient
+the top 2 sending IPs (level 2) and finally below that, only envelope from addresses (level 3) with hit counts
+greater than 6.
+Ellipses indicate top N or threshold-limited data:
+.nf
+.RS 4
+.PP
+\fBamavis-logwatch --nosummary --nodetail \\
+        --limit spamblocked '1:4: 2:2: 3::6' \fIfile\fR
+.nf
+
+19346   Spam blocked -----------------------------------
+  756      joe@example.com
+   12         10.0.0.1
+   12            <>
+   12         10.99.99.99
+   12            <>
+	     ...
+  640      fred@example.com
+    8         10.0.0.1
+    8            <>
+    8         192.168.3.19
+    8            <>
+	     ...
+  595      peter@sample.net
+    8         10.0.0.1
+    8            <>
+    7         192.168.3.3
+    7            <>
+	     ...
+  547      paul@example.us
+    8         192.168.3.19
+    8            <>
+    7         10.0.0.1
+    7            <>
+ 	      ...
+	   ...
+.fi
+.RE 0
+.fi
+.SS Running within Logwatch
+\fBNote:\fR Logwatch versions prior to 7.3.6, unless configured otherwise, required the \fB--print\fR option to print to STDOUT instead of sending reports via email.
+Since version 7.3.6, STDOUT is the default output destination, and the \fB--print\fR option has been replaced
+by \fB--output stdout\fR. Check your configuration to determine where report output will be directed, and add the appropriate option to the commands below.
+.PP
+To print a summary report for today's Amavis log data:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range today --detail 1\fR
+.RE 0
+.nf
+.PP
+To print a report for today's Amavis log data, with one level
+of detail in the \fBDetailed\fR section:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range today --detail 5\fR
+.RE 0
+.fi
+.PP
+To print a report for yesterday, with two levels of detail in the \fBDetailed\fR section:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range yesterday --detail 6\fR
+.RE 0
+.fi
+.PP
+To print a report from Dec 12th through Dec 14th, with four levels of detail in the \fBDetailed\fR section:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range \\
+        'between 12/12 and 12/14' --detail 8\fR
+.RE 0
+.PP
+To print a report for today, with all levels of detail:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range today --detail 10\fR
+.RE 0
+.PP
+Same as above, but leaves long lines uncropped:
+.nf
+.RS 4
+.PP
+\fBlogwatch --service amavis --range today --detail 11\fR
+.RE 0
+.SS "Amavis Log Level"
+.PP
+Amavis provides additional log information when the variable 
+\fB$log_level\fR is increased above the default 0 value.
+This information is used by the \fBamavis-logwatch\fR utility to provide additional reports,
+not available with the default \fB$log_level\fR=0 value.
+A \fB$log_level\fR of 2 is suggested.
+.PP
+If you prefer not to increase the noise level in your main mail or Amavis logs,
+you can configure syslog to log Amavis' output to multiple log files,
+where basic log entries are routed to your main mail log(s) and more detailed
+entries routed to an Amavis-specific log file used to feed the \fBamavis-logwatch\fR utility.
+.PP
+A convenient way to accomplish this is to change the Amavis
+configuration variables in \fBamavisd.conf\fR as shown below:
+.nf
+
+    amavisd.conf:
+        $log_level = 2;
+        $syslog_facility = 'local5';
+        $syslog_priority = 'debug';
+
+.fi
+.PP
+This increases \fB$log_level\fR to 2, and sends Amavis' log entries to
+an alternate syslog facility (eg. \fBlocal5\fR, user), which can then be
+routed to one or more log files, including your main mail log file:
+.nf
+
+    syslog.conf:
+        #mail.info                         -/var/log/maillog
+        mail.info;local5.notice            -/var/log/maillog
+
+        local5.info                        -/var/log/amavisd-info.log
+
+.fi
+.PP
+\fBAmavis\fR' typical \fB$log_level\fR 0 messages will be directed to both your maillog
+and to the \fBamavisd-info.log\fR file, but higher \fB$log_level\fR messages
+will only be routed to the \fBamavisd-info.log\fR file.
+For additional information on Amavis' logging, search the
+file \fBRELEASE_NOTES\fR in the Amavis distribution for:
+.nf
+
+    "syslog priorities are now dynamically derived"
+
+.fi
+.SH "ENVIRONMENT"
+.na
+.nf
+.ad
+.fi
+The \fBamavis-logwatch\fR program uses the following (automatically set) environment
+variables when running under Logwatch:
+.IP \fBLOGWATCH_DETAIL_LEVEL\fR
+This is the detail level specified with the Logwatch command line argument \fB--detail\fR
+or the \fBDetail\fR setting in the ...conf/services/amavis.conf configuration file.
+.IP \fBLOGWATCH_DEBUG\fR
+This is the debug level specified with the Logwatch command line argument \fB--debug\fR.
+.IP \fBamavis_\fIxxx\fR
+The Logwatch program passes all settings \fBamavis_\fIxxx\fR in the configuration file ...conf/services/amavis.conf
+to the \fBamavis\fR filter (which is actually named .../scripts/services/amavis) via environment variable.
+.SH "FILES"
+.na
+.nf
+.SS Standalone mode
+.IP "/usr/local/bin/amavis-logwatch"
+The \fBamavis-logwatch\fR program
+.IP "/usr/local/etc/amavis-logwatch.conf"
+The \fBamavis-logwatch\fR configuration file in standalone mode
+.SS Logwatch mode
+.IP "/etc/logwatch/scripts/services/amavis"
+The Logwatch \fBamavis\fR filter
+.IP "/etc/logwatch/conf/services/amavis.conf"
+The Logwatch \fBamavis\fR filter configuration file
+.SH "SEE ALSO"
+.na
+.nf
+logwatch(8), system log analyzer and reporter
+.SH "README FILES"
+.na
+.ad
+.nf
+README, an overview of \fBamavis-logwatch\fR
+Changes, the version change list history
+Bugs, a list of the current bugs or other inadequacies
+Makefile, the rudimentary installer
+LICENSE, the usage and redistribution licensing terms
+.SH "LICENSE"
+.na
+.nf
+.ad
+Covered under the included MIT/X-Consortium License:
+http://www.opensource.org/licenses/mit-license.php
+
+.SH "AUTHOR(S)"
+.na
+.nf
+Mike Cappella
+
+.fi
+The original \fBamavis\fR Logwatch filter was written by
+Jim O'Halloran, and has had many contributors over the years.
+They are entirely not responsible for any errors, problems or failures since the current author's
+hands have touched the source code.

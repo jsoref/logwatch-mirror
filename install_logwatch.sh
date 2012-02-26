@@ -263,25 +263,27 @@ for f in `echo $PATH | tr : ' '`; do
 done
 
 #Man page
-if [ -d $MANDIR/man5 ] && [ -d $MANDIR/man8 ] && [ $HAVE_MAKEWHATIS ]; then
+if [ -d $MANDIR/man5 ] && [ -d $MANDIR/man8 ] && [ -d $MANDIR/man1 ] && [ $HAVE_MAKEWHATIS ]; then
    install -m 0644 logwatch.8 $MANDIR/man8
    install -m 0644 logwatch.conf.5 $MANDIR/man5
    install -m 0644 override.conf.5 $MANDIR/man5
    install -m 0644 ignore.conf.5 $MANDIR/man5
+   install -m 0644 postfix-logwatch.1 $MANDIR/man1
+   install -m 0644 amavis-logwatch.1 $MANDIR/man1
    #OpenBSD no -s
    if [ $OS = "OpenBSD" ]; then
-      makewhatis -u $MANDIR/man5 $MANDIR/man8
+      makewhatis -u $MANDIR/man5 $MANDIR/man8 $MANDIR/man1
    else
       #FreeBSD and NetBSD no -s no -u
       if [ $OS = "FreeBSD" ] || [ $OS = "NetBSD" ]; then
-         makewhatis $MANDIR/man5 $MANDIR/man8
+         makewhatis $MANDIR/man5 $MANDIR/man8 $MANDIR/man1
       else
          #MacOS X aka Darwin no -u [even thought the manpage says]
          if [ $OS = "Darwin" ]; then
-            makewhatis -s "5 8" $MANDIR
+            makewhatis -s "1 5 8" $MANDIR
          else
          #Linux
-            makewhatis -u -s "5 8" $MANDIR
+            makewhatis -u -s "1 5 8" $MANDIR
          fi
       fi
    fi
@@ -293,8 +295,14 @@ else
       install -m 0644 logwatch.conf.5 $MANDIR/man1m
       install -m 0644 override.conf.5 $MANDIR/man1m
       install -m 0644 ignore.conf.5 $MANDIR/man1m
+      install -m 0644 postfix-logwatch.1 $MANDIR/man1
+      install -m 0644 amavis-logwatch.1 $MANDIR/man1
       catman -w -M $MANDIR/man1m
    else
+      install -m 0755 -d $MANDIR/man1
+      install -m 0644 postfix-logwatch.1 $MANDIR/man1
+      install -m 0644 amavis-logwatch.1 $MANDIR/man1
+
       install -m 0755 -d $MANDIR/man5
       install -m 0644 logwatch.conf.5 $MANDIR/man5
       install -m 0644 override.conf.5 $MANDIR/man5
@@ -303,8 +311,8 @@ else
       install -m 0755 -d $MANDIR/man8
       install -m 0644 logwatch.8 $MANDIR/man8
 
-      printf "Installed manpages in $MANDIR/man5 and $MANDIR/man8.\n"
-      printf "Check your man.cf or man.conf to enable MANSECTS 5 and 8\n"
+      printf "Installed manpages in $MANDIR/man1, $MANDIR/man5 and $MANDIR/man8.\n"
+      printf "Check your man.cf or man.conf to enable MANSECTS 1, 5 and 8\n"
    fi
 fi
 

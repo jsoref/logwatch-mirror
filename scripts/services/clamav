@@ -57,6 +57,7 @@ while (defined($ThisLine = <STDIN>)) {
        ( $ThisLine =~ /MaxQueue set to: / ) or
        ( $ThisLine =~ /^(?:LOCAL|TCP): Removing stale socket file/ ) or
        ( $ThisLine =~ /Listening daemon: PID: / ) or
+       ( $ThisLine =~ /Bytecode: Security mode set to /) or
        ( $ThisLine =~ /^No stats for Database check/ )) {
        # We do not care about these.
    } elsif (($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {

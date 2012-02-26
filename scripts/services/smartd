@@ -60,6 +60,7 @@ my @OtherList = ();
 my $DLine = 0;
 my %UnavailableDev = ();
 my %SataDisk = ();
+my %CheckFailed = ();
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreUnmatched = $ENV{'smartd_ignore_unmatched'} || 0;
@@ -129,7 +130,8 @@ while (defined(my $ThisLine = <STDIN>)) {
 	  || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device Try '.*' to turn on SMART features/)
 	  || ($ThisLine =~ /Device: (.*), Bad IEC (SMART) mode page, err=-5, skip device/)
 	  || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
-	  || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/) )
+	  || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/)
+	  || ($ThisLine =~ /System clock time adjusted to the past/) )
    {
        # ignore
 
@@ -142,6 +144,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    # smartd reports temperature changes this way only for SCSI disks
    } elsif ( my ($Device,$AttribType,$Code,$Name,undef,undef,$NewVal) = ($ThisLine =~ /^Device: ([^,]+), SMART ([A-Za-z]+) Attribute: ([0-9]+) ([A-Za-z_]+) changed from ([0-9]+) (\[Raw [0-9]+\] )?to ([0-9]+)/)) {
       push (@{$ParamChanges{$Device}{"$AttribType: $Name ($Code)"}}, $NewVal);
+   } elsif ( my ($Device,$Name,undef,$NewVal) = ($ThisLine =~ /^Device: ([^,]+), (.*) increased from ([0-9]+) to ([0-9]+)/) ) {
+      push (@{$ParamChanges{$Device}{"information: $Name"}}, $NewVal);
    } elsif ( my ($Device,$NewVal) = ($ThisLine =~ /^Device: ([^,]+), initial Temperature is (\d+) Celsius/)) {
       push @{$TempChanges{$Device}},$NewVal;
    } elsif ( my ($Device,$Limit) = ($ThisLine =~ /^Device: ([^,]+), Temperature \d+ Celsius reached limit of (\d+) Celsius/)) {
@@ -162,6 +166,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SelfTest{$Device}{$TestType}++;
    } elsif ( my ($Device,$AttribType,$Code,$Name) = ($ThisLine =~ /^Device: ([^,]+), Failed SMART ([A-Za-z]+) Attribute: ([0-9]+) ([A-Za-z_]+)/)) {
       $Failed{$Device}{"$AttribType attribute: $Name ($Code)"}++;
+   } elsif ( my ($Device, $Text) = ($ThisLine =~ /^Device: ([^,]+), failed (.*)$/) ) {
+      $Failed{$Device}{"$Text"}++; 
    } elsif ( ( $ThisLine =~ /warning/i ) ) {
       $Warnings{$ThisLine}++;
    } elsif ( my ($Device, $Text) = ( $ThisLine =~ /^Device: ([^,]+), (can't monitor.*)$/i ) ) {
@@ -178,11 +184,22 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SataDisk{"$Device"}++;
    } elsif ($ThisLine =~ /Unable to monitor any SMART enabled devices\. Try debug \(-d\) option\. Exiting/) {
       $UnableToMonitor++;
+   } elsif ( my ($Device) = ($ThisLine =~ /Device: ([^,]+), FAILED SMART self-check/) ) {
+      $CheckFailed{$Device}++;
    } else {
       # Report any unmatched entries...
       push @OtherList,"$ThisLine\n";
    }
 
+}
+
+if (keys %CheckFailed) {
+   print "\nFAILED SMART self-check !!!";
+   print "\n---------------------------";
+   foreach my $Device (sort keys %CheckFailed) {
+      printf "\n   %s: BACK UP DATA NOW!", $Device;
+   }
+   print "\n====================================\n";
 }
 
 if ($UnableToMonitor > 0) {
