@@ -46,6 +46,7 @@ my $Ignore_connections = $ENV{'ignore_connections'};
 $StillRoot = 0;
 $CleanTotal = 0;
 $SpamTotal = 0;
+$PyzorTerminated = 0;
 
 my %Child;
 my %Clean;
@@ -89,6 +90,9 @@ while (defined($ThisLine = <STDIN>)) {
       $StillRoot++;
    } elsif ( $ThisLine =~ m/^spamd: connection from (.*) at port / ) {
       $Connections{$1}++;
+   # These are caused by pyzor taking too long and being terminated
+   } elsif ( $ThisLine =~ m/^pyzor:.* error: TERMINATED, signal 15/ ) {
+      $PyzorTerminated++;
    } elsif ( $ThisLine =~ m/\bchild\b/ ) {
       chomp($ThisLine);
       # Many perl errors report pseudo-line-numbers, e.g.
@@ -138,7 +142,7 @@ if ( $StillRoot ) {
 }
 
 if (keys %Child) {
-   print "\nChild-related errors\nn";
+   print "\nChild-related errors\n";
    foreach $line (sort {$Child{$b}<=>$Child{$a} } keys %Child) {
       print "   $line: $Child{$line} Time(s)\n";
    }
@@ -154,6 +158,10 @@ if (keys %Connections) {
       }
       print "   $connection : $Connections{$connection} Time(s)\n";
    }
+}
+
+if ( $PyzorTerminated) {
+   print "\nPyzor TERMINATED errors: $PyzorTerminated time(s)\n";
 }
 
 if (keys %OtherList) {
