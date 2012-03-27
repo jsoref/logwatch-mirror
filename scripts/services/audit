@@ -121,6 +121,7 @@ while ($ThisLine = <STDIN>) {
         ( $ThisLine =~ /audit\([0-9.]*:[0-9]*\): bool=.* val=.* old_val=.* auid=[0-9]*/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): audit_enabled=[0-9]* old=[0-9]* auid=[0-9]* ses=[0-9]* subj=system_u:system_r:.*:s0 res=[0-9]*/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): auid=[0-9]* ses=[0-9]* subj=system_u:system_r:.*:s0 op=.* key=.* list=[0-9]* res=[0-9]*/) or
+        ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): pid=0 uid=0 auid=[0-9]* ses=[0-9]* subj=system_u:system_r:.*:s0 .* res=success/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\):  cwd=".*"/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): user/) or
         ( $ThisLine =~ /audit_printk_skb: [0-9]* callbacks suppressed/) or
