@@ -178,6 +178,7 @@ $pwd_file_unknown = 0;
 $pwd_file_too_short = 0;
 $Executed_app = 0;
 $PwdChange = 0;
+$RequestKeyFailures = 0;
 %OtherList = ();
 use Logwatch ':ip';
 
@@ -479,6 +480,8 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif (($User,$Reason) = ($ThisLine =~ /dovecot-auth: pam_userdb\(dovecot:auth\): user `(.*)' denied access \((.*)\)/)) {
       # dovecot-auth: pam_userdb(dovecot:auth): user `bobok' denied access (incorrect password)
       $DeniedAccess{"$User,$Reason"}++;
+   } elsif ($ThisLine =~ /^request-key: Cannot find command to construct key/) {
+      $RequestKeyFailures++;
    } else {
       # Unmatched entries...
       $ThisLine =~ s/\[\d+\]:/:/;
@@ -830,6 +833,10 @@ if (keys %DeprecateModule){
    }
 }
 
+
+if ($RequestKeyFailures) {
+   print "\nRequest Key Failures (nfs-utils/kernel mismatch): $RequestKeyFailures Time(s)\n";
+}
 
 if (keys %OtherList) {
    print "\n**Unmatched Entries**\n";
