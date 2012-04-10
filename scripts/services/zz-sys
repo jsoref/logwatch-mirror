@@ -47,16 +47,6 @@ if ($@) {
    print "   CPU:     " . Sys::CPU::cpu_count() . " " . Sys::CPU::cpu_type() . " at " . Sys::CPU::cpu_clock() . "MHz\n";
 }
 
-eval "require Sys::MemInfo";
-if ($@) {
-   print STDERR "No Sys::MemInfo module installed.  To install, execute the command:\n";
-   print STDERR "   perl -MCPAN -e 'install Sys::MemInfo' \n\n";
-} else {
-   import Sys::MemInfo qw(totalmem);
-   print "   Memory:  " . ((&totalmem - (&totalmem % (1024*1024))) / (1024*1024)) . " MB\n";
-}
-
-
 use POSIX qw(uname);
 my ($OSname, $hostname, $release, $version, $machine) = POSIX::uname();
 print "   Machine: $machine\n";
@@ -64,6 +54,16 @@ my $OStitle;
 $OStitle = $OSname;
 $OStitle = "Solaris" if ($OSname eq "SunOS" && $release >= 2);
 print "   Release: $OStitle $release\n";
+
+eval "require Sys::MemInfo";
+if ($@) {
+   print STDERR "No Sys::MemInfo module installed.  To install, execute the command:\n";
+   print STDERR "   perl -MCPAN -e 'install Sys::MemInfo' \n\n";
+} else {
+   import Sys::MemInfo qw(totalmem freemem);
+   printf "   Total Memory:  %6d MB\n", ((&totalmem - (&totalmem % (1024*1024))) / (1024*1024));
+   printf "   Free Memory:   %6d MB\n", ((&freemem - (&freemem % (1024*1024))) / (1024*1024)); 
+}
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
 # Local Variables:
