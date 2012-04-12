@@ -1520,7 +1520,7 @@ sub output {
 
    if ( $type eq "line" ) {
 	   if ( $Config{'format'} eq "text" ) {
-         $out_body{$index} .= "$text ";
+         $out_body{$index} .= " $text";
       } elsif ( $Config{'format'} eq "html" ) {
          #Covert spaces
          $text =~ s/  / \&nbsp;/go;

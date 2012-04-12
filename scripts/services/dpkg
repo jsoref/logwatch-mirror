@@ -53,7 +53,7 @@ my @unknown;
 while(my $line=<STDIN>) {
 	chomp $line;
 	if ( my ( $do, $pkg, $ver1, $ver2) = ( $line =~ /^\S+ \S+ (install|upgrade|remove|purge) (\S+) (\S+)(?: (\S+))?/ )) {
-		if(($do eq "remove" or $do eq "purge") and ($ver1 ne $ver2)) {
+		if(($do eq "remove" or $do eq "purge") and ($ver1 ne $ver2) and ($ver2 !~ /^<\w+>$/ )) {
 			push @unknown, $line;
 		} elsif ($do eq "remove") {
 			push @remove, "$pkg $ver1";

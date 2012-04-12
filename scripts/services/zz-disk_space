@@ -145,6 +145,8 @@ sub DiskSpace ()
       $df_options = "-l";
    } elsif ($OSname eq "AIX") {
       $df_options = "-P";
+   } elsif ($OSname eq "GNU/kFreeBSD") {
+      $df_options = "-h -l -x tmpfs -x udf -x iso9660 -x devfs -x linprocfs -x sysfs -x fdescfs";
    } else {
       $df_options = "-l";
 	}

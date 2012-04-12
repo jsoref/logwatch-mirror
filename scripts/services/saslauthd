@@ -61,6 +61,7 @@ while (defined($ThisLine = <STDIN>)) {
    if (
       ( $ThisLine =~ m/^DEBUG: / ) or
       ( $ThisLine =~ m/^ipc_init        : listening on socket:/ ) or
+      ( $ThisLine =~ m/^pam_sm_authenticate:/ ) or
       ( $ThisLine =~ m/^pam_unix/ )
    ) {
       # We don't care about these
