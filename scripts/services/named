@@ -249,6 +249,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /refresh in progress, refresh check queued/) or
       ($ThisLine =~ /refresh: NODATA response from master/) or
       ($ThisLine =~ /update with no effect/) or
+      ($ThisLine =~ /validating \@0x[[:xdigit:]]+: .* no valid signature found/) or
       # ignore this line because the following line describes the error
       ($ThisLine =~ /unexpected error/)
    ) {
