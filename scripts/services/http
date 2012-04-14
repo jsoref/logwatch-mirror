@@ -402,6 +402,15 @@ while ($end_loop) {
       # issue
       $parse_field[$parse_index][$parse_subindex++] = "bytes_transfered";
       $parse_string[$parse_index] .= "(-|\\d*)";
+   } elsif ($logformat =~ /\G%V/gc) {
+      $parse_string[$parse_index] .= "(\\S*?)";
+      $parse_field[$parse_index][$parse_subindex++] = "server_name";
+   } elsif ($logformat =~ /\G%I/gc) {
+      $parse_field[$parse_index][$parse_subindex++] = "bytes_in";
+      $parse_string[$parse_index] .= "(-|\\d*)";
+   } elsif ($logformat =~ /\G%O/gc) {
+      $parse_field[$parse_index][$parse_subindex++] = "bytes_out";
+      $parse_string[$parse_index] .= "(-|\\d*)";
    } elsif ($logformat =~ /\G%{Referer}i/gci) {
       $parse_string[$parse_index] .= "(.*)";
       $parse_field[$parse_index][$parse_subindex++] = "referrer";
