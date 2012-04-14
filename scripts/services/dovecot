@@ -223,23 +223,22 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ($ThisLine =~ /Disconnected in APPEND/) {
       $Disconnected{"in APPEND"}++;
    } elsif (($ThisLine =~ /Disconnected$/) or
-            (($Reason) = ($ThisLine =~ /pop3-login: Disconnected: (.+)/)) or
-            (($Reason) = ($ThisLine =~ /imap-login: Disconnected: (.+)/)) ) {
+            ($ThisLine =~ /(IMAP|POP3)\(.+\): Disconnected (bytes|top|rip|user|method)=/) or
+            ($ThisLine =~ /(imap\-login|pop3\-login): Disconnected: (bytes|top|rip|user|method)=/) ) { 
       $Disconnected{"no reason"}++;
-   } elsif ( (($Reason) = ($ThisLine =~ /POP3.+: Disconnected: (.+) top/)) or
-          (($Reason) = ($ThisLine =~ /pop3-login: Disconnected \((.+)\): /)) or
-          (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+) bytes=/i)) or
+   } elsif ( (($Reason) = ($ThisLine =~ /(?:IMAP|POP3).+: Disconnected: (.+) (bytes|top)=/i)) or
+          (($Reason) = ($ThisLine =~ /(?:imap\-login|pop3\-login): Disconnected: \(?(.+)\)?: /)) or
+            #This one should go away also -mgt
           (($Reason) = ($ThisLine =~ /IMAP.+: Disconnected: (.+)/i)) ) {
       $Disconnected{$Reason}++;
-   } elsif (($Reason) = ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/i))  {
+   } elsif ($ThisLine =~ /(IMAP|POP3).+: Connection closed (top|bytes)=/i) {
         $ConnectionCl{"no reason"}++;
-   } elsif ( (($Reason) = ($ThisLine =~ /IMAP.+: Connection closed: (.*) bytes=/i)) or
-             (($Reason) = ($ThisLine =~ /POP3.+: Connection closed: (.*) (top=|bytes=)/i)) ) {
+   } elsif ( ($Reason) = ($ThisLine =~ /(?:IMAP|POP3).+: Connection closed: (.*) (?:bytes|method|top|rip|user)=/i) ) {
        $ConnectionCl{$Reason}++;
    } elsif ($ThisLine =~ /(IMAP|POP3).+: (Connection closed.*)/) {
       $Disconnected{$2}++;
-   } elsif ($ThisLine =~ /POP3.+: Connection closed top=.* retr=.* del=.* size=.*/i) {
-      $ConnectionCl{"no reason"}++;
+   } elsif (($Host) = ($ThisLine =~ /(?:imap\-login|pop3\-login): Aborted login: .*rip=(?:::ffff:)?(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/) ) {
+      $Aborted{$Host}++;
    } elsif (($Error) = ($ThisLine =~ /child \d* (?:\(login\) )?returned error (.*)/)) {
    # dovecot: child 23747 (login) returned error 89
    # dovecot: log: Error: service(auth): child 19654 returned error 89 (Fatal failure)
