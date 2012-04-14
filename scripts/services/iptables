@@ -128,7 +128,7 @@ while (defined($ThisLine = <STDIN>)) {
    # the format for ulogd/ulogd.syslogmenu and messages differ in that
    # the earlier has no service name after the date.  So RemoveHeaders
    # doesn't work.  Therefore, we extract it here:
-   $ThisLine =~ s/^... .. ..:..:.. ([^ ]*) (kernel: )?(\[\d+\.\d+\] )?//;
+   $ThisLine =~ s/^... .. ..:..:.. ([^ ]*) (kernel: )?(\[\s*\d+\.\d+\] )?//;
 
    # IPCHAINS
    if( ($TU,$from,$port,$on) = ( $ThisLine =~ /IP fw-in deny \w+ (\w+) ([^:]+):\d+ ([^:]+):(\d+) / ) ){
