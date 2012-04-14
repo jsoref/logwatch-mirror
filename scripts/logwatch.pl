@@ -1428,24 +1428,26 @@ sub parselogs {
    }
 
 #Printing starts here $out_mime $out_head $out_reference $out_body $out_foot
-   print OUTFILE $out_mime if $out_mime;
-   if ( $Config{'encode'} eq "base64" ) {
-      print OUTFILE encode_base64($out_head) if $out_head;
-      print OUTFILE encode_base64($out_reference) if $out_reference;
-      foreach ( 0 .. $index_par ) {
-         print OUTFILE encode_base64($out_body{$_}) if defined( $out_body{$_} );
+   if (defined fileno OUTFILE) {
+      print OUTFILE $out_mime if $out_mime;
+      if ( $Config{'encode'} eq "base64" ) {
+         print OUTFILE encode_base64($out_head) if $out_head;
+         print OUTFILE encode_base64($out_reference) if $out_reference;
+         foreach ( 0 .. $index_par ) {
+            print OUTFILE encode_base64($out_body{$_}) if defined( $out_body{$_} );
 #fixme
-         $out_body{$_} = ''; #We should track this down out_body could be an array instead also -mgt
+            $out_body{$_} = ''; #We should track this down out_body could be an array instead also -mgt
+         }
+         print OUTFILE encode_base64($out_foot) if $out_foot;
+      } else {
+         print OUTFILE $out_head if $out_head;
+         print OUTFILE $out_reference if $out_reference;
+         foreach ( 0 .. $index_par ) {
+            print OUTFILE $out_body{$_} if defined( $out_body{$_} );
+            $out_body{$_} = '';
+         }
+         print OUTFILE $out_foot if $out_foot;
       }
-      print OUTFILE encode_base64($out_foot) if $out_foot;
-   } else {
-      print OUTFILE $out_head if $out_head;
-      print OUTFILE $out_reference if $out_reference;
-      foreach ( 0 .. $index_par ) {
-         print OUTFILE $out_body{$_} if defined( $out_body{$_} );
-         $out_body{$_} = '';
-      }
-      print OUTFILE $out_foot if $out_foot;
    }
 #ends here
 
