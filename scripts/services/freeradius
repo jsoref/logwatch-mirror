@@ -1,0 +1,119 @@
+
+##########################################################################
+# freeradius logwatch filter
+#	written by Jonas Marczona 28.12.2011 
+#
+## Covered under the included MIT/X-Consortium License:
+## http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.
+##########################################################################
+
+$^W=1;
+use strict;
+
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+
+my $DebugCounter = 0;
+
+if ( $Debug >= 5 ) {
+   print STDERR "\n\nDEBUG: Inside freeradius Filter \n\n";
+   $DebugCounter = 1;
+}
+
+my %OtherList = ();
+
+my %loginsOk = ();
+my %wrongPassword = ();
+my %wrongUser = ();
+my %wrong_ip = (); 
+
+my $ThisLine;
+while (defined($ThisLine = <STDIN>)) {
+   if ( $Debug >= 5 ) {
+      print STDERR "DEBUG($DebugCounter): $ThisLine";
+      $DebugCounter++;
+   }
+   chomp($ThisLine);
+
+   if ( my $user = ($ThisLine =~ m/^Auth: Login OK: \[(.+)\] \(from client [^ ]* port \d{1,10} cli \d+.\d+.\d+.\d+\)/) ) {
+      $loginsOk{$user}++;
+   } elsif ( my ($user, $ip) = ( $ThisLine =~ m/^Auth: Login incorrect \(rlm_pap: CLEAR TEXT password check failed\): \[(.+)\] \(from client [^ ]* port \d{1,10} cli (\d+.\d+.\d+.\d+)\)/) ) {
+      $wrongPassword{$ip}{$user}++;
+      $wrong_ip{$ip}++;
+   } elsif ( my ($user, $ip) = ($ThisLine =~ m/^Auth: Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10} cli (\d+.\d+.\d+.\d+)\)/) ) {
+      $wrongUser{$ip}{$user}++;
+      $wrong_ip{$ip}++;
+   } else {
+      # Report any unmatched entries...
+      $OtherList{$ThisLine}++;
+   }
+}
+
+
+#################################
+# Output section
+################################
+
+sub compPerIp {
+  return $wrong_ip{$b} <=> $wrong_ip{$a};
+}
+
+if ($Detail >= 10) {
+   if (keys %loginsOk) {
+      print "\nSuccessful logins:\n";
+      my $user;
+      foreach $user (sort {$loginsOk{$b} <=> $loginsOk{$a}} keys %loginsOk) {
+        # print  $user, " ";
+        # print  $loginsOk{$user}; 
+        printf " %10s : %3d time(s)\n", $user, $loginsOk{$user};
+      }
+   }
+}
+
+if ($Detail >= 5) {
+   if (keys %wrong_ip) {
+      print "\nSum of failed logins per ip (wrong password or user)\n";
+      foreach my $ip (sort compPerIp keys %wrong_ip) {
+         printf " %15s : %3d time(s)\n", $ip, $wrong_ip{$ip};
+      } 
+   }
+}
+
+if (keys %wrongUser) {
+   print "\nFailed logins - wrong user name:\n";
+   foreach my $ip (sort compPerIp keys %wrongUser) {
+     printf " %15s\n",  $ip;
+     my $users = $wrongUser{$ip};
+     foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
+        printf "%20s : %3d time(s)\n", $user, $users->{$user};
+     }
+   }
+}
+
+if (keys %wrongPassword) {
+   print "\nFailed logins - wrong password:\n";
+   foreach my $ip (sort compPerIp keys %wrongPassword) {
+     my $users = $wrongPassword{$ip};
+     printf " %15s\n", $ip ;
+     foreach my $user (sort {$users->{$b} <=> $users->{$a}} keys %$users) {
+        #print "    $user ", $users->{$user}, " time(s)\n";
+        printf "%20s : %3d time(s)\n", $user, $users->{$user};
+     }
+   }
+}
+
+if (keys %OtherList) {
+   print "\n**** Unmatched entries ****\n";
+   foreach (keys %OtherList) {
+      print "    $_ : $OtherList{$_} Time(s)\n";
+   }
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+
