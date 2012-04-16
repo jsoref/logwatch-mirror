@@ -24,6 +24,7 @@ use strict;
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $allowedServicesInput = $ENV{'stunnel_allowed_services'} || "";
 
 my $DebugCounter = 0;
 
@@ -35,9 +36,22 @@ if ( $Debug >= 5 ) {
 my @OtherList = ();
 my %OtherList = ();
 my %connections = ();
+my %connectionsAllowed = ();
 my %versioninfo = ();
 my $sockdata = 0;
 my $ssldata = 0;
+
+$allowedServicesInput =~ s/[\t ]*,[\t ]*/,/g;
+my %allowedServices = ();
+@allowedServices{split(/,/, $allowedServicesInput)} = ();
+
+if ($Debug >= 5) {
+  print "Allowed services are set to: \n";
+  foreach my $allowedService (sort keys %allowedServices) {
+     print $allowedService, "\n";
+  }
+  print "\n\n\n";
+}
 
 sub other {
    my $msg = shift;
@@ -56,14 +70,20 @@ while (defined($ThisLine = <STDIN>)) {
       $DebugCounter++;
    }
    chomp($ThisLine);
-   my $origline = $ThisLine;
-   if ($ThisLine =~ m/^(.+) connected from (\d+\.\d+\.\d+\.\d+)/) {
+   # remove leading log level and ID, eg 'LOG5[2411:3084352400]: '
+   $ThisLine =~ s/^LOG\d\[\d+:\d+\]: //;
+
+   if ( ($ThisLine =~ m/^SSL_read: Connection reset by peer/)
+   ) {
+      # ignore
+   } elsif ($ThisLine =~ m/^(.+) connected from (\d+\.\d+\.\d+\.\d+)/) {
       my $service = $1;
       my $ip = $2;
-      if (! exists($connections{$service}{$ip})) {
-        $connections{$service}{$ip} = 0;
+      if (exists($allowedServices{$service})) {
+         ++$connectionsAllowed{$service};
+      } else {
+         ++$connections{$service}{$ip};
       }
-      ++$connections{$service}{$ip};
    } elsif ($ThisLine =~ m/^Connection (reset|closed): (\d+) bytes sent to SSL, (\d+) bytes sent to socket/) {
       $ssldata += $2;
       $sockdata += $3;
@@ -78,13 +98,20 @@ while (defined($ThisLine = <STDIN>)) {
 }
 
 if (keys %connections) {
-   print "\nconnections:\n";
+   print "\nNumber of connections per service per ip:\n";
    foreach my $service (sort keys %connections) {
-     print "  $service\n";
+     printf " %7s \n", $service;
      my $ips = $connections{$service};
      foreach my $ip (sort keys %$ips) {
-        print "    $ip ", $ips->{$ip}, "\n";
+        printf "    %15s : %5d time(s)\n", $ip, $ips->{$ip};
      }
+   }
+}
+
+if (keys %connectionsAllowed) {
+   print "\nNumber of connections per allowed service:\n";
+   foreach my $service (sort keys %connectionsAllowed) {
+     printf " %18s : %5d time(s)\n",  $service, $connectionsAllowed{$service};
    }
 }
 
