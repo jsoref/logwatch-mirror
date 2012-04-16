@@ -193,6 +193,10 @@ while (my $line = <STDIN>) {
       if ($Detail >= 3) {
          $data{'Duplicate lease'}{$line}++;
       }
+   } elsif ($line =~ /^client [a-f0-9:]{18} has duplicate leases on/) {
+      if ($Detail >= 3) {
+         $data{'Duplicate lease'}{$line}++;
+      }
    } elsif ($line =~ /^DHCPDISCOVER from .* via \S+: (.*): no free leases/) {
       $data{'No Free Leases'}{$1}++;
    } elsif ($line =~ /^DHCPDISCOVER from .* via (\S+): unknown network segment/) {
