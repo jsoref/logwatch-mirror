@@ -434,7 +434,7 @@ next unless $ThisLine;
 
       # the following two return errors that are caught in the "to=" statements
       # file=srvrsmtp.c, LogLevel>3, LOG_INFO
-      ( $ThisLine =~ /^Milter: data, reject=554 5\.7\.1 (.*)/ ) or
+      ( $ThisLine =~ /^Milter: data, reject=55[0-9] 5\.7\.1 (.*)/ ) or
       # file=srvrsmtp.c, LogLevel>3, LOG_INFO
       ( $ThisLine =~ /^Milter: data, discard$/ ) or
       # file=srvrsmtp.c, LogLevel>9, LOG_INFO
