@@ -198,6 +198,24 @@ while (defined($ThisLine = <STDIN>)) {
          $Connection{$Host}++;
        }
 
+   # Dovecot 2.0 proxy
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag pop3-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
+      if ($Host !~ /$IgnoreHost/) {
+         $ProxyLogin{$User}{$Host}++;
+         $ProxyLoginPOP3{$User}++;
+         $ProxyConnectionPOP3{$Host}++;
+         $ProxyConnection{$Host}++;
+      }
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag imap-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
+      if ($Host !~ /$IgnoreHost/) {
+         $ProxyLogin{$User}{$Host}++;
+         $ProxyLoginIMAP{$User}++;
+         $ProxyConnectionIMAP{$Host}++;
+         $ProxyConnection{$Host}++;
+      }
+   } elsif ( ($Reason) = ( $ThisLine =~ /proxy\(.*\): disconnecting .* \(Disconnected (.*)\)/ ) ) {
+      $ProxyDisconnected{$Reason}++;
+
    } elsif ($ThisLine =~ /Disconnected (\[|top)/) {
       $Disconnected{"no reason"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
@@ -482,6 +500,49 @@ if (keys %DiskQuotaExceed) {
    print "\n\nDisk quota exceeded:";
    foreach my $Name (sort keys %DiskQuotaExceed) {
       print "\n   disk quota for user '". $Name . "' exceeded: ". $DiskQuotaExceed{$Name} ." Time(s)";
+   }
+}
+
+if ( ( $Detail >= 5 ) and (keys %ProxyLogin)) {
+   print "\n\nDovecot Proxy IMAP and POP3 Successful Logins:";
+   $LoginCount = 0;
+   foreach my $User (sort keys %ProxyLogin) {
+      print "\n  User $User:";
+      if ( ($Detail >= 10) and ($ProxyLoginPOP3{$User} > 0 || $ProxyLoginIMAP{$User} > 0) ) {
+         print "   (";
+         if ($ProxyLoginPOP3{$User} > 0) { print "$ProxyLoginPOP3{$User} POP3"; };
+         if ($ProxyLoginPOP3{$User} > 0 && $ProxyLoginIMAP{$User} > 0) { print "/"; };
+         if ($ProxyLoginIMAP{$User} > 0) { print "$ProxyLoginIMAP{$User} IMAP"; };
+         print ")";
+      }
+      $UserCount = 0;
+      $NumHosts = 0;
+      foreach $Host (sort keys %{$ProxyLogin{$User}}) {
+         $NumHosts++;
+         $HostCount = $ProxyLogin{$User}{$Host};
+# Cleanly display IPv4 addresses
+         $Host=~ s/::ffff://;
+         print "\n    From $Host: $HostCount Time(s)" if ($Detail >= 10);
+         $UserCount += $HostCount;
+      }
+      $LoginCount += $UserCount;
+      if ($Detail >= 10) {
+         if ($NumHosts > 1) {
+            print "\n  Total: $UserCount Time(s)\n";
+         } else {
+	    print "\n";
+	 }
+      } elsif ($Detail >= 5) {
+         print " $UserCount Time(s)";
+      }
+   }
+   print "\nTotal: $LoginCount successful logins";
+}
+
+if (keys %ProxyDisconnected) {
+   print "\n\nDovecot Proxy disconnects:\n";
+   foreach my $Reason (sort keys %ProxyDisconnected) {
+      print "   $Reason: $ProxyDisconnected{$Reason} Time(s)\n";
    }
 }
 
