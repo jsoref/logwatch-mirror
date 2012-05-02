@@ -68,6 +68,10 @@ while (defined($ThisLine = <STDIN>)) {
       $ChangedFiles{$1}++;
    } elsif ($ThisLine =~ /File\[(.+)\].+content changed/) {
       $ChangedFiles{$1}++;
+   } elsif (($File, $Content) = $ThisLine =~ /\(\/File\[(.+)\]\/content\) #012(.*)/) {
+      $Content =~ s/#011/\t/g;
+      $Content =~ s/#012/\n        /g;
+      $ChangedFilesContent{$File} .= $Content;
    } elsif ($ThisLine =~ /File\[(.+)\].+created/) {
       $CreatedFiles{$1}++;
    } elsif ($ThisLine =~ /File\[(.+)\].+removed/) {
@@ -131,6 +135,9 @@ if (keys %ChangedFiles) {
    print "\nChanged files:\n";
    foreach $ThisOne (keys %ChangedFiles) {
       print "    $ThisOne: $ChangedFiles{$ThisOne} Time(s)\n";
+      if (defined($ChangedFilesContent{$ThisOne}) and $Detail >= 3) {
+         print "        $ChangedFilesContent{$ThisOne}\n";
+      }
    }
 }
 
