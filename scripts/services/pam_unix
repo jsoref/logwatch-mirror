@@ -232,6 +232,8 @@ while ($line = <STDIN>) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^authentication failure;.* user=(.+)$/$1/) {
          $data{$service}{'Authentication Failures'}{$line}++;
+      } elsif ($line =~ s/^authentication failure;.* ruser=(.+) rhost=.+$/$1/) {
+         $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ /check pass; user unknown/) {
          $data{$service}{'Invalid Users'}{'Unknown Account'}++;
       } elsif ($line =~ /session closed for user/) {
