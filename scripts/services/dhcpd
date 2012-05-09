@@ -133,7 +133,7 @@ while (my $line = <STDIN>) {
       if ($Detail >= 5) {
          $data{'Warnings'}{$line}++;
       }
-   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) \(([^)]+)\) via ([\d\.]+).*$/$1 -> $2 [$3] ($4)/) {
+   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) (?:\(([^)]+)\) )?via ([\d\.]+).*$/$1 -> $2 [$3] ($4)/) {
       if ($Detail >= 5) {
          $data{'Addresses Declined'}{$line}++;
       }
@@ -193,7 +193,7 @@ while (my $line = <STDIN>) {
       if ($Detail >= 3) {
          $data{'Duplicate lease'}{$line}++;
       }
-   } elsif ($line =~ /^client [a-f0-9:]{18} has duplicate leases on/) {
+   } elsif ($line =~ s/^client ([a-f0-9:]{17}) has duplicate leases on ([a-f0-9\/.:]+)$/$1 on $2/ ) {
       if ($Detail >= 3) {
          $data{'Duplicate lease'}{$line}++;
       }
