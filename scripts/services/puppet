@@ -74,6 +74,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ChangedFilesContent{$File} .= $Content;
    } elsif ($ThisLine =~ /File\[(.+)\].+created/) {
       $CreatedFiles{$1}++;
+   } elsif ($ThisLine =~ /File\[(.+)\].+defined content/) {
+      $CreatedFiles{$1}++;
    } elsif ($ThisLine =~ /File\[(.+)\].+removed/) {
       $RemovedFiles{$1}++;
    } elsif (($fileinfo) = ($ThisLine =~ /Filebucketed (.*)/)) {
@@ -99,6 +101,10 @@ while (defined($ThisLine = <STDIN>)) {
       $ServiceStarts{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/) {
       $ServiceStarts{$1}++;
+   } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'stopped\'/) {
+      $ServiceStops{$1}++;
+   } elsif ($ThisLine =~ /User\[(.+)\].+changed password/) {
+      $PasswordChanged{$1}++;
    } elsif ($ThisLine =~ /Dependency .+\[.+\] has [0-9]+ failure/) {
       $DependencyFailures++;
    } else {
@@ -187,6 +193,20 @@ if (keys %ServiceStarts) {
    print "\nService starts:\n";
    foreach $ThisOne (keys %ServiceStarts) {
       print "    $ThisOne: $ServiceStarts{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %ServiceStops) {
+   print "\nService stops:\n";
+   foreach $ThisOne (keys %ServiceStops) {
+      print "    $ThisOne: $ServiceStops{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %PasswordChanged) {
+   print "\nPassword changed:\n";
+   foreach $ThisOne (keys %PasswordChanged) {
+      print "    $ThisOne: $PasswordChanged{$ThisOne} Time(s)\n";
    }
 }
 
