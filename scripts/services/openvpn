@@ -109,6 +109,8 @@ while (defined($ThisLine = <STDIN>)) {
    }  elsif (($status, $dn) = ( $ThisLine =~ /^VERIFY X509NAME (.*): (.*)/ )) {
       #VERIFY X509NAME OK: /C=US/ST=TX/O=Aidant.Enterprises/OU=IT/CN=delta.aidant.net/Email=keymaster@aidant.net: 23 Time(s)
       $VerifyList{"status: $status X509Name DN: $dn"}++;
+   } elsif ($ThisLine =~ /^TLS: Username\/Password authentication/) {
+      $VerifyList{$ThisLine}++;
    } elsif ($ThisLine =~ m/^MULTI: new incoming connection would exceed maximum number of clients/) {
       $MaxClients++;
    } elsif ($ThisLine =~ m/^OpenVPN [\d.]+ [\w-]+ [\[\]\w ]+ built on [\w]+ +[\d]+ [\d]+$/) {
@@ -132,6 +134,12 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ((($Err) = ($ThisLine =~ /(read UDPv4 \[ECONNREFUSED\]: Connection refused \(code=111\))/)) or
       (($Err) = ($ThisLine =~ /(read UDPv4 \[EHOSTUNREACH\]: No route to host \(code=113\))/))) {
       $Error{$Err}++;
+   } elsif (($plugin,$call,$status) = ($ThisLine =~ /^PLUGIN_CALL: POST (.*)\/(PLUGIN_.*) status=(.*)/)) {
+      if ($status == 0) {
+         $PluginCallOK{$plugin}{$call}++;
+      } else {
+         $PluginCallFailure{$plugin}{$call}++;
+      }
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
@@ -181,7 +189,7 @@ if (keys %Connections) {
    }
 }
 
-if (keys %Auth) {
+if (keys %Auth and $Detail >= 10) {
    print "\nCiphers used for Authentication:";
    foreach $channel (sort keys %Auth) {
       print "\n   $channel:";
@@ -195,7 +203,7 @@ if (keys %Auth) {
    }
 }
 
-if (keys %Crypt) {
+if (keys %Crypt and $Detail >= 10) {
    print "\nCiphers used for Encryption:";
    foreach $channel (sort keys %Crypt) {
       print "\n   $channel:";
@@ -227,6 +235,30 @@ if (keys %Error) {
    print "\n UDPv4 errors:\n";
    foreach $Err (sort keys %Error) {
      print "   " . $Err . ": " .$Error{$Err}. " Time(s)\n";
+   }
+}
+
+if (keys %PluginCallFailures) {
+   print "\nPlugin Call Failures:";
+   foreach $plugin (sort keys %PluginCallFailures) {
+      print "\n   Plugin $plugin:";
+      foreach $call (sort keys %{$PluginCallFailures{$plugin}}) {
+         $times = $PluginCallFailures{$plugin}{$call};
+         print "\n      $call failed $PluginCallFailures{$plugin}{$call} Time(s)";
+      }
+      print "\n";
+   }
+}
+
+if (keys %PluginCallOK and $Detail >= 5) {
+   print "\nPlugin Call OK:";
+   foreach $plugin (sort keys %PluginCallOK) {
+      print "\n   Plugin $plugin:";
+      foreach $call (sort keys %{$PluginCallOK{$plugin}}) {
+         $times = $PluginCallOK{$plugin}{$call};
+         print "\n      $call succeeded $PluginCallOK{$plugin}{$call} Time(s)";
+      }
+      print "\n";
    }
 }
 
