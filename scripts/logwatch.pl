@@ -1147,6 +1147,9 @@ sub initprint {
          } else {
             print OUTFILE "Subject: Logwatch for $Config{'hostname'} (${OStitle})\n";
          }
+         #Add headers to recognize automatically generated email
+         print OUTFILE "Auto-Submitted: auto-generated\n";
+         print OUTFILE "Precedence: bulk\n";
          #Add MIME
          $out_mime = "MIME-Version: 1.0\n";
          #Config{encode} switch

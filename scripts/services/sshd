@@ -449,8 +449,19 @@ while (defined(my $ThisLine = <STDIN>)) {
 
 foreach my $Host (keys %PotentialIllegalUsers) {
    foreach my $User (keys %{$PotentialIllegalUsers{$Host}}) {
-      while ($IllegalUsers{$Host}{$User} < $PotentialIllegalUsers{$Host}{$User}) {
-	 $IllegalUsers{$Host}{$User}++;
+      my @user_hosts = grep { $PotentialIllegalUsers{$_}{$User} } keys %PotentialIllegalUsers;
+
+      if ($Host eq "undef") {
+         if ((scalar @user_hosts) == 1 && $user_hosts[0] == "undef") {
+            # Report illegal user from "undef" only if there are no other hosts
+            # for the given user
+            $IllegalUsers{"undef"}{$User}++;
+         }
+      }
+      else {
+         while ($IllegalUsers{$Host}{$User} < $PotentialIllegalUsers{$Host}{$User}) {
+            $IllegalUsers{$Host}{$User}++;
+         }
       }
    }
 }
