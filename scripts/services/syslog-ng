@@ -51,7 +51,7 @@ my (%WriteErrs)	= ();
 my (%Stats_center, %Stats_source, %Stats_dest)	= ( (), (), ());
 my (%Stats_dropped, %Stats_supp, %Stats_global)	= ( (), (), ());
 my (%Stats_dropped_net, %Stats_supp_net)	= ( (), ());
-my (%Warnings) = ();
+my (%Warnings, %IntErrors) = ( (), ());
 
 ### Parse the lines ###
 
@@ -200,10 +200,16 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^WARNING: (.*)$/) {
       $Warnings{$1}++;
    }
-   # syslog-nb v3.X
+   # syslog-ng v3.X
    #TD syslog-ng[1601]: Configuration file has no version number, assuming ...
    elsif ($ThisLine =~ /(Configuration file has no version number)/) {
       $Warnings{$1}++;
+   }
+
+   #TD syslog-ng[2550]: Internal error, duplicate configuration elements refer to
+   #   the same persistent config; name='afsocket_sd_connections(dgram,AF_INET(0.0.0.0:514))'
+   elsif ($ThisLine =~ /Internal error, ([^;]*); name='([^']*)'/) {
+      $IntErrors{$1}{$2}++;
    }
 
    else {
@@ -363,6 +369,16 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
 
 if ($Drops) {
     print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
+}
+
+if (keys %IntErrors) {
+   print "\nInternal Errors:\n";
+   foreach my $class (sort {$a cmp $b} keys %IntErrors) {
+      print "    $class\n";
+      foreach my $error (sort {$a cmp $b} keys %{$IntErrors{$class}}) {
+         print "\t$error : $IntErrors{$class}{$error} Time(s)\n";
+      }
+   }
 }
 
 if (keys %Warnings) {
