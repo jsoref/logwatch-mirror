@@ -1,5 +1,5 @@
 ###########################################################################
-# $Id: syslog-ng,v 1.5.1.1 2011/01/06 21:32:01 general Exp $
+# $Id: syslog-ng,v 1.7 2012/07/16 13:22:34 general Exp general $
 ###########################################################################
 
 ###########################################################################
@@ -9,7 +9,7 @@
 # Please send all comments, suggestions, bug reports,
 #    etc, to logwatch at localside.net.
 ###########################################################################
-# Copyright (c) 2008-2010 Stefan Jakobs
+# Copyright (c) 2008-2012 Stefan Jakobs
 # Covered under the included MIT/X-Consortium License:
 #    http://www.opensource.org/licenses/mit-license.php
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,7 @@
 use strict;
 
 my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-my $Version	= "1.2-20110106";
+my $Version	= "1.3-20120716";
 
 # initialize logwatch variables 
 my $ThisLine	= "";
@@ -50,6 +50,8 @@ my (%BrokenConns, %PermFiles, %OpenFiles)	= ( (), (), ());
 my (%WriteErrs)	= ();
 my (%Stats_center, %Stats_source, %Stats_dest)	= ( (), (), ());
 my (%Stats_dropped, %Stats_supp, %Stats_global)	= ( (), (), ());
+my (%Stats_program, %Stats_stored) = ( (), ());
+my (%Stats_dropped_program, %Stats_supp_program) = ( (), ());
 my (%Stats_dropped_net, %Stats_supp_net)	= ( (), ());
 my (%Warnings, %IntErrors) = ( (), ());
 
@@ -59,7 +61,10 @@ while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
 
    #TD syslog-ng[2351]: New configuration initialized;
-   if ($ThisLine =~ /^New configuration initialized/ ) {
+   if ( ($ThisLine =~ /^New configuration initialized/ ) ||
+        ($ThisLine =~ /^EOF on control channel, closing connection;/ ) ||
+        ($ThisLine =~ /^POLLERR occurred while idle;/ ) 
+   ) {
       #ignore
    }
 
@@ -135,54 +140,78 @@ while (defined($ThisLine = <STDIN>)) {
    #     stamp='src.internal(src#0)=1283808150', processed='global(msg_clones)=0', ...
    elsif ($ThisLine =~ /^Log statistics; /) {
       my @processed = 
-	  $ThisLine =~ /processed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
+         $ThisLine =~ /processed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@processed; $i=$i+3)
       {
-	  if ($processed[$i] eq "center") { 
-	     $Stats_center{$processed[$i+1]} = 
-		$Stats_center{$processed[$i+1]} + $processed[$i+2]; 
-	  } elsif ($processed[$i] eq "destination") {
-	     $Stats_dest{$processed[$i+1]} = 
-		$Stats_dest{$processed[$i+1]} + $processed[$i+2];
-	  } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal") {
-	     $Stats_source{$processed[$i+1]} = 
-		$Stats_source{$processed[$i+1]} + $processed[$i+2];
-          } elsif ($processed[$i] eq "global") {
-             $Stats_global{$processed[$i+1]} =
-                $Stats_global{$processed[$i+1]} + $processed[$i+2];
-	  } else { chomp($ThisLine); $OtherList{$ThisLine}++; }  
+         if ($processed[$i] eq "center") { 
+            $Stats_center{$processed[$i+1]} = 
+               $Stats_center{$processed[$i+1]} + $processed[$i+2]; 
+         } elsif ($processed[$i] eq "destination") {
+            $Stats_dest{$processed[$i+1]} = 
+               $Stats_dest{$processed[$i+1]} + $processed[$i+2];
+	      } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal") {
+            $Stats_source{$processed[$i+1]} = 
+               $Stats_source{$processed[$i+1]} + $processed[$i+2];
+         } elsif ($processed[$i] eq "global") {
+            $Stats_global{$processed[$i+1]} =
+               $Stats_global{$processed[$i+1]} + $processed[$i+2];
+         } elsif ($processed[$i] eq "dst.program") {
+            $Stats_program{$processed[$i+1]} =
+               $Stats_program{$processed[$i+1]} + $processed[$i+2];
+	      } else { chomp($ThisLine); $OtherList{$ThisLine}++; }  
       }
       my @dropped =
-	  $ThisLine =~ /dropped='([a-z]*)\((\S*)\)=([0-9]*)'/g;
+	      $ThisLine =~ /dropped='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@dropped; $i=$i+3)
       {
-	  if ($dropped[$i] eq "program" || $dropped[$i] eq "pipe") {
-	     if ($dropped[$i+2] > 0) {
-		$Stats_dropped{$dropped[$i+1]} =
-		   $Stats_dropped{$dropped[$i+1]} + $dropped[$i+2];
-	     }
-	  } elsif ($dropped[$i] eq "tcp" || $dropped[$i] eq "udp") {
-	     if ($dropped[$i+2] > 0) {
-		$Stats_dropped_net{$dropped[$i+1]} =
-		   $Stats_dropped_net{$dropped[$i+1]} + $dropped[$i+2];
-	     }
-	  } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
+         if ($dropped[$i] eq "program" || $dropped[$i] eq "pipe") {
+            if ($dropped[$i+2] > 0) {
+               $Stats_dropped{$dropped[$i+1]} =
+                  $Stats_dropped{$dropped[$i+1]} + $dropped[$i+2];
+            }
+         } elsif ($dropped[$i] eq "tcp" || $dropped[$i] eq "udp") {
+            if ($dropped[$i+2] > 0) {
+               $Stats_dropped_net{$dropped[$i+1]} =
+                  $Stats_dropped_net{$dropped[$i+1]} + $dropped[$i+2];
+            }
+         } elsif ($dropped[$i] eq "dst.program") {
+            if ($dropped[$i+2] > 0) {
+               $Stats_dropped_program{$dropped[$i+1]} =
+                  $Stats_dropped_program{$dropped[$i+1]} + $dropped[$i+2];
+            }
+         } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }   
       my @suppressed =
-	  $ThisLine =~ /suppressed='([a-z]*)\((\S*)\)=([0-9]*)'/g;
+         $ThisLine =~ /suppressed='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@suppressed; $i=$i+3)
       {
-	  if ($suppressed[$i] eq "program" || $suppressed[$i] eq "pipe") {
-	     if ($suppressed[$i+2] > 0) {
-		$Stats_supp{$suppressed[$i+1]} =
-		   $Stats_supp{$suppressed[$i+1]} + $suppressed[$i+2];
-	     }
-	  } elsif ($suppressed[$i] eq "tcp" || $suppressed[$i] eq "udp") {
-	     if ($suppressed[$i+2] > 0) {
-		$Stats_supp_net{$suppressed[$i+1]} =
-		   $Stats_supp_net{$suppressed[$i+1]} + $suppressed[$i+2];
-	     }
-	  } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
+         if ($suppressed[$i] eq "program" || $suppressed[$i] eq "pipe") {
+            if ($suppressed[$i+2] > 0) {
+               $Stats_supp{$suppressed[$i+1]} =
+                  $Stats_supp{$suppressed[$i+1]} + $suppressed[$i+2];
+            }
+         } elsif ($suppressed[$i] eq "tcp" || $suppressed[$i] eq "udp") {
+            if ($suppressed[$i+2] > 0) {
+               $Stats_supp_net{$suppressed[$i+1]} =
+                  $Stats_supp_net{$suppressed[$i+1]} + $suppressed[$i+2];
+            }
+         } elsif ($suppressed[$i] eq "dst.program") {
+            if ($suppressed[$i+2] > 0) {
+               $Stats_supp_program{$suppressed[$i+1]} =
+                  $Stats_supp_program{$suppressed[$i+1]} + $suppressed[$i+2];
+            }
+         } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
+      }
+      my @stored = 
+          $ThisLine =~ /stored='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
+      for (my $i=0; $i<@stored; $i=$i+3)
+      {
+         if ($stored[$i] eq "dst.program" || $stored[$i] eq "pipe") {
+            if ($stored[$i+2] > 0) {
+               $Stats_stored{$stored[$i+1]} =
+                  $Stats_stored{$stored[$i+1]} + $stored[$i+2];
+            }
+         } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }
    }
 
@@ -212,6 +241,11 @@ while (defined($ThisLine = <STDIN>)) {
       $IntErrors{$1}{$2}++;
    }
 
+   #TD syslog-ng[20709]: Referenced filter rule not found; rule='f_dhcpd'
+   elsif ($ThisLine =~ /(Referenced filter rule not found); (.+)/) {
+      $IntErrors{$1}{$2}++
+   }
+
    else {
       # Report any unmatched entries...
       chomp($ThisLine);
@@ -222,153 +256,172 @@ while (defined($ThisLine = <STDIN>)) {
 ### generate the output ###
 
 if ($Starts) {
-    printf "\nSyslog-ng started:\t\t%5i Time(s)", $Starts;
+   printf "\nSyslog-ng started:\t\t%5i Time(s)", $Starts;
 }
 
 if ($Stops) {
-    printf "\nSyslog-ng stopped:\t\t%5i Time(s)", $Stops;
+   printf "\nSyslog-ng stopped:\t\t%5i Time(s)", $Stops;
 }
 
 if ($Reloads) {
-    printf "\nSyslog-ng reloaded:\t\t%5i Time(s)", $Reloads;
+   printf "\nSyslog-ng reloaded:\t\t%5i Time(s)", $Reloads;
 }
 if ($Starts || $Stops || $Reloads) { print "\n"; }
 
 if ($Perms) {
-    if ($Detail >= 5) {
-        print "\nSyslog-ng changed the permission on the file(s):";
-        foreach my $file (keys %PermFiles) {
- 	    printf "\n\t$file\t\t%5i Time(s)", $PermFiles{$file};
-	}
-	print "\n";
-    } else {
-	print "\nSyslog-ng changed $Perms time(s) permission on file(s)\n";
-    }
+   if ($Detail >= 5) {
+      print "\nSyslog-ng changed the permission on the file(s):";
+      foreach my $file (keys %PermFiles) {
+         printf "\n\t$file\t\t%5i Time(s)", $PermFiles{$file};
+      }
+      print "\n";
+   } else {
+      print "\nSyslog-ng changed $Perms time(s) permission on file(s)\n";
+   }
 }
 
 if ($FileOpenErrors) {
-    if ($Detail >= 5) {
-        print "\nSyslog-ng could not open the file(s):";
-        foreach my $file (keys %OpenFiles) {
-            printf "\n\t$file\t\t%5i Time(s)", $OpenFiles{$file};
-        }
-	print "\n";
-    } else {
-	printf "\nSyslog-ng could not open file:\t%5i Time(s)", $FileOpenErrors;
-    }
+   if ($Detail >= 5) {
+      print "\nSyslog-ng could not open the file(s):";
+      foreach my $file (keys %OpenFiles) {
+         printf "\n\t$file\t\t%5i Time(s)", $OpenFiles{$file};
+      }
+	   print "\n";
+   } else {
+	   printf "\nSyslog-ng could not open file:\t%5i Time(s)", $FileOpenErrors;
+   }
 }
 
 if (keys %BrokenConns) {
-    if ($Detail >= 5) {
-        print "\nBroken connection(s) to:";
-        foreach my $IP (keys %BrokenConns) {
-            printf "\n\t%-21s\t%5i Time(s)", $IP, $BrokenConns{$IP}; 
-        }
-	print "\n";
-    } else {
-        printf "\nBroken connection(s):\t\t%5i Time(s)\n", $BrokenConnsSum;
-    }
+   if ($Detail >= 5) {
+      print "\nBroken connection(s) to:";
+      foreach my $IP (keys %BrokenConns) {
+         printf "\n\t%-21s\t%5i Time(s)", $IP, $BrokenConns{$IP}; 
+      }
+      print "\n";
+   } else {
+      printf "\nBroken connection(s):\t\t%5i Time(s)\n", $BrokenConnsSum;
+   }
 }
 
 if (keys %WriteErrs) {
-    if ($Detail >= 5) {
-        print "\nWrite Error(s):";
-        foreach my $err (keys %WriteErrs) {
-            printf "\n\tError Number %3i:\t%5i Time(s)", $err, $WriteErrs{$err};
-        }
-        print "\n";
-    } else {
-        printf "\nWrite Error(s): \t\t%5i Time(s)\n", $WriteErrsSum;
-    }
+   if ($Detail >= 5) {
+      print "\nWrite Error(s):";
+      foreach my $err (keys %WriteErrs) {
+         printf "\n\tError Number %3i:\t%5i Time(s)", $err, $WriteErrs{$err};
+      }
+      print "\n";
+   } else {
+      printf "\nWrite Error(s): \t\t%5i Time(s)\n", $WriteErrsSum;
+   }
 }
 
 if ($Exceed_Conns && $Detail >= 5) {
-    printf "\nConcurrent Connections Exceeded:%3i Time(s)\n", $Exceed_Conns;
+   printf "\nConcurrent Connections Exceeded:%3i Time(s)\n", $Exceed_Conns;
 }
 
 if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
-	keys %Stats_dropped || keys %Stats_supp || keys %Stats_global ) {
-    my ($lost_rcvd, $lost_dest) = ( 0, 0);
+	 keys %Stats_dropped || keys %Stats_supp || keys %Stats_global ||
+    keys %Stats_stored || keys %Stats_program) {
+   my ($lost_rcvd, $lost_dest) = ( 0, 0);
 
-    if ($Stats_center{received} && %Stats_source) {
-	$lost_rcvd = 0 - $Stats_center{received};
-	map { $lost_rcvd = $lost_rcvd + $Stats_source{$_} } keys %Stats_source;
-    }
-    if ($Stats_center{queued} && %Stats_dest) {
-	$lost_dest = $Stats_center{queued};
-	map { $lost_dest = $lost_dest - $Stats_dest{$_} } keys %Stats_dest;
-    }
+   if ($Stats_center{received} && %Stats_source) {
+      $lost_rcvd = 0 - $Stats_center{received};
+      map { $lost_rcvd = $lost_rcvd + $Stats_source{$_} } keys %Stats_source;
+   }
+   if ($Stats_center{queued} && %Stats_dest) {
+      $lost_dest = $Stats_center{queued};
+      map { $lost_dest = $lost_dest - $Stats_dest{$_} } keys %Stats_dest;
+   }
 
-    if ($Detail >= 6) { print "\nLog Statistics:"; }
-    if ($lost_rcvd != 0 || $lost_dest != 0) {
-	if ($lost_rcvd != 0) { 
-	   if ($Detail >= 5) { 
-	       print "\n- Failed to receive $lost_rcvd message(s)!"; 
-	   }
-	}
-	if ($lost_dest != 0) {
-	   if ($Detail >= 5 ) {
-	       print "\n- Failed to save $lost_dest message(s) in logfile(s)!";
-	   } else { $Drops = $Drops +  $lost_dest; }
-	}
-	if ($Detail >= 5) { print "\n"; }
-    }
+   if ($Detail >= 6) { print "\nLog Statistics:"; }
+   if ($lost_rcvd != 0 || $lost_dest != 0) {
+      if ($lost_rcvd != 0) { 
+         if ($Detail >= 5) { 
+            print "\n- Failed to receive $lost_rcvd message(s)!"; 
+         }
+      }
+      if ($lost_dest != 0) {
+         if ($Detail >= 5 ) {
+            print "\n- Failed to save $lost_dest message(s) in logfile(s)!";
+         } else { $Drops = $Drops +  $lost_dest; }
+      }
+      if ($Detail >= 5) { print "\n"; }
+   }
 
-    if ($Detail >= 6) {
-	if (keys %Stats_center) {
-	   print "\nCenter:";
-	   foreach my $center (sort {$a cmp $b} keys %Stats_center) {
-		printf "\n\t%-30s %12i", $center, $Stats_center{$center};
-	   }
-	}
-	if (keys %Stats_dest) {
-	   print "\nDestination:";
-           foreach my $dest (sort {$a cmp $b} keys %Stats_dest) {
-                printf "\n\t%-30s %12i", $dest, $Stats_dest{$dest};
-           }
-        }
-        if (keys %Stats_source) {
-           print "\nSource:";
-           foreach my $source (sort {$a cmp $b} keys %Stats_source) {
-                printf "\n\t%-30s %12i", $source, $Stats_source{$source};
-           }
-        }
-        if (keys %Stats_supp) {
-           print "\nSuppressed:";
-           foreach my $source (sort {$a cmp $b} keys %Stats_supp) {
-                printf "\n\t%-30s %12i", $source, $Stats_supp{$source};
-           }
-        }
-        if (keys %Stats_supp_net) {
-           print "\nSuppressed(net):";
-           foreach my $source (sort {$a cmp $b} keys %Stats_supp_net) {
-                printf "\n\t%-30s %12i", $source, $Stats_supp_net{$source};
-           }
-        }
-        if (keys %Stats_dropped) {
-           print "\nDropped:";
-           foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
-                printf "\n\t%-30s %12i", $source, $Stats_dropped{$source};
-           }
-        }
-        if (keys %Stats_dropped_net) {
-           print "\nDropped(net):";
-           foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
-                printf "\n\t%-30s %12i", $source, $Stats_dropped_net{$source};
-           }
-        }
-        if (keys %Stats_global) {
-           print "\nGlobal:";
-           foreach my $source (sort {$a cmp $b} keys %Stats_global) {
-                printf "\n\t%-30s %12i", $source, $Stats_global{$source};
-           }
-        }
-	print "\n";
-     }
+   if ($Detail >= 6) {
+      if (keys %Stats_center) {
+         print "\nCenter:";
+         foreach my $center (sort {$a cmp $b} keys %Stats_center) {
+            printf "\n\t%-30s %12i", $center, $Stats_center{$center};
+         }
+      }
+      if (keys %Stats_dest) {
+         print "\nDestination:";
+         foreach my $dest (sort {$a cmp $b} keys %Stats_dest) {
+            printf "\n\t%-30s %12i", $dest, $Stats_dest{$dest};
+         }
+      }
+      if (keys %Stats_source) {
+         print "\nSource:";
+         foreach my $source (sort {$a cmp $b} keys %Stats_source) {
+            printf "\n\t%-30s %12i", $source, $Stats_source{$source};
+         }
+      }
+      if (keys %Stats_supp) {
+         print "\nSuppressed:";
+         foreach my $source (sort {$a cmp $b} keys %Stats_supp) {
+            printf "\n\t%-30s %12i", $source, $Stats_supp{$source};
+         }
+      }
+      if (keys %Stats_supp_net) {
+         print "\nSuppressed(net):";
+         foreach my $source (sort {$a cmp $b} keys %Stats_supp_net) {
+            printf "\n\t%-30s %12i", $source, $Stats_supp_net{$source};
+         }
+      }
+      if (keys %Stats_supp_program) {
+         print "\nSuppressed(program):";
+         foreach my $source (sort {$a cmp $b} keys %Stats_supp_program) {
+            printf "\n\t%-30s %12i", $source, $Stats_supp_program{$source};
+         }
+      }
+      if (keys %Stats_dropped) {
+         print "\nDropped:";
+         foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
+            printf "\n\t%-30s %12i", $source, $Stats_dropped{$source};
+         }
+      }
+      if (keys %Stats_dropped_net) {
+      print "\nDropped(net):";
+      foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
+            printf "\n\t%-30s %12i", $source, $Stats_dropped_net{$source};
+         }
+      }
+      if (keys %Stats_dropped_program) {
+      print "\nDropped(program):";
+      foreach my $source (sort {$a cmp $b} keys %Stats_dropped_program) {
+            printf "\n\t%-30s %12i", $source, $Stats_dropped_program{$source};
+         }
+      }
+      if (keys %Stats_stored) {
+         print "\nStored:";
+         foreach my $source (sort {$a cmp $b} keys %Stats_stored) {
+            printf "\n\t%-30s %12i", $source, $Stats_stored{$source};
+         }
+      }
+      if (keys %Stats_global) {
+         print "\nGlobal:";
+         foreach my $source (sort {$a cmp $b} keys %Stats_global) {
+            printf "\n\t%-30s %12i", $source, $Stats_global{$source};
+         }
+      }
+	   print "\n";
+   }
 }
 
 if ($Drops) {
-    print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
+   print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
 }
 
 if (keys %IntErrors) {
