@@ -1101,6 +1101,7 @@ sub Usage () {
    print "--debug <level>: Debug Level - High, Med, Low or any #.\n";
    print "--hostformat: Host Based Report Options - none [default], split, splitmail.\n"; #8.0
    print "--hostlimit: Limit report to hostname - host1,host2.\n"; #8.0
+   print "--hostname: overwrites hostname\n";
    print "--html_wrap <num_characters>: Default is 80.\n";
    print "--version: Displays current version.\n";
    print "--help: This message.\n";
@@ -1208,6 +1209,9 @@ sub initprint {
    &output( $index_par, "       Type of Output/Format: $Config{'output'} / $Config{'format'}\n", "line");
    &output( $index_par, "       Logfiles for Host: $Config{'hostname'}\n", "line");
 
+   if ( $Config{'hostlimit'} ) {
+      &output( $index_par, "       Hosts limited to:  $Config{'hostlimit'}\n", "line");
+   }
    if ( $Config{'format'} eq "html" ) {
       &output( $index_par, "\n", "stop");
    } else {
