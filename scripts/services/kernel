@@ -103,7 +103,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       # Standard boot messages
       next if $ThisLine =~ /Giving out device to /;
       $EDACs{$1}++;
-   } elsif ( ( my $errormsg ) = ( $ThisLine =~ /(.*?[Ee]rror.{0,17})/ ) ) {
+   } elsif ( ( my $errormsg ) = ( $ThisLine =~ /(.*?error.{0,17})/i ) ) {
       # filter out smb open/read errors cased by insufficient permissions
       my $SkipError = 0;
       $SkipError = 1 if $ThisLine =~ /smb_readpage_sync: .*open failed, error=-13/;
@@ -112,14 +112,17 @@ while (defined(my $ThisLine = <STDIN>)) {
       # filter out error_exit in stack traces caused by OOM conditions
       $SkipError = 1 if $ThisLine =~ /\[<[\da-f]+>\] error_exit\+0x/;
       # These are informative, not errors
-      $SkipError = 1 if $ThisLine =~ /PCIe errors handled by OS/;
+      $SkipError = 1 if $ThisLine =~ /ACPI _OSC request failed \(AE_ERROR\), returned control mask: 0x1d/;
+      $SkipError = 1 if $ThisLine =~ /ERST: Error Record Serialization Table \(ERST\) support is initialized/;
       $SkipError = 1 if $ThisLine =~ /GHES: Generic hardware error source: \d notified via .* is not supported/;
+      $SkipError = 1 if $ThisLine =~ /PCIe errors handled by OS/;
       # These happen when kerberos tickets expire, which can be normal
       $SkipError = 1 if $ThisLine =~ /Error: state manager encountered RPCSEC_GSS session expired against NFSv4 server/ && $Ignore_rpcsec_expired;
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
-   }
+   } elsif ( ( my $errormsg ) = ( $ThisLine =~ /((BUG|WARNING|INFO):.{0,40})/ ) ) {
+      $Errors{$errormsg}++;
    # OTHER
-   else {
+   } else {
       # XXX For now, going to ignore all other kernel messages as there
       # XXX are practically an infinite number and most of them are obviously
       # XXX not parsed here at this time.
