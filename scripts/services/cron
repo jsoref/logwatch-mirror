@@ -139,12 +139,14 @@ while (defined($ThisLine = <STDIN>)) {
       # Ignore
    } elsif (
       ($ThisLine =~ s/^([^ ]+) \([^ ]+\)\s+//) or
-      ($ThisLine =~ s/^\S+\s+\S+\s+..:..:..\s+\S+\s+\S+\[\d+\]:\s+\((\S+)\)\s+//)
+      ($ThisLine =~ s/^\S+\s+\S+\s+..:..:..\s+\S+\s+\S+\[(\d+)\]:\s+\((\S+)\)\s+//)
    ) {
-      $User = $1;
+      $PID  = $1;
+      $User = $2;
 
       if ($ThisLine =~ s/^CMD \((.+)\)\s*$/$1/) {
          $Runs->{$User}->{$ThisLine}++;
+         $ExecutedCommand{$PID} = {command=>$ThisLine, user=>$User};
       } elsif ($ThisLine =~ s/^CMD FINISH \((.+)\)\s*$/$1/) {
          $Runs->{$User}->{$ThisLine}++;
       } elsif ($ThisLine =~ s/^(END|CMD START) \((.+)\)\s*$/$1/) {
@@ -174,7 +176,12 @@ while (defined($ThisLine = <STDIN>)) {
                   $ThisLine =~ /session closed/ ) {
          # ignore
       } elsif ( ($Reason) = ($ThisLine =~ /^error \((.+)\)$/) ) {
-         $Errors{$Reason}++;
+         if ($Reason =~ /^grandchild #(\d+) failed with exit status (\d+)/ && \
+             $ExecutedCommand{$1}) {
+#            $Reason = $ExecutedCommand{$1}{user}.": command failed with error (".$2."): ".$ExecutedCommand{$1}{command};
+            $Reason = "failed with error (".$2."): ".$ExecutedCommand{$1}{command};
+         }
+         $Errors{$ExecutedCommand{$1}{user}}{$Reason}++;
       } elsif ( ($FileName) = ($ThisLine =~ /BAD FILE MODE \((.+)\)/) ) {
          $BFMFile{$FileName}++;
       } elsif ( ($FileName) = ($ThisLine =~ /WRONG FILE OWNER \((.+)\)/) ) {
@@ -271,8 +278,11 @@ if (%InodeError) {
 
 if (keys %Errors) {
    print "Errors when running cron:\n";
-   foreach $Reason (sort {$a cmp $b} keys %Errors) {
-      print "   $Reason: $Errors{$Reason} Time(s)\n";
+   foreach $User (sort {$a cmp $b} keys %Errors) {
+      print "   User $User:\n";
+      foreach $Reason (sort {$a cmp $b} keys %{$Errors{$User}}) {
+         print "      $Reason: $Errors{$User}{$Reason} Time(s)\n";
+      }
    }
 }
 
