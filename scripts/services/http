@@ -735,7 +735,7 @@ if (keys %needs_exam) {
       if (not defined $StatusCode{$code}) {
          $StatusCode{$code} = "\(undefined\)";
       }
-      if( ($ENV{"http_rc_detail_rep-$code"} || $detail) > $detail ) {
+      if( ($ENV{"http_rc_detail_rep_$code"} || $detail) > $detail ) {
       # only display summary for this code
          my $t = 0;
          my $u = 0;
