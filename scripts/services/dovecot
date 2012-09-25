@@ -100,6 +100,35 @@ if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG \n\n";
 }
 
+use Socket;
+my $rdns = {};
+sub hostName {
+   (my $ipaddr) = @_;
+
+   if ($ENV{'LOGWATCH_NUMERIC'} || $ENV{'dovecot_numeric'}) {
+      return $ipaddr;
+   }
+
+   if (exists $rdns{ $ipaddr }) {
+      return $rdns{ $ipaddr };
+   }
+   $rdns{ $ipaddr } = $ipaddr;
+
+   my $iaddr = inet_aton($ipaddr);
+   if (defined $iaddr) {
+      my $host = gethostbyaddr($iaddr, AF_INET);
+      if (defined $host) {
+         my $iaddrcheck = gethostbyname($host);
+         if (defined $iaddrcheck) {
+            if ($iaddr == $iaddrcheck) {
+               $rdns{ $ipaddr } = $host;
+            }
+         }
+      }
+   }
+   return $rdns{ $ipaddr };
+}
+
 # Handle "dovecot: <svc>" and "dovecot: [ID yyyyy mail.info] <svc"
 my $dovecottag = qr/dovecot:(?:\s*\[[^]]+\])?/;
 
@@ -126,6 +155,7 @@ while (defined($ThisLine = <STDIN>)) {
          $End = 0;
      } elsif ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Login: (.*?) \[(.*)\]/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
          $Login{$User}{$Host}++;
          $LoginPOP3{$User}++;
          $ConnectionPOP3{$Host}++;
@@ -133,6 +163,7 @@ while (defined($ThisLine = <STDIN>)) {
       }
    } elsif ( ($User, $Host) = ( $ThisLine =~ /^imap-login: Login: (.*?) \[(.*)\]/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
          $Login{$User}{$Host}++;
          $LoginIMAP{$User}++;
          $ConnectionIMAP{$Host}++;
@@ -140,6 +171,7 @@ while (defined($ThisLine = <STDIN>)) {
       }
    } elsif ( ($User, $Host) = ( $ThisLine =~ /managesieve-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
          $SieveLogin{$User}{$Host}++;
          $LoginSieve{$User}++;
          $ConnectionSieve{$Host}++;
@@ -151,7 +183,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Deliver{$User}{$Mailbox}++;
 
 # For Sieve-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda\(|deliver\(|lmtp\(\d+, )(.*)\): (?:[^:]+: )?sieve: msgid=.*: stored mail into mailbox '(\S+)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda\(|deliver\(|lmtp\(\d+, )(.*)\): (?:[^:]+: )?sieve: msgid=.*: stored mail into mailbox '([^']*)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based delivery
@@ -185,6 +217,7 @@ while (defined($ThisLine = <STDIN>)) {
 # This is for Dovecot 1.0 series
     } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
          $Login{$User}{$Host}++;
          $LoginPOP3{$User}++;
          $ConnectionPOP3{$Host}++;
@@ -192,6 +225,7 @@ while (defined($ThisLine = <STDIN>)) {
       }
    } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag imap-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/) ) {
       if ($Host !~ /$IgnoreHost/) {
+         $Host = hostName($Host);
          $Login{$User}{$Host}++;
          $LoginIMAP{$User}++;
          $ConnectionIMAP{$Host}++;
@@ -227,6 +261,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif (($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
       $TLSInitFail++;
    } elsif (($Host) = ($ThisLine =~ /Aborted login \[(.*)\]/) ) {
+      $Host = hostName($Host);
       $Aborted{$Host}++;
    } elsif (($Reason) = ($ThisLine =~ /Aborted login \((.*)\):/)) {
       $Aborted{$Reason}++;
@@ -287,11 +322,12 @@ if ( ( $Detail >=5 ) and $Restarts ) {
 if ( ( $Detail >= 5 ) and (keys %Connection)) {
    print     "\n[Dovecot IMAP and POP3] Connections:".
              "\n====================================".
-             "\n                                  Host |    POP3   |   IMAP   |   Total ".
-             "\n-------------------------------------- | --------- |--------- | ---------";
+             "\nPOP3 IMAP Total  Host".
+             "\n" . "-" x 72;
 
    $TLSInitFail = 0;
-   foreach $Host (sort keys %Connection) {
+   foreach $Host (sort { $Connection{$b} <=> $Connection{$a} }
+                  keys %Connection) {
       $Total = $Connection{$Host};
       if (defined ($ConnectionPOP3{$Host})) {
          $Conns = $ConnectionPOP3{$Host};
@@ -305,56 +341,39 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
       }
 # Cleanly display IPv4 addresses
       $Host=~ s/::ffff://;
-      $HostLength = length($Host);
-      $HostSpaceLength = 38 - $HostLength;
-      $CountLength = length("$Conns");
-      $CountSpaceLength = 10 - $CountLength;
-      $IMAPLength = length("$IMAP");
-      $IMAPSpaceLength = 9 - $IMAPLength;
-      $TotalLength = length("$Total");
-      $TotalSpaceLength = 10 - $TotalLength;
-      print "\n" ." " x $HostSpaceLength . $Host . " |" . " " x $CountSpaceLength .  $Conns .
-            " |" . " " x $IMAPSpaceLength . $IMAP . " |" . " " x $TotalSpaceLength . $Total;
+      printf "\n%4s %4s %5s  %s", $Conns, $IMAP, $Total, $Host;
       $POP3Count += $Conns;
       $IMAPCount += $IMAP;
       $TotalCount += $Total;
    }
-   $POP3Length = length("$POP3Count");
-   $POP3SpaceLength = 50 - $POP3Length;
-   $IMAPLength = length("$IMAPCount");
-   $IMAPSpaceLength = 9 - $IMAPLength;
-   $TotalLength = length("$TotalCount");
-   $totalSpaceLength = 10 - $TotalLength;
-   print "\n" . "-" x 73;
-   print "\n" . " " x $POP3SpaceLength . $POP3Count . " |" . " " x $IMAPSpaceLength . $IMAPCount .
-                 " |" . " " x $totalSpaceLength . $TotalCount . "\n";
+   print "\n" . "-" x 72;
+   printf "\n%4s %4s %5s  %s", $POP3Count, $IMAPCount, $TotalCount, "Total";
 }
 
-if ( ( $Detail >= 5 ) and (keys %Deliver)) {
-   print "\n\nDovecot Deliveries:";
-   $DeliverCount = 0;
-   foreach my $User (sort keys %Deliver) {
-      print "\n  User $User:";
-      $UserCount = 0;
-      $NumMailboxes = 0;
-      foreach $Mailbox (sort keys %{$Deliver{$User}}) {
-         $NumMailboxes++;
-         $MailboxCount = $Deliver{$User}{$Mailbox};
-         print "\n    To $Mailbox: $MailboxCount Time(s)" if ($Detail >= 10);
-         $UserCount += $MailboxCount;
+if (keys %Deliver) {
+   my $DeliverCount = 0;
+   my $DeliverUserCount = {};
+   foreach my $User (keys %Deliver) {
+      foreach my $Mailbox (keys %{$Deliver{$User}}) {
+         $DeliverUserCount{$User} += $Deliver{$User}{$Mailbox};
       }
-      $DeliverCount += $UserCount;
-      if ($Detail >= 10) {
-         if ($NumMailboxes > 1) {
-	    print "\n  Total: $UserCount Time(s)\n";
-	 } else {
-	    print "\n";
-	 }
-      } elsif ($Detail >= 5) {
-         print " $UserCount Time(s)";
+      $DeliverCount += $DeliverUserCount{$User};
+   }
+   printf "\n" if ($Detail >= 5);
+   printf "\nDovecot Deliveries: %s", $DeliverCount;
+   if ($Detail >= 5) {
+      foreach my $User (sort { $DeliverUserCount{$b} <=> $DeliverUserCount{$a} }
+                        keys %DeliverUserCount) {
+         printf "\n  %4s %s", $DeliverUserCount{$User}, $User;
+         if ($Detail >= 10) {
+            foreach my $Mailbox (sort {
+               $Deliver{$User}{$b} <=> $Deliver{$User}{$a}
+                              } keys %{$Deliver{$User}}) {
+               printf "\n      %4s %s", $Deliver{$User}{$Mailbox}, $Mailbox;
+            }
+         }
       }
    }
-   print "\nTotal: $DeliverCount successful deliveries";
 }
 
 if (($Detail >= 10) and (keys %Forwarded)) {
@@ -398,40 +417,35 @@ if (($Detail >= 10) and (keys %VacationDup)) {
 }
 
 
-if ( ( $Detail >= 5 ) and (keys %Login)) {
-   print "\n\nDovecot IMAP and POP3 Successful Logins:";
-   $LoginCount = 0;
-   foreach my $User (sort keys %Login) {
-      print "\n  User $User:";
-      if ( ($Detail >= 10) and ($LoginPOP3{$User} > 0 || $LoginIMAP{$User} > 0) ) {
-         print "   (";
-         if ($LoginPOP3{$User} > 0) { print "$LoginPOP3{$User} POP3"; };
-         if ($LoginPOP3{$User} > 0 && $LoginIMAP{$User} > 0) { print "/"; };
-         if ($LoginIMAP{$User} > 0) { print "$LoginIMAP{$User} IMAP"; };
-         print ")";
+if (keys %Login) {
+   my $LoginCount = 0;
+   my $LoginUserCount = {};
+   foreach my $User (keys %Login) {
+      foreach my $Host (keys %{$Login{$User}}) {
+         $LoginUserCount{$User} += $Login{$User}{$Host};
       }
-      $UserCount = 0;
-      $NumHosts = 0;
-      foreach $Host (sort keys %{$Login{$User}}) {
-         $NumHosts++;
-         $HostCount = $Login{$User}{$Host};
-# Cleanly display IPv4 addresses
-         $Host=~ s/::ffff://;
-         print "\n    From $Host: $HostCount Time(s)" if ($Detail >= 10);
-         $UserCount += $HostCount;
-      }
-      $LoginCount += $UserCount;
-      if ($Detail >= 10) {
-         if ($NumHosts > 1) {
-            print "\n  Total: $UserCount Time(s)\n";
-         } else {
-	    print "\n";
-	 }
-      } elsif ($Detail >= 5) {
-         print " $UserCount Time(s)";
+      $LoginCount += $LoginUserCount{$User};
+      $LoginPOP3{$User} = 0 if $LoginPOP3{$User} <= 0;
+      $LoginIMAP{$User} = 0 if $LoginIMAP{$User} <= 0;
+   }
+   printf "\n" if ($Detail >= 5);
+   printf "\nDovecot IMAP and POP3 Successful Logins: %s", $LoginCount;
+   if ($Detail >= 5) {
+      foreach my $User (sort { $LoginUserCount{$b} <=> $LoginUserCount{$a} }
+                        keys %LoginUserCount) {
+         printf("\n  %4s %s", $LoginUserCount{$User}, $User);
+         if ($Detail >= 10) {
+            printf(" (%s POP3, %s IMAP)", $LoginPOP3{$User}, $LoginIMAP{$User});
+            foreach my $Host (sort { $Login{$User}{$b} <=> $Login{$User}{$a} }
+                              keys %{$Login{$User}}) {
+               $HostCount = $Login{$User}{$Host};
+               # Cleanly display IPv4 addresses
+               $Host=~ s/::ffff://;
+               printf "\n      %4s %s", $Login{$User}{$Host}, $Host;
+            }
+         }
       }
    }
-   print "\nTotal: $LoginCount successful logins";
 }
 
 if ( ( $Detail >= 10 ) and (keys %SieveLogin)) {
@@ -465,9 +479,17 @@ if (keys %LimitExceeded) {
 }
 
 if (keys %Disconnected) {
-   print "\n\nDovecot disconnects:";
-   foreach my $Reason (sort keys %Disconnected) {
-      print "\n   $Reason: $Disconnected{$Reason} Time(s)";
+   my $Disconnects = 0;
+   foreach my $Reason (%Disconnected) {
+      $Disconnects += $Disconnected{$Reason};
+   }
+   printf "\n" if ($Detail >= 5);
+   printf "\nDovecot disconnects: %s", $Disconnects;
+   if ($Detail >= 5) {
+      foreach my $Reason (sort { $Disconnected{$b} <=> $Disconnected{$a} }
+                          keys %Disconnected) {
+         printf "\n  %4s %s", $Disconnected{$Reason}, $Reason;
+      }
    }
 }
 
