@@ -95,11 +95,11 @@ while (defined($ThisLine = <STDIN>)) {
       $RemovedPackages{$1}++;
    } elsif ($ThisLine =~ /Exec\[(.+)\].+executed successfully/) {
       $ExecRuns{$1}++;
-   } elsif ($ThisLine =~ /Exec\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/) {
+   } elsif ($ThisLine =~ /Exec\[(.+)\].+Trigger(?:ing|ed) 'refresh' from [0-9]+ (?:dependencies|events)/) {
       $ExecRuns{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'running\'/) {
       $ServiceStarts{$1}++;
-   } elsif ($ThisLine =~ /Service\[(.+)\].+Triggering 'refresh' from [0-9]+ dependencies/) {
+   } elsif ($ThisLine =~ /Service\[(.+)\].+Trigger(?:ing|ed) 'refresh' from [0-9]+ (?:dependencies|events)/) {
       $ServiceStarts{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'stopped\'/) {
       $ServiceStops{$1}++;
