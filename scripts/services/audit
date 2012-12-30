@@ -78,7 +78,7 @@
 use strict;
 use Logwatch ':all';
 
-my (%denials, %grants);
+my (%denials, %grants, %loads);
 my @OtherList;
 my $othercount = 0;
 my $Debug = ($ENV{'LOGWATCH_DEBUG'} || 0);
@@ -92,7 +92,7 @@ my $NumberOfDdStops = 0;
 my $NumberOfLostMessages = 0;
 my %InvalidContext = ();
 my %BugLog = ();
-my $UELimit = 10;
+my $UELimit = 100;
 my $ThisLine;
 my %Warning = ();
 my %AuditctlStatus = ();
@@ -153,6 +153,22 @@ while ($ThisLine = <STDIN>) {
       $Warning{$ThisLine}++;
     } elsif ( my ($status) = ( $ThisLine =~ /AUDIT_STATUS: (.*)/ ) ) {
       $AuditctlStatus{$status}++; 
+    } elsif ( $ThisLine =~ /audit\([0-9]+\.[0-9]+:[0-9]+\): apparmor=/) {
+        # AppArmor
+        if ( $ThisLine =~ /apparmor="STATUS" operation="profile_(load|replace)" name="([^"]+)"/ ) {
+            # type=1400 audit(1314853473.168:33616): apparmor="STATUS" operation="profile_replace" name="/usr/lib/apache2/mpm-prefork/apache2//DEFAULT_URI" pid=26566 comm="apparmor_parser"
+            $loads{$2}++;
+        } elsif ( $ThisLine =~ /apparmor="DENIED" operation="([^"]+)" parent=\d+ profile="([^"]+)" name="([^"]+)" pid=\d+ comm="([^"]+)"/ ) {
+            # type=1400 audit(1314853822.672:33649): apparmor="DENIED" operation="mknod" parent=27250 profile="/usr/lib/apache2/mpm-prefork/apache2//example.com" name="/usr/share/wordpress/1114140474e5f13bea68a4.tmp" pid=27289 comm="apache2" requested_mask="c" denied_mask="c" fsuid=33 ouid=33
+            # type=1400 audit(1315353795.331:33657): apparmor="DENIED" operation="exec" parent=14952 profile="/usr/lib/apache2/mpm-prefork/apache2//example.com" name="/usr/lib/sm.bin/sendmail" pid=14953 comm="sh" requested_mask="x" denied_mask="x" fsuid=33 ouid=0
+            $denials{$1.' '.$3.' ('.$2.' via '.$4 . ')'}++;
+        } else {
+            $othercount++;
+            $ThisLine =~ s/^\s*//;
+            if ($othercount < $UELimit+1) {
+                push @OtherList, $ThisLine;
+            }
+        }
     } elsif ( $Detail > 9 ) {
 	if ( $ThisLine =~ /avc:\s*denied\s*{\s*([^}]+).*scontext=(\S+)\s*tcontext=(\S+)\s*tclass=(\S+)/ ) {
 	    $denials{$2.' '.$3.' ('.$1.$4 . ')'}++;
@@ -231,6 +247,12 @@ if ( keys %InvalidContext) {
     }
 }
 
+if ( keys %loads ) {
+    print "\n\n*** Loads ***\n";
+    foreach my $key (sort keys %loads) {
+        print "   $key: ". $loads{$key} . " times\n";
+    }
+}
 
 
 if ($Detail and $NumberOfDStarts+$NumberOfDStartsPid) {

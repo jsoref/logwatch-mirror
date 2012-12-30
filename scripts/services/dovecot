@@ -135,7 +135,7 @@ my $dovecottag = qr/dovecot:(?:\s*\[[^]]+\])?/;
 while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
      # service name
-     $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d [^ ]* //;
+     $ThisLine =~ s/^\w{3} .\d \d\d:\d\d:\d\d //;
      if ( ($ThisLine =~ /(?:ssl-build-param|ssl-params): SSL parameters regeneration completed/) or
           ($ThisLine =~ /ssl-params: Generating SSL parameters/) or
           ($ThisLine =~ /auth-worker/) or
@@ -153,7 +153,8 @@ while (defined($ThisLine = <STDIN>)) {
      } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up( \(core dumps disabled\))?$/) {
          $Restarts++;
          $End = 0;
-     } elsif ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Login: (.*?) \[(.*)\]/ ) ) {
+     } elsif ( ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Login: (.*?) \[(.*)\]/ ) ) or
+               ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Info: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Host = hostName($Host);
          $Login{$User}{$Host}++;
@@ -161,7 +162,8 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionPOP3{$Host}++;
          $Connection{$Host}++;
       }
-   } elsif ( ($User, $Host) = ( $ThisLine =~ /^imap-login: Login: (.*?) \[(.*)\]/ ) ) {
+     } elsif ( ( ($User, $Host) = ( $ThisLine =~ /^imap-login: Login: (.*?) \[(.*)\]/ ) ) or
+               ( ($User, $Host) = ( $ThisLine =~ /^imap-login: Info: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Host = hostName($Host);
          $Login{$User}{$Host}++;
