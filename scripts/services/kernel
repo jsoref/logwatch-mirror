@@ -114,8 +114,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       # These are informative, not errors
       $SkipError = 1 if $ThisLine =~ /ACPI _OSC request failed \(AE_ERROR\), returned control mask: 0x1d/;
       $SkipError = 1 if $ThisLine =~ /ERST: Error Record Serialization Table \(ERST\) support is initialized/;
-      $SkipError = 1 if $ThisLine =~ /GHES: Generic hardware error source: \d notified via .* is not supported/;
-      $SkipError = 1 if $ThisLine =~ /PCIe errors handled by OS/;
+      $SkipError = 1 if $ThisLine =~ /GHES: Generic hardware error source: \d+ notified via .* is not supported/;
+      $SkipError = 1 if $ThisLine =~ /PCIe errors handled by (?:BIOS|OS)/;
       # These happen when kerberos tickets expire, which can be normal
       $SkipError = 1 if $ThisLine =~ /Error: state manager encountered RPCSEC_GSS session expired against NFSv4 server/ && $Ignore_rpcsec_expired;
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
