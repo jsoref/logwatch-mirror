@@ -197,7 +197,7 @@ while (defined($ThisLine = <STDIN>)) {
    #Woody - specific, thanks to Michael Stovenour
    if ($ThisLine =~ /^PAM_unix[\[\]0-9]*:/i ) { next; }
 
-   if (( $ThisLine =~ /pam_succeed_if(\([a-zA-Z]*:[a-zA-Z]*\))?: requirement \"uid < 100\" (was|not) met by user /) or
+   if (( $ThisLine =~ /pam_succeed_if(\([a-zA-Z]*:[a-zA-Z]*\))?: requirement \"uid (<|>)=? 1000?\" (was|not) met by user /) or
       ( $ThisLine =~ /pam_rhosts_auth\[\d+\]: allowed to [^ ]+ as \w+/) or
       ( $ThisLine =~ /pam_rhosts_auth\([^\)]+\): allowed to [^ ]+ as \w+/) or
       ( $ThisLine =~ /^(.*)\(pam_unix\)/) or
@@ -225,6 +225,8 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /^sshd\(\w+\)\[\d+\]: authentication failure/) or
       ( $ThisLine =~ /^sshd\(\w+\)\[\d+\]: check pass; user unknown/) or
       ( $ThisLine =~ /^sshd\(\w+\)\[\d+\]: session /) or
+      ( $ThisLine =~ /sshd\[\d+\]: Server listening on/) or
+      ( $ThisLine =~ /sshd\[\d+\]: Received signal \d+; terminating/) or
       ( $ThisLine =~ /^ipop3d\[\d+\]:/) or
       ( $ThisLine =~ /^su\[\d+\]: [+-] .+/) or
       ( $ThisLine =~ /^su\[\d+\]: FAILED su for \S+ by \S+/) or #debian: done in pam_unix
@@ -232,6 +234,8 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /^login\[\d+\]: FAILED LOGIN \(\d+\) on ['`]\S+' FOR `\S+', (Authentication failure|User not known to the underlying authentication module)/) or #debian: done in pam_unix
       ( $ThisLine =~ /^login: FAILED LOGIN 2 FROM (.*) FOR .*, (Authentication failure|User not known to the underlying authentication module)/) or
       ( $ThisLine =~ /^login: pam_securetty(.*): unexpected response from failed conversation function/) or
+      ( $ThisLine =~ /^login: pam_securetty(.*): access denied: tty '.*' is not secure/) or
+      ( $ThisLine =~ /^login: pam_securetty(.*): cannot determine username/) or
       ( $ThisLine =~ /^pam_limits\[\d+\]/ ) or
       ( $ThisLine =~ /^kcheckpass(\[\d+\]|):/ ) or   # done in pam_unix
       ( $ThisLine =~ /^cyrus\/lmtpd\[\d+\]: [^ ]+ server step [12]/ ) or
@@ -260,7 +264,8 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /polkit-grant-helper\[\d+\]: granted authorization for [^ ]* to session .* \[uid=[0-9]*\]/) or
       ( $ThisLine =~ /polkit-grant-helper-pam\[\d+\]: pam_thinkfinger\(polkit:auth\): conversation failed/) or
       ( $ThisLine =~ /polkitd\(authority=.*\): (Unr|R)egistered Authentication Agent/) or
-      ( $ThisLine =~ /(gdm-session-worker|gdm-password)\[\d+\]: gkr-pam: no password is available for user/) or
+      ( $ThisLine =~ /polkitd\(authority=.*\): Operator of unix-session:/) or
+      ( $ThisLine =~ /(gdm-session-worker|gdm-password|gnome-screensaver-dialog)\[\d+\]: gkr-pam: no password is available for user/) or
       ( $ThisLine =~ /gkr-pam: the password for the login keyring was invalid/) or
       ( $ThisLine =~ /groupadd\[\d+\]: group added to /) or    # Details in other messages
       ( $ThisLine =~ /groupmod\[\d+\]: group changed in \/etc\/gshadow /) or    # Details in other messages
@@ -359,7 +364,7 @@ while (defined($ThisLine = <STDIN>)) {
       $NoIP->{$ThisLine}++;
    } elsif ( ($Service,$Err) = ($ThisLine =~ /^([^ ]+)\[\d+\]: error: (.+)$/) ) {
       $Error{$Service}{$Err}++;
-   } elsif ( ($Service,$Err) = ($ThisLine =~ /^([^ ]+): (FAILED LOGIN SESSION FROM [^ ]+ FOR , .*)$/ ) ) {
+   } elsif ( ($Service,$Err) = ($ThisLine =~ /^([^ ]+): (FAILED LOGIN SESSION FROM [^ ]+ FOR ([^ ]+)?, .*)$/ ) ) {
       $Error{$Service}{$Err}++;
    } elsif ( ($Service,$Err) = ($ThisLine =~ /^([^ ]+): (password mismatch for [^ ]+ in [^ ]+):.*$/ ) ) {
       $Error{$Service}{$Err}++;
@@ -376,6 +381,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Error{$Service}{$Err}++;
    } elsif ( $ThisLine =~ /^login(\[\d+\])*: ROOT LOGIN\s+(ON|on)\s+`?tty[0-9]+/) {
       $RootLoginTTY++
+   } elsif ( $ThisLine =~ /^login(\[\d+\])*: ROOT LOGIN\s+(ON|on)\s+`?xvc[0-9]+/) {
+      $RootLoginXVC++
    } elsif ( $ThisLine =~ /^com.apple.SecurityServer: authinternal authenticated user root .*/) {
       $RootLoginTTY++
    } elsif ( (undef,$User) = ($ThisLine =~ /^login: LOGIN ON (tty|pts\/)[0-9]+ BY ([^ ]+)/ )) {
@@ -723,6 +730,10 @@ if (keys %Error) {
 
 if ($RootLoginTTY) {
    print "\nRoot logins on ttys: $RootLoginTTY Time(s).\n";
+}
+
+if ($RootLoginXVC) {
+   print "\nRoot logins on xvcs: $RootLoginXVC Time(s).\n";
 }
 
 if (keys %UserLogin) {

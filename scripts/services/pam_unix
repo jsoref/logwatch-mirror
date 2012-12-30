@@ -174,7 +174,7 @@ while ($line = <STDIN>) {
 	# ignore this line
       } elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s+user=(\S*)$/$2 ($1)/) {
  	 $data{$service}{'Authentication Failures'}{$line}++;
-      } elsif ($line =~ s/^authentication failure; .*rhost=(\S*).$/unknown ($1)/) {
+      } elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s*$/unknown ($1)/) {
          $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^authentication failure; logname=(\S*) uid=(\d+) .*user=(\S*)$/$1($2) -> $3/) {
          $data{$service}{'Authentication Failures'}{$line}++;
@@ -227,8 +227,8 @@ while ($line = <STDIN>) {
       if ($line =~ s/^password changed for (.+)/$1/) {
          ($Detail >= 5) && $data{$service}{'Password changed'}{$line}++;
       }
-   } elsif (grep $_ eq $service, qw/gdm gdm-password kdm kcheckpass xdm imap dovecot cups/) {
-      if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
+   } elsif (grep $_ eq $service, qw/gdm gdm-password gdm-welcome kdm kcheckpass xdm imap dovecot cups/) {
+      if ($line =~ s/^session opened for user (.+) by (?:\(unknown\))?\(uid=\d+\)/$1/) {
          ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^authentication failure;.* user=(.+)$/$1/) {
          $data{$service}{'Authentication Failures'}{$line}++;

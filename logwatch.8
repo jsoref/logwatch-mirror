@@ -43,7 +43,7 @@ Linux and many types of UNIX.
 This is the detail level of the report.
 .I level
 can be a positive integer, or high, med, low, which correspond to the
-integers 10, 5, and 0, repectively.
+integers 10, 5, and 0, respectively.
 .IP "\fB--logfile\fR log-file-group"
 This will force Logwatch to process only the set of logfiles
 defined by
@@ -66,7 +66,6 @@ filters installed.
 .IP "\fB--mailto\fR address"
 Mail the results to the email address or user specified in
 .I address.
-This option overrides the \-\-print option.
 .IP "\fB--range\fR range"
 You can specify a date-range to process. Common ranges are  
 .I Yesterday, Today, All,
@@ -121,12 +120,12 @@ the default configuration.  See \fBMORE INFORMATION\fR below for more
 information.
 .RE
 .SH EXAMPLES
-.B logwatch --service ftpd-xferlog --range all --detail high --print --archives
+.B logwatch --service ftpd-xferlog --range all --detail high --archives
 .RS
 This will print out all FTP transfers that are stored in all current and archived
 xferlogs.
 .RE
-.B logwatch --service pam_pwdb --range yesterday --detail high --print
+.B logwatch --service pam_pwdb --range yesterday --detail high 
 .RS
 This will print out login information for the previous day...
 .RE

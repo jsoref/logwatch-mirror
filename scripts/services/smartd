@@ -117,7 +117,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        # ignore empty lines
    } elsif ( ($ThisLine =~ /^smartd version/)
           || ($ThisLine =~ /^Home page/)
-          || ($ThisLine =~ /^smartd .* Copyright \(C\) [0-9-]+ by Bruce Allen/)
+          || ($ThisLine =~ /^smartd .*Copyright \(C\) [0-9-]+ by Bruce Allen/)
           || ($ThisLine =~ /configuration file/i)
           || ($ThisLine =~ /\[trip Temperature is \d+ Celsius\]/)
           || ($ThisLine =~ /^Monitoring/)
