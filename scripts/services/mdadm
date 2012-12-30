@@ -1,0 +1,105 @@
+
+###########################################################################
+## Copyright (c) 2012 Pat Riehecky
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## Permission is hereby granted, free of charge, to any person obtaining a
+## copy of this software and associated documentation files (the "Software"),
+## to deal in the Software without restriction, including without limitation
+## the rights to use, copy, modify, merge, publish, distribute, sublicense,
+## and/or sell copies of the Software, and to permit persons to whom the
+## Software is furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included
+## in all copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+## OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+## MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+## IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+## CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+## TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+## SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+############################################################################
+
+use strict;
+
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+
+# TODO: remove awk dependency
+my $devices = `mdadm --examine --scan 2>/dev/null| awk '{print \$2}'`;
+
+chomp($devices);
+
+if ($devices ne '') {
+  foreach my $dev (split(/\n/,$devices)) {
+    my $md = `mdadm --misc --detail $dev | grep -v $dev`;
+    chomp($md);
+
+    my %mdhash;
+    foreach (split(/\n/,$md)) {
+      $mdhash{'level'} = $1 if ($_ =~ /Raid Level ?: ?(.*)$/);
+      $mdhash{'active'} = $1 if ($_ =~ /Active Devices ?: ?(.*)$/);
+      $mdhash{'working'} = $1 if ($_ =~ /Working Devices ?: ?(.*)$/);
+      $mdhash{'failed'} = $1 if ($_ =~ /Failed Devices ?: ?(.*)$/);
+      $mdhash{'spare'} = $1 if ($_ =~ /Spare Devices ?: ?(.*)$/);
+      $mdhash{'state'} = $1 if ($_ =~ /State ?: ?(.*)$/);
+      $mdhash{'rebuild'} = $1 if ($_ =~ /Rebuild Status ?: ?(.*)$/);
+      push(@{$mdhash{'good devices'}},$1) if ($_ =~ /sync .*(\/dev\/[\w\d\-\_]*)/);
+      push(@{$mdhash{'middle devices'}},$1) if ($_ =~ /rebuilding .*(\/dev\/[\w\d\-\_]*)/);
+      push(@{$mdhash{'bad devices'}},$1) if ($_ =~ /faulty .*(\/dev\/[\w\d\-\_]*)/);
+    }
+
+    if ($Detail <= 4) {
+      if (lc($mdhash{'state'}) =~ /clean|active/) {
+        print "$dev : $mdhash{'state'}\n";
+      } else {
+        print "$dev : $mdhash{'state'}\n";
+        if (@{$mdhash{'middle devices'}}) {
+          if (defined($mdhash{'rebuild'}) and ($mdhash{'rebuild'} ne '')) {
+            print "\tRebuilding status: $mdhash{'rebuild'}\n";
+          }
+          print "\tRebuilding @{$mdhash{'middle devices'}}\n";
+        }
+        if (@{$mdhash{'bad devices'}}) {
+          print "\tFailed @{$mdhash{'bad devices'}}\n";
+        }
+      }
+    }
+    elsif($Detail <= 9) {
+      if (lc($mdhash{'state'}) =~ /clean|active/) {
+        print "$dev : $mdhash{'state'} - @{$mdhash{'good devices'}}\n";
+      } else {
+        print "$dev : $mdhash{'state'}\n";
+        if (@{$mdhash{'middle devices'}}) {
+          if (defined($mdhash{'rebuild'}) and ($mdhash{'rebuild'} ne '')) {
+            print "\tRebuilding status: $mdhash{'rebuild'}\n";
+          }
+          print "\t  Rebuilding : @{$mdhash{'middle devices'}}\n";
+        }
+        if (@{$mdhash{'bad devices'}}) {
+          print "\t      Failed : @{$mdhash{'bad devices'}}\n";
+        }
+        print "\t        Good : @{$mdhash{'good devices'}}\n";
+      }
+    } else {
+      print "$dev : $mdhash{'state'}\n";
+      print "\t  Raid Level : $mdhash{'level'}\n";
+      print "\tGood Devices : @{$mdhash{'good devices'}}\n";
+      if (defined ($mdhash{'middle devices'}) and @{$mdhash{'middle devices'}}) {
+        if (defined($mdhash{'rebuild'}) and ($mdhash{'rebuild'} ne '')) {
+          print "\tRebuilding status: $mdhash{'rebuild'}\n";
+        }
+        print "\t  Rebuilding : @{$mdhash{'middle devices'}}\n";
+      }
+      if (defined($mdhash{'bad devices'}) and @{$mdhash{'bad devices'}}) {
+        print "\t      Failed : @{$mdhash{'bad devices'}}\n";
+      }
+      if ($mdhash{'spare'} ne 0) {
+        print "\t      Spares : $mdhash{'spare'}\n";
+      }
+      print "\n";
+    }
+  }
+}
+
