@@ -69,7 +69,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/connection from localhost / ) or
       ( $ThisLine =~ m/setuid to / ) or
       ( $ThisLine =~ m/processing message / ) or
-      ( $ThisLine =~ m/^spamd: result: / ) or
+      ( $ThisLine =~ m/^spamd: result: .*,mid=\(unknown\)/ ) or
       ( $ThisLine =~ m/^prefork: child states: / ) or
       ( $ThisLine =~ m/^spamd: alarm *$/ ) or
       ( $ThisLine =~ m/^spamd: handled cleanup of child / ) or
@@ -77,6 +77,9 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/^logger: removing stderr method/ ) or
       ( $ThisLine =~ m/^spamd: server pid:/ ) or
       ( $ThisLine =~ m/^prefork: adjust: \d+ idle children (less|more) than \d+ (min|max)imum idle children/ ) or
+      # Sendmail messages to ignore
+      ( $ThisLine =~ m/^AUTH=/ ) or
+      ( $ThisLine =~ m/^STARTTLS/ ) or
       0  # Always last in the list, so all above can say "or" at the end
    ) {
       ; # We don't care about these
@@ -99,6 +102,18 @@ while (defined($ThisLine = <STDIN>)) {
       #   ... at /usr/bin/spamd line 1085, <GEN5490> line 212
       $ThisLine =~ s/\d+/___/g;  # Make all numbers "generic"
       $Child{ $ThisLine }++;        # ...and count generic error types
+   } elsif ( ($spam, $score, $msgid) = ($ThisLine =~ m/^spamd: result: (.) (-?\d+).*,mid=<(.*)>/) ) {
+      # Only record the first scan
+      if (!defined($msg{$msgid}->{"score"}) and $spam eq "Y") {
+         $msg{$msgid}->{"score"} = $score;
+         $SpamRelay{$msg{$msgid}->{"relay"}}++;
+      }
+   } elsif ( $ThisLine =~ m/^q\w+:/ ) {
+      # Sendmail lines for statistics
+      if ( ($from, $msgid, $relay) = ($ThisLine =~ m/^q\w+: from=<(.*)>, .*, msgid=<(.*)>, .*, relay=(.*)/) ) {
+         $msg{$msgid}->{"from"} = $from;
+         $msg{$msgid}->{"relay"} = $relay;
+      }
 
    # EVERYTHING ELSE, or, Incentive to identify all "We don't care" lines
    # We on-purpose allow warnings about --max-children to go here
@@ -137,6 +152,15 @@ if ( $CleanTotal || $SpamTotal ) {
       int ((100.0 * $SpamTotal / $ttotal) + 0.5);
 }
 
+if (keys %SpamRelay) {
+   print "\nTop 10 Spam Relays:\n";
+   $i = 0;
+   foreach $relay (sort {$SpamRelay{$b}<=>$SpamRelay{$a} } keys %SpamRelay) {
+      print "   $relay: $SpamRelay{$relay} Time(s)\n";
+      last if ++$i == 10;
+   }
+}
+   
 if ( $StillRoot ) {
    print qq{\n"still running as root" error: $StillRoot time(s)\n};
 }
