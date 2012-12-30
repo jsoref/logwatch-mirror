@@ -1,0 +1,213 @@
+
+##########################################################################
+# VDR script for Logwatch 
+#
+# Copyright (c) 2012 Reiner Buehl 
+# Covered under the included MIT/X-Consortium License:
+#    http://www.opensource.org/licenses/mit-license.php
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+##########################################################################
+
+use strict;
+use Logwatch ':ip';
+
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $IgnoreUnmatched = $ENV{'vdr_ignore_unmatched'} || 0;
+my $TSContinuityErrors = 0;
+my $PESPacketShortened = 0;
+my %FrontendTimeout = ();
+my $TransferBufferOverflow = 0;
+my @UnknownPicTypeError = ();
+my %ChannelNameChange = ();
+my %TimerSet = ();
+my %RecordingDeleted = ();
+my @OtherList;
+
+while (defined(my $ThisLine = <STDIN>)) {
+   next if ($ThisLine eq '');
+
+   if (
+      # filter out svdrp connect messages
+      ($ThisLine =~ /connect from .*, port .* - accepted/)
+      or ($ThisLine =~ /closing SVDRP connection/)
+      # filter out EPGSearch and Text2Skin messages
+      or ($ThisLine =~ /EPGSearch:/)
+      or ($ThisLine =~ /Text2Skin:/)
+      # filter out pid, ca and caid changes
+      or ($ThisLine =~ /changing pids of channel/)
+      or ($ThisLine =~ /changing ca descriptors of channel/)
+      or ($ThisLine =~ /changing caids of channel .* from .* to .*/)
+      or ($ThisLine =~ /changing portal name of channel .* from .* to .*/)
+      # filter out event status messages
+      or ($ThisLine =~ /channel [0-9]+ \(.+\) event.*status [0-9]+/)
+      # filter out directory scanner thread messages
+      or ($ThisLine =~ /video directory scanner thread started/)
+      or ($ThisLine =~ /video directory scanner thread ended/)
+      # filter out delete recordings thread messages
+      or ($ThisLine =~ /remove deleted recordings thread started/)
+      or ($ThisLine =~ /remove deleted recordings thread ended/)
+      # filter out file name truncate messages
+      or ($ThisLine =~ /timer file name too long for VFAT file system/)
+      or ($ThisLine =~ /timer file name truncated to/)
+      or ($ThisLine =~ /timer .* modified/)
+      # filter out timer status change messages
+      or ($ThisLine =~ /timer .* added/)
+      or ($ThisLine =~ /timer .* start/)
+      or ($ThisLine =~ /timer .* stop/)
+      or ($ThisLine =~ /deleting timer/)
+      or ($ThisLine =~ /cleaning up schedules data/)
+      # filter out additional timer start messages
+      or ($ThisLine =~ /vdr: \[[0-9]+\] Title:/)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] executing .*vdr-recordingaction before/)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] executing .*vdr-recordingaction after/)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] record /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] recording to /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] creating directory /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] recording thread started /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] recording thread ended /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] transfer thread started /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] transfer thread ended /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] file writer thread started /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] file writer thread ended /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] receiver on device [0-9]+ thread started /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] receiver on device [0-9]+ thread ended /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] TS buffer on device [0-9]+ thread started /)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] TS buffer on device [0-9]+ thread ended /)
+      # filter out other messages
+      or ($ThisLine =~ /vdr: \[[0-9]+\] switching device [0-9]+ to channel [0-9]+/)
+      or ($ThisLine =~ /vdr: \[[0-9]+\] buffer stats: [0-9]+ \([0-9]+%\) used/)
+      or ($ThisLine =~ /timer ([0-9]+) \(.*\) set to no event/)
+      or ($ThisLine =~ /timer ([0-9]+) \(.*\) entered VPS margin/)
+      or ($ThisLine =~ /switching to channel [0-9]+/)
+      or ($ThisLine =~ /setting audio track to [0-9]+/)
+      or ($ThisLine =~ /retuning due to modification of channel [0-9]+/)
+      ) {
+      # ignore the above strings
+   } elsif ($ThisLine =~ /TS continuity error/) {
+      $TSContinuityErrors++;
+   } elsif ($ThisLine =~ /PES packet shortened/) {
+      $PESPacketShortened++;
+   } elsif ( my ($Frontend,$Channel) = ($ThisLine =~ /frontend ([0-9]+) timed out while tuning to channel ([0-9]+)/) ) {
+      push @{$FrontendTimeout{$Frontend}}, $Channel;
+   } elsif ($ThisLine =~ /clearing transfer buffer to avoid overflows/) {
+      $TransferBufferOverflow++;
+   } elsif ($ThisLine =~ /buffer usage: [0-9]+%/) {
+      # ignore the above string
+   } elsif ( my ($PicType) = ($ThisLine =~ /ERROR: unknown picture type '([0-9]+)'/) ) {
+      push @UnknownPicTypeError,$PicType;
+   } elsif ( my ($Channel, $From, $To) = ($ThisLine =~ /changing name of channel ([0-9]+) from '(.+)' to '(.+)'/) ) {
+      $ChannelNameChange{$Channel} = "'$From' to '$To'";
+   } elsif ( my ($TimerNumber, $TimerEvent) = ($ThisLine =~ /timer ([0-9]+) \(.*\) set to event (.*)$/) ) {
+      $TimerSet{$TimerEvent} = "$TimerNumber";
+   } elsif ( my ($RecordingName) = ($ThisLine =~ /removing recording (.*)$/) ) {
+      $RecordingDeleted{$RecordingName} = "1";
+   } else {
+      # Report any unmatched entries...
+      push @OtherList,$ThisLine;
+   }
+}
+
+if ($TSContinuityErrors > 0) {
+   print "\n$TSContinuityErrors TS continuity error(s)\n";
+}
+
+if ($PESPacketShortened > 0) {
+   print "\n$PESPacketShortened PES packets shortened\n";
+}
+
+if (keys %FrontendTimeout) {
+   print "\n";
+   foreach my $Frontend (sort keys %FrontendTimeout) {
+      my %counts = ();
+      for (@{$FrontendTimeout{$Frontend}}) {
+         $counts{$_}++;
+      }
+      my $result = "";
+      foreach my $keys (keys %counts) {
+         $result .= "$keys ($counts{$keys} times), ";
+      }
+      $result =~ s/, $//;
+      print "Frontend $Frontend timed out when changing to channels: $result\n";
+   }
+}
+
+if ($TransferBufferOverflow > 0) {
+   print "\n$TransferBufferOverflow transfer buffer overflows\n";
+}
+
+if ($#UnknownPicTypeError > 0) {
+   print "\nUnknown picture type errors for picture types: ";
+   my %counts = ();
+   for (@UnknownPicTypeError) {
+      $counts{$_}++;
+   }
+   my $result = "";
+   foreach my $keys (keys %counts) {
+      $result .= "$keys ($counts{$keys} times), ";
+   }
+   $result =~ s/, $//;
+   print "$result\n";
+}
+
+if (keys %ChannelNameChange) {
+   if($Detail >= 10) {
+      print "\n";
+      foreach my $Channel (sort keys %ChannelNameChange) {
+         print "Name of channel $Channel changed from ", $ChannelNameChange{$Channel}, "\n";
+      }
+   } elsif ($Detail >= 5) {
+      my $number = keys %ChannelNameChange;
+      print "\n$number channel name changes\n";
+   }
+}
+
+if (keys %TimerSet) {
+   if($Detail >= 15) {
+      print "\n";
+      foreach my $Timer (sort keys %TimerSet) {
+         print "Timer set to event $Timer\n";
+      }
+   } elsif ($Detail >= 10) {
+      my $number = keys %TimerSet;
+      print "\n$number timers set\n";
+   }
+}
+
+if (keys %RecordingDeleted) {
+   if($Detail >= 15) {
+      print "\n";
+      foreach my $Recording (sort keys %RecordingDeleted) {
+         print "DEleted recording $Recording\n";
+      }
+   } elsif ($Detail >= 10) {
+      my $number = keys %RecordingDeleted;
+      print "\n$number recordings deleted\n";
+   }
+}
+
+if (($#OtherList >= 0) and (not $IgnoreUnmatched)) {
+   print "\n**Unmatched Entries**\n";
+   print @OtherList;
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+
+
