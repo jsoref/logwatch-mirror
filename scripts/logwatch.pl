@@ -1327,13 +1327,17 @@ sub parselogs {
       }
 
       my $Command = '';
-      if ($FileList[0] eq 'none') {
-         $Command = " $FilterText 2>&1 ";
-      } elsif ($FileText) {
-         if ($HostStrip ne " ") {
-            $Command = " ( $Config{'pathtocat'} $FileText | $HostStrip | $FilterText) 2>&1 ";
-         } else {
-            $Command = " ( $Config{'pathtocat'} $FileText | $FilterText) 2>&1 ";
+      if (! @FileList) {
+         output(1, "\n Warning: LogFile of service $ServiceData{$Service}{title} is not defined.\n", "line");
+      } else {
+         if ($FileList[0] eq 'none') {
+            $Command = " $FilterText 2>&1 ";
+         } elsif ($FileText) {
+            if ($HostStrip ne " ") {
+               $Command = " ( $Config{'pathtocat'} $FileText | $HostStrip | $FilterText) 2>&1 ";
+            } else {
+               $Command = " ( $Config{'pathtocat'} $FileText | $FilterText) 2>&1 ";
+            }
          }
       }
 
