@@ -108,9 +108,9 @@ while (defined($ThisLine = <STDIN>)) {
          $msg{$msgid}->{"score"} = $score;
          $SpamRelay{$msg{$msgid}->{"relay"}}++;
       }
-   } elsif ( $ThisLine =~ m/^q\w+:/ ) {
+   } elsif ( $ThisLine =~ m/^\w+:/ ) {
       # Sendmail lines for statistics
-      if ( ($from, $msgid, $relay) = ($ThisLine =~ m/^q\w+: from=<(.*)>, .*, msgid=<(.*)>, .*, relay=(.*)/) ) {
+      if ( ($from, $msgid, $relay) = ($ThisLine =~ m/^\w+: from=<(.*)>, .*, msgid=<(.*)>, .*, relay=(.*)/) ) {
          $msg{$msgid}->{"from"} = $from;
          $msg{$msgid}->{"relay"} = $relay;
       }
