@@ -1,0 +1,72 @@
+#!/usr/bin/perl
+###########################################################################
+# $Id$
+###########################################################################
+
+########################################################
+## Copyright (c) 2013 Stefan Jakobs <logwatch@localside.net>
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+
+my @install;
+my @remove;
+my @rremove;
+my @radd;
+
+my @unknown;
+
+while(my $line=<STDIN>) {
+   chomp $line;
+   if ( my ( $do, $pkg, $ver, $arch, $user, $repo, $hash) = 
+      ( $line =~ /^\S+ \S+\|(?:(install|remove) ?)\|([^\|\s]+)\|([^\|\s]+)\|([^\|\s]+)\|([^\|\s]+)?(?:\|([^\|\s]+)\|([^\|\s]+))?/ )) {
+      if ($do eq "remove") {
+         push @remove, "$pkg $ver";
+      } elsif ($do eq "install") {
+         push @install, "$pkg $ver";
+      }
+   } elsif ( my ( $do, $repo, $url) = ( $line =~ /^\S+ \S+\|(?:(rremove|radd) {0,3})\|([^\|\s]+)(?:\|([^\|]+))?/) ) {
+     if ($repo eq "_tmpRPMcache_") {
+        # ignore
+     } elsif ($do eq "radd") {
+        push @radd, "$repo: $url";
+     } elsif ($do eq "rremove") {
+        push @rremove, "$repo";
+     }
+   } else {
+      push @unknown, $line;
+   }
+}
+
+my @k = ( "Installed" , \@install,
+          "Removed", \@remove,
+          "Repository added", \@radd,
+          "Repository removed", \@rremove,
+          "Unknown lines", \@unknown);
+
+while (@k > 0) {
+   my $text = shift @k;
+   my $array = shift @k;
+   if(@$array) {
+      print "\n$text:\n";
+      foreach my $line (sort @$array) {
+         print "   $line\n";
+      }
+
+   }
+}
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+
