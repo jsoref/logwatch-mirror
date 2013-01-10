@@ -51,35 +51,30 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Applying configuration version/) or
       ($ThisLine =~ /Loading facts in/) or
       ($ThisLine =~ /Retrieving plugin/) or
-      ($ThisLine =~ /FileBucket adding/)
+      ($ThisLine =~ /FileBucket adding/) or
+      ($ThisLine =~ /^Caching certificate/) or
+      ($ThisLine =~ /^Certificate Request fingerprint/) or
+      ($ThisLine =~ /^Creating state file/)
    ) {
       # Ignore
-   } elsif (($reason) = ($ThisLine =~ /Could not retrieve catalog from remote server: (.*)/)) {
+   } elsif (($junk, $failure, $reason) = ($ThisLine =~ /^(\(.*\) |)Could not ([^:]*): (.*)/)) {
       if ($reason == "getaddrinfo: Name or service not known" && $offline) {
          $FailedRuns--;
       } else {
-         $CatalogFailures{$reason}++;
+         $Failures{$failure}->{$reason}++;
       }
    } elsif ($ThisLine =~ /Finished catalog run in [0-9]+\.[0-9]+ seconds/) {
       $SuccessfulRuns++;
    } elsif ($ThisLine =~ /skipping run/) {
       $FailedRuns++;
-   } elsif ($ThisLine =~ /File\[(.+)\].+checksum changed/) {
-      $ChangedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[(.+)\].+content changed/) {
-      $ChangedFiles{$1}++;
-   } elsif (($File, $Content) = $ThisLine =~ /\(\/File\[(.+)\]\/content\) #012(.*)/) {
-      $Content =~ s/#011/\t/g;
-      $Content =~ s/#012/\n        /g;
-      $ChangedFilesContent{$File} .= $Content;
-   } elsif ($ThisLine =~ /File\[(.+)\].+created/) {
-      $CreatedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[(.+)\].+defined content/) {
-      $CreatedFiles{$1}++;
-   } elsif ($ThisLine =~ /File\[(.+)\].+removed/) {
-      $RemovedFiles{$1}++;
+   } elsif ($ThisLine =~ /(Did not receive certificate)/) {
+      $Errors{$1}++;
+   } elsif (($file) = $ThisLine =~ /Reparsing (.*)/) {
+      $Reparsed{$file}++;
    } elsif (($fileinfo) = ($ThisLine =~ /Filebucketed (.*)/)) {
       $FileBucketed{$1}++;
+   } elsif ($ThisLine =~ /Dependency .+\[.+\] has ([0-9]+ |)failure/) {
+      $DependencyFailures++;
    } elsif (
       ($ThisLine =~ /Failed to retrieve current state of resource/) or
       ($ThisLine =~ /Package.+ensure.+Could not find package/) or
@@ -97,16 +92,42 @@ while (defined($ThisLine = <STDIN>)) {
       $ExecRuns{$1}++;
    } elsif ($ThisLine =~ /Exec\[(.+)\].+Trigger(?:ing|ed) 'refresh' from [0-9]+ (?:dependencies|events)/) {
       $ExecRuns{$1}++;
+   } elsif ($ThisLine =~ /Exec\[(.+)\].+Triggered 'refresh' from [0-9]+ events/) {
+      $ExecRuns{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'running\'/) {
       $ServiceStarts{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+Trigger(?:ing|ed) 'refresh' from [0-9]+ (?:dependencies|events)/) {
+      $ServiceStarts{$1}++;
+   } elsif ($ThisLine =~ /Service\[(.+)\].+Triggered 'refresh' from [0-9]+ events/) {
       $ServiceStarts{$1}++;
    } elsif ($ThisLine =~ /Service\[(.+)\].+ensure changed \'.+\' to \'stopped\'/) {
       $ServiceStops{$1}++;
    } elsif ($ThisLine =~ /User\[(.+)\].+changed password/) {
       $PasswordChanged{$1}++;
-   } elsif ($ThisLine =~ /Dependency .+\[.+\] has [0-9]+ failure/) {
-      $DependencyFailures++;
+
+   # Generic rules need to be last
+   } elsif (($type, $name, $attr) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) (created|defined content)/) {
+      $Created{$type}->{$name}++;
+   } elsif (($type, $name, $attr) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) removed/) {
+      $Removed{$type}->{$name}++;
+   } elsif (($type, $name, $attr, $from, $to) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) .+ changed '(.*)' to '(.*)/) {
+      if ($attr eq 'content' or $attr eq 'checksum') {
+         # Only count these types of changes
+         $Changed{$type}->{$name}->{$attr}++;
+      } else {
+         # Get details for all other types of changes
+         $Changed{$type}->{$name}->{$attr}->{'from'} = $from;
+         $Changed{$type}->{$name}->{$attr}->{'to'} = $to;
+      }
+   } elsif (($type, $name, $attr, $from) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) undefined '.+' from '(.*)'/) {
+      $Changed{$type}->{$name}->{$attr}->{'from'} = $from;
+      $Changed{$type}->{$name}->{$attr}->{'to'} = 'undefined';
+   } elsif (($type, $name, $content) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/content\) (.*)/) {
+      $content =~ s/#011/\t/g;
+      $content =~ s/#012/\n            /g;
+      $Changed{$type}->{$name}->{'contents'} .= $content;
+   } elsif (($source, $target) = $ThisLine =~ /^\(\/(.*)\) Scheduling refresh of (.*)/) {
+      $ScheduledRefresh{"$source -> $target"}++;
    } else {
       # Report any unmatched entries...
       $OtherList{$ThisLine}++;
@@ -123,34 +144,32 @@ if ($FailedRuns > 0) {
    print "\nFailed runs: $FailedRuns\n";
 }
 
-if (keys %CatalogFailures) {
-   print "\nCould not retrieve catalog from remote server:\n";
-   foreach $ThisOne (keys %CatalogFailures) {
-      print "    $ThisOne: $CatalogFailures{$ThisOne} Time(s)\n";
+if (keys %Errors) {
+   print "\nERRORS:\n";
+   foreach $ThisOne (keys %Errors) {
+      print "    $ThisOne: $Errors{$ThisOne} Time(s)\n";
    }
 }
 
-if (keys %CreatedFiles) {
-   print "\nCreated files:\n";
-   foreach $ThisOne (keys %CreatedFiles) {
-      print "    $ThisOne: $CreatedFiles{$ThisOne} Time(s)\n";
+foreach $failure (sort(keys %Failures)) {
+   print "\nERROR: Could not $failure:\n";
+   foreach $ThisOne (keys %{$Failures{$failure}}) {
+      print "    $ThisOne: $Failures{$failure}->{$ThisOne} Time(s)\n";
    }
 }
 
-if (keys %ChangedFiles) {
-   print "\nChanged files:\n";
-   foreach $ThisOne (keys %ChangedFiles) {
-      print "    $ThisOne: $ChangedFiles{$ThisOne} Time(s)\n";
-      if (defined($ChangedFilesContent{$ThisOne}) and $Detail >= 3) {
-         print "        $ChangedFilesContent{$ThisOne}\n";
-      }
-   }
+if ($ResourceFailures > 0) {
+   print "\nResource failures: $ResourceFailures\n";
 }
 
-if (keys %RemovedFiles) {
-   print "\nRemoved files:\n";
-   foreach $ThisOne (keys %RemovedFiles) {
-      print "    $ThisOne: $RemovedFiles{$ThisOne} Time(s)\n";
+if ($DependencyFailures > 0) {
+   print "\nDependency failures: $DependencyFailures\n";
+}
+
+if (keys %Reparsed) {
+   print "\nReparsed:\n";
+   foreach $ThisOne (keys %Reparsed) {
+      print "    $ThisOne: $Reparsed{$ThisOne} Time(s)\n";
    }
 }
 
@@ -210,12 +229,47 @@ if (keys %PasswordChanged) {
    }
 }
 
-if ($ResourceFailures > 0) {
-   print "\nResource failures: $ResourceFailures\n";
+foreach $Type (sort(keys %Created)) {
+   print "\n$Type created:\n";
+   foreach $Name (sort(keys %{$Created{$Type}})) {
+      print "    $Name: $Created{$Type}->{$Name} Time(s)\n";
+   }
 }
 
-if ($DependencyFailures > 0) {
-   print "\nDependency failures: $DependencyFailures\n";
+foreach $Type (sort(keys %Changed)) {
+   print "\n$Type changed:\n";
+   foreach $Name (sort(keys %{$Changed{$Type}})) {
+      print "    $Name:\n";
+      foreach $Attr (sort(keys %{$Changed{$Type}->{$Name}})) {
+         if ($Attr eq 'contents') {
+            if ($Detail >= 3) {
+                print "        $Attr:";
+                print "$Changed{$Type}->{$Name}->{$Attr}\n";
+            }
+         } else {
+            print "        $Attr: ";
+            if (defined($Changed{$Type}->{$Name}->{$Attr}->{'from'})) {
+               print "from '$Changed{$Type}->{$Name}->{$Attr}->{from}' to '$Changed{$Type}->{$Name}->{$Attr}->{to}'\n";
+            } else {
+               print "$Changed{$Type}->{$Name}->{$Attr} Time(s)\n";
+            }
+         }
+      }
+   }
+}
+
+foreach $Type (sort(keys %Removed)) {
+   print "\n$Type removed:\n";
+   foreach $Name (sort(keys %{$Removed{$Type}})) {
+      print "    $Name: $Removed{$Type}->{$Name} Time(s)\n";
+   }
+}
+
+if (keys %ScheduledRefresh) {
+   print "\nScheduled refresh:\n";
+   foreach $ThisOne (keys %ScheduledRefresh) {
+      print "    $ThisOne: $ScheduledRefresh{$ThisOne} Time(s)\n";
+   }
 }
 
 if (keys %OtherList) {
