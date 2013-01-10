@@ -1,0 +1,138 @@
+###########################################################################
+# $Id$
+###########################################################################
+
+###########################################################################
+# This was written and is maintained by:
+#    Stefan Jakobs <logwatch at localside.net>
+#
+# Please send all comments, suggestions, bug reports,
+#    etc, to logwatch at localside.net.
+###########################################################################
+# Copyright (c) 2013 Stefan Jakobs
+# Covered under the included MIT/X-Consortium License:
+#    http://www.opensource.org/licenses/mit-license.php
+# All modifications and contributions by other persons to
+# this script are assumed to have been donated to the
+# Logwatch project and thus assume the above copyright
+# and licensing terms.  If you want to make contributions
+# under your own copyright or a different license this
+# must be explicitly stated in the contribution and the
+# Logwatch project reserves the right to not accept such
+# contributions.  If you have made significant
+# contributions to this script and want to claim
+# copyright please contact logwatch-devel@logwatch.org.
+###########################################################################
+
+use strict;
+
+my $Detail      = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Version     = 0.1;
+
+# initialize logwatch variables 
+my $ThisLine    = "";
+my %OtherList   = ();
+
+# initialize variables which save the stats
+my (%fatal, %info, %warn);
+my (%mon_fatal, %mon_error);
+
+### Parse the lines ###
+
+while (defined($ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   $ThisLine =~ s/^\d{4}\/\d\d\/\d\d \d\d:\d\d:\d\d *//;
+   if ( ($ThisLine =~ /^INFO We have some new roles added or old rules deleted!$/) or
+        ($ThisLine =~ /^INFO END$/)
+   ) {
+      # ignore
+
+   } elsif ($ThisLine =~ /^FATAL State of host '(\S+)' changed from (\S+) to (\S+)(?: (.*))?/) {
+     $mon_fatal{"State change"}{"$1: $2 -> $3 $4"}++;
+   } elsif ($ThisLine =~ /^FATAL Agent on host '(\S+)' (.*)/) {
+     $mon_fatal{"Agent on host"}{"$1: $2"}++;
+   } elsif ($ThisLine =~ /^FATAL Can't reach agent on host '(\S+)'/) {
+     $mon_fatal{"Agent on host"}{"$1: can't be reached"}++;
+   } elsif ($ThisLine =~ /^FATAL (Couldn't open status file) '([^']+)'/) {
+     $mon_fatal{"$1"}{"$2"}++;
+   } elsif ($ThisLine =~ /^FATAL ([^\:]+)(?:: ERROR: (.*))?/) {
+     $fatal{"$1"}{"$2"}++;
+   } elsif ($ThisLine =~ /^ERROR Check '(\S+)' on '(\S+)' has (.*)/) {
+     $mon_error{"$2: $1: $3"}++;
+   } elsif ($ThisLine =~ /^ERROR The (status of the (?:system|agent on host) '\S+' could not be determined)/) {
+     $mon_error{"$1"}++;
+   } elsif ($ThisLine =~ /^ERROR (Can't reach agent on host '\S+')/) {
+     $mon_error{"$1"}++;
+   } elsif ( $ThisLine =~ /^WARN (.*)/) {
+     $warn{"$1"}++;
+   } elsif ( $ThisLine =~ /^INFO (.*)/) {
+     $info{"$1"}++;
+   } else {
+     # Report any unmatched entries...
+     $OtherList{$ThisLine}++;
+   }
+}
+
+### generate output ###
+
+if (keys %mon_fatal) {
+   print "\n  Monitoring FATAL:\n";
+   foreach my $msg (keys %mon_fatal) {
+      printf "    %-52s", $msg;
+      foreach my $err (sort {$a cmp $b} keys %{$mon_fatal{$msg}}) {
+         if ($err) {
+            printf "\n\t%-48s: %4i time(s)", $err, $mon_fatal{$msg}{$err};
+         } else {
+            printf ": %4i time(s)\n", $mon_fatal{$msg}{$err};
+         }
+      }
+      print "\n";
+   }
+}
+
+if (keys %mon_error) {
+   print "\n  Monitoring ERROR:\n";
+   foreach my $msg (sort {$a cmp $b} keys %mon_error) {
+      printf "    %-52s: %4i time(s)\n", $msg, $mon_error{$msg};
+   }
+}
+
+if (keys %fatal) {
+   print "\n  Agent FATAL:\n";
+   foreach my $msg (sort {$a cmp $b} keys %fatal) {
+      printf "    %-52s", $msg;
+      foreach my $err (sort {$a cmp $b} keys %{$fatal{$msg}}) {
+         if ($err) {
+            printf "\n\t%-48s: %4i time(s)\n", $err, $fatal{$msg}{$err};
+         } else {
+            printf ": %4i time(s)\n", $fatal{$msg}{$err};
+         }
+      }
+   }
+}
+
+if (keys %warn and $Detail > 1) {
+   print "\n  Agent WARN:\n";
+   foreach my $msg (sort {$a cmp $b} keys %warn) {
+      printf "    %-52s: %4i time(s)\n", $msg, $warn{$msg};
+   }
+}
+
+if (keys %info and $Detail > 5) {
+   print "\n  INFO:\n";
+   foreach my $msg (sort {$a cmp $b} keys %info) {
+      printf "    %-52s: %5i time(s)\n", $msg, $info{$msg};
+   }
+}
+
+if (keys %OtherList) {
+   print "\n**** Unmatched entries ****\n";
+   foreach my $Error (keys %OtherList) {
+      print "    $Error : $OtherList{$Error} Time(s)\n";
+   }
+}
+
+### return without a failure ###
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
