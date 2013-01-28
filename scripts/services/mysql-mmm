@@ -61,7 +61,7 @@ while (defined($ThisLine = <STDIN>)) {
      $mon_error{"$2: $1: $3"}++;
    } elsif ($ThisLine =~ /^ERROR The (status of the (?:system|agent on host) '\S+' could not be determined)/) {
      $mon_error{"$1"}++;
-   } elsif ($ThisLine =~ /^ERROR (Can't reach agent on host '\S+')/) {
+   } elsif ($ThisLine =~ /^ERROR (Can't (?:reach agent on host|send offline status notification to) '\S+')/) {
      $mon_error{"$1"}++;
    } elsif ( $ThisLine =~ /^WARN (.*)/) {
      $warn{"$1"}++;
