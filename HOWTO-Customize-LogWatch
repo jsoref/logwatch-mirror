@@ -1,4 +1,4 @@
-$Id: HOWTO-Customize-LogWatch,v 1.8 2006/02/28 19:34:24 bjorn Exp $
+HOWTO-Customize-LogWatch
 ================================================================================
 
 1. Table of Contents
@@ -15,6 +15,7 @@ $Id: HOWTO-Customize-LogWatch,v 1.8 2006/02/28 19:34:24 bjorn Exp $
 	A. Logfile Groups
 	B. Service Filter Configuration
 	C. Service Filer Executable
+        D. Shared Script Commands
   7. For More Information
 
 
@@ -463,6 +464,88 @@ In some cases, you can use a security setting higher than 10.  This would be
 reserved for information so trivial that it would not even interest the US 
 Government.
 
+D. Shared Script Commands
+-------------------------
+
+The way to call commands is:
+
+*SharedScriptCommand [= Arguments]
+
+Logwatch will search for the command in /usr/share/logwatch/scripts/shared/ and
+/etc/logwatch/scripts/shared/. The command name is case insensitiv and can be
+used in logfile and service group configuratin files. Everything after the
+equal sign will be passed as arguments to the command.
+The following shared scripts are shipped with logwatch (they don't accept any
+arguments unless otherwise mentioned):
+
+        - ApplyBindDate
+            Filter messages with a time format of '%d-%b-%Y %H:%M:%S'
+        - ApplyEuroDate
+            Filter messages with a time format of '%Y-%m-%d %H:%M:%S'
+        - ApplyHttpDate
+            Filter messages with a time format of '%d/%b/%Y:%H:%M:%S'
+        - ApplyStdDate
+            Without argument filter messages with a time format of
+            '%b %e %H:%M:%S' or '%Y-%m-%dT%H:%M:%S\.[0-9]+[+-][0-9]{2}:[0-9]{2}
+            which is the ISO8601 logformat
+            It accepts one argument which is the filter string, e.g.:
+            *applystddate = "%m-%d-%Y %H:%M:%S"
+        - ApplyTaiDate
+            Filter messages which start with a hex string which represents
+            the seconds since 01.01.1970.'
+        - ApplyUSDate
+            Filter messages with a time format of '%m/%d/%y:%H:%M:%S'
+        - ApplyVsftpdDate
+            Filter messages with a time format of '... %b %e %H:%M:%S 20%y'
+        - EventLogOnlyService
+            Filter messages which match: '... .. ..:..:.. .* MSWinEventLog\t\d+\t$ServiceName\t'
+            It accepts one argument which is the $ServiceName
+        - EventLogRemoveService
+            Will remove the unwanted service from a logfile in a WinEventLog
+            format. Drops messages which match the pattern in
+            EventLogOnlyService. Accepts one argument which is $ServiceName
+        - ExpandRepeats
+            This used to expand "Last message repeated n Times" messages
+            in standard sslog files. But it now ignores these lines, as
+            otherwise the temporary logfiles will be too huge.
+        - HostHash
+            Print all hostnames which occured in a logfile. This matches only
+            at default syslog format: '^... .. ..:..:.. ([\w\-\_]+)'
+        - HostList
+            Write a list of all hostnames which occured in a logfile to
+            $LOGWATCH_TEMP_DIR/hostfile. This matches only at default 
+            syslog format: '^... .. ..:..:.. (\S*)'
+        - MultiService
+            This will pick out only the wanted service from a logfile in
+            the standard syslog message format. Case insensitive.
+            Accepts a comma separated list of service names as argument.
+        - OnlyContains
+            Just does a case insensitive egrep. Arguments are passed
+            directly to egrep.
+        - OnlyHost
+            This will pick out only lines from $hostname from a logfile in the
+            standard syslog format. Case insensitive.
+            Set logwatch option LOGWATCH_ONLY_HOSTNAME or pass a comma
+            separated list of hostnames as argument to make this work.
+        - OnlyService
+            This will pick out only the wanted service from a logfile in the
+            standard syslog format. Case insensitive. First argument is the
+            service name.
+        - Remove
+            Just a case insensitive, inverse egrep
+        - RemoveHeaders
+            Remove the beginning of each line of a standard syslog-style,
+            Solaris ID tag style or date-prefix-style logfile.
+            The pattern to remove is configurable and can be passed
+            as the first argument, e.g.:
+            * RemoveHeaders = "\d{4}-\d\d-\d\d \d\d:\d\:\d\d "
+        - RemoveService
+            Remove the unwanted service form a logfile in the standard
+            syslog-style message format. Case insensitive.
+            It accepts one argument which is a comma separated list of
+            service names, e.g.:
+            * RemoveService = "myservice,myotherservice"
+
 
 7. For More Information
 =======================
@@ -472,15 +555,15 @@ In addition, the website http://www.logwatch.org contains:
 	- the current (and some archived) distributions of Logwatch
 	- access to mailing lists where comments, suggestions, bug reports,
 	  etc., are welcome.
-	- access to the cvs repository, for the very latest code.
+	- access to the svn repository, for the very latest code.
 
 If you do create new services or enhancements that you feel would be useful
 to other people, please send them to the logwatch-devel mailing list
 at logwatch.org.
 
 If you send patches, please make sure that you have the latest version
-of the file from cvs, and send the patch file in unified format
-(using 'cvs diff -u' or 'diff -u') as an attachment.
+of the file from svn, and send the patch file in unified format
+(using 'svn diff' or 'diff -u') as an attachment.
 
 Enhancement suggestions are more likely to be implemented if patch files
 implementing the change are sent.
