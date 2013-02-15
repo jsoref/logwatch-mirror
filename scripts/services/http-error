@@ -34,6 +34,8 @@ use POSIX qw(strftime);
 my $date_format = '... %b %d %H:%M:%S %Y';
 my $filter = TimeFilter($date_format);
 my $detail = exists $ENV{'LOGWATCH_DETAIL_LEVEL'} ? $ENV{'LOGWATCH_DETAIL_LEVEL'} : 0;
+my $Ignore_not_exist_all = $ENV{'ignore_not_exist_all'} || 0;
+my $Ignore_not_exist_no_referer = $ENV{'ignore_not_exist_no_referer'} || 0;
 
 # we do not use any Date:: package (or strptime) as they are probably not available
 my %month2num = ( Jan => 0, Feb => 1, Mar => 2, Apr => 3,
@@ -55,10 +57,15 @@ pop(@message_categories) if $detail < 5;
 # counting messages
 while(<>) {
     my $line = $_;
-    # skipping messages that are not within the requested range
-    next unless $line =~ /^\[($filter)\]/o;
     # skip PHP messages (have a separate script)
     next if $line =~ / PHP (Warning|Fatal error|Notice):/o;
+    # Ignore does not exist messages if asked
+    if ($line =~ /does not exist:/o) {
+       next if $Ignore_not_exist_all;
+       next if $Ignore_not_exist_no_referer and $line !~ /, referer: /o;
+    }
+    # skipping messages that are not within the requested range
+    next unless $line =~ /^\[($filter)\]/o;
     $1 =~ /(\w+) (\w+) (\d+) (\d+):(\d+):(\d+) (\d+)/;
     my $time;
 
