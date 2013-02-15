@@ -122,9 +122,9 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif (($type, $name, $attr, $from) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) undefined '.+' from '(.*)'/) {
       $Changed{$type}->{$name}->{$attr}->{'from'} = $from;
       $Changed{$type}->{$name}->{$attr}->{'to'} = 'undefined';
-   } elsif (($type, $name, $content) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/content\) (.*)/) {
+   } elsif (($type, $name, $content) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/content\)(.*)/) {
       $content =~ s/#011/\t/g;
-      $content =~ s/#012/\n            /g;
+      $content =~ s/#012/\n            /g or $content .= "\n            ";
       $Changed{$type}->{$name}->{'contents'} .= $content;
    } elsif (($source, $target) = $ThisLine =~ /^\(\/(.*)\) Scheduling refresh of (.*)/) {
       $ScheduledRefresh{"$source -> $target"}++;
