@@ -1,5 +1,5 @@
 ###########################################################################
-# $Id: syslog-ng,v 1.9 2012/12/19 10:20:31 general Exp $
+# $Id: syslog-ng,v 1.10 2013/02/19 11:24:42 general Exp $
 ###########################################################################
 
 ###########################################################################
@@ -9,7 +9,7 @@
 # Please send all comments, suggestions, bug reports,
 #    etc, to logwatch at localside.net.
 ###########################################################################
-# Copyright (c) 2008-2012 Stefan Jakobs
+# Copyright (c) 2008-2013 Stefan Jakobs
 # Covered under the included MIT/X-Consortium License:
 #    http://www.opensource.org/licenses/mit-license.php
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,7 +35,7 @@
 use strict;
 
 my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-my $Version	= "1.3-20120716";
+my $Version	= "1.4-20130219";
 
 # initialize logwatch variables 
 my $ThisLine	= "";
@@ -44,13 +44,14 @@ my %OtherList 	= ();
 # initialize variables which save the stats
 my ($Starts,$Stops,$Reloads)	= ( 0, 0, 0);
 my ($Perms,$FileOpenErrors)	= ( 0, 0);
-my ($Drops, $BrokenConnsSum, $WriteErrsSum)	= ( 0, 0, 0);
-my ($Exceed_Conns)	= ( 0);
-my (%BrokenConns, %PermFiles, %OpenFiles)	= ( (), (), ());
-my (%WriteErrs, %Connections)	= ();
+my ($Drops, $WriteErrsSum)	= ( 0, 0);
+my ($ExceedConns)	= ( 0);
+my (%PermFiles, %OpenFiles)	= ( (), ());
+my (%WriteErrs, %Connections)	= ( (), ());
+my (%Conns, %ConnsSum) = ();
 my (%Stats_center, %Stats_source, %Stats_dest)	= ( (), (), ());
 my (%Stats_dropped, %Stats_supp, %Stats_global)	= ( (), (), ());
-my (%Stats_program, %Stats_stored, %Stats_net) = ( (), ());
+my (%Stats_program, %Stats_stored, %Stats_net) = ( (), (), ());
 my (%Stats_dropped_program, %Stats_supp_program) = ( (), ());
 my (%Stats_dropped_net, %Stats_supp_net)	= ( (), ());
 my (%Warnings, %IntErrors) = ( (), ());
@@ -61,9 +62,9 @@ while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
 
    #TD syslog-ng[2351]: New configuration initialized;
-   if ( ($ThisLine =~ /^New configuration initialized/ ) ||
+   if ( ($ThisLine =~ /^[Nn]ew configuration initialized/ ) ||
         ($ThisLine =~ /^EOF on control channel, closing connection;/ ) ||
-        ($ThisLine =~ /^POLLERR occurred while idle;/ ) 
+        ($ThisLine =~ /^(?:POLLERR|EOF) occurred while idle;/ )
    ) {
       #ignore
    }
@@ -86,11 +87,6 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ($ThisLine =~ /^SIGHUP received, restarting syslog-ng$/ ||
       $ThisLine =~ /^Configuration reload request received, reloading configuration;/) {
       $Reloads++;
-   }
-
-   #TD syslog-ng[9754]: new configuration initialized
-   elsif ($ThisLine =~ /^new configuration initialized$/) {
-      # happens with reload, but it's not for extra accounting
    }
 
    #TD syslog-ng[9754]: syslog-ng version 1.6.2 starting
@@ -126,12 +122,24 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[4833]: Connection broken to AF_INET(XXX.YYY.ZZZ.AAA:BBB), reopening in 60 seconds
    elsif ($ThisLine =~ /^Connection broken to [A-Z_]*\((([0-9]{1,3}\.){3}[0-9]{1,3}:[0-9]{1,5})\), reopening in [0-9]* seconds$/) {
-      $BrokenConns{$1}++;
-      $BrokenConnsSum++;
+      $Conns{'Connection broken'}{$1}++;
+      $ConnsSum{'Connection broken'}++;
+   }
+
+   # syslog-ng v2.X
+   #TD syslog-ng[4833]: Connection failed; error='Connection timed out (110)', time_reopen='60'
+   #TD syslog-ng[4833]: Connection failed; error='Connection refused (111)', time_reopen='60'
+   #TD syslog-ng[4833]: Connection broken; time_reopen='60' 
+   elsif ($ThisLine =~ /^(Connection \w+); (?:error='([^\(']+) \(\d+\)', )?time_reopen='\d+'/ ) {
+      $Conns{$1}{$2}++;
+      $ConnsSum{$1}++;
    }
 
    #TD syslog-ng[4869]: io.c: do_write: write() failed (errno 111), Connection refused
-   elsif ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) {
+   #TD syslog-ng[4869]: I/O error occurred while writing; fd='66', error='Connection refused (111)'
+   elsif ( ($ThisLine =~ /^io\.c: do_write: write\(\) failed \(errno ([\d]+)\)/) or 
+           ($ThisLine =~ /I\/O error occurred while writing; fd='\d+', error='[^'(]+ \((\d+)\)'/) 
+   ) {
       $WriteErrs{$1}++;
       $WriteErrsSum++;
    } 
@@ -161,13 +169,13 @@ while (defined($ThisLine = <STDIN>)) {
          } elsif ($processed[$i] eq "global") {
             $Stats_global{$processed[$i+1]} =
                $Stats_global{$processed[$i+1]} + $processed[$i+2];
-         } elsif ($processed[$i] =~ /(?:dst\.)?(?:udp|tcp)/) {
-            $Stats_net{$processed[$i+1]} =
-               $Stats_net{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "dst.program") {
             $Stats_program{$processed[$i+1]} =
                $Stats_program{$processed[$i+1]} + $processed[$i+2];
-	      } else { chomp($ThisLine); $OtherList{$ThisLine}++; }  
+         } elsif ($processed[$i] =~ /(?:dst\.)?(?:udp|tcp)/) {
+            $Stats_net{$processed[$i+1]} =
+               $Stats_net{$processed[$i+1]} + $processed[$i+2];
+	 } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }
       my @dropped =
 	      $ThisLine =~ /dropped='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
@@ -227,7 +235,7 @@ while (defined($ThisLine = <STDIN>)) {
    # syslog-ng v2.X
    #TD syslog-ng[1796]: Number of allowed concurrent connections exceeded; num='10', max='10'  
    elsif ($ThisLine =~ /^Number of allowed concurrent connections exceeded/) {
-      $Exceed_Conns++;
+      $ExceedConns++;
    }
 
    # syslog-ng v3.X
@@ -244,15 +252,28 @@ while (defined($ThisLine = <STDIN>)) {
       $Warnings{$1}++;
    }
 
+   # syslog-ng v2.X
+   #TD syslog-ng[1602]: Error initializing new configuration, reverting to old config;
+   elsif ($ThisLine =~ /^Error initializing new configuration, reverting to old config;/) {
+      $IntErrors{"Error initializing new configuration"}{"reverting to old config"}++;
+   }
+
    #TD syslog-ng[2550]: Internal error, duplicate configuration elements refer to
    #   the same persistent config; name='afsocket_sd_connections(dgram,AF_INET(0.0.0.0:514))'
    elsif ($ThisLine =~ /Internal error, ([^;]*); name='([^']*)'/) {
       $IntErrors{$1}{$2}++;
    }
 
+   # syslog-ng v2.X
    #TD syslog-ng[20709]: Referenced filter rule not found; rule='f_dhcpd'
    elsif ($ThisLine =~ /(Referenced filter rule not found); (.+)/) {
       $IntErrors{$1}{$2}++
+   }
+
+   # syslog-ng v2.X
+   #TD syslog-ng[2000]: Error in configuration, unresolved filter reference; filter='f_host_dhcp_dns0'
+   elsif ($ThisLine =~ /^Error in configuration, ([^;]+); (.+)/) {
+      $IntErrors{$1}{$2}++;
    }
 
    else {
@@ -265,72 +286,74 @@ while (defined($ThisLine = <STDIN>)) {
 ### generate the output ###
 
 if ($Starts) {
-   printf "\nSyslog-ng started:\t\t%5i Time(s)", $Starts;
+    printf "\n%-48s %5i Time(s)", "Syslog-ng started:", $Starts;
 }
 
 if ($Stops) {
-   printf "\nSyslog-ng stopped:\t\t%5i Time(s)", $Stops;
+    printf "\n%-48s %5i Time(s)", "Syslog-ng stopped:", $Stops;
 }
 
 if ($Reloads) {
-   printf "\nSyslog-ng reloaded:\t\t%5i Time(s)", $Reloads;
+    printf "\n%-48s %5i Time(s)", "Syslog-ng reloaded:", $Reloads;
 }
 if ($Starts || $Stops || $Reloads) { print "\n"; }
 
 if ($Perms) {
-   if ($Detail >= 5) {
-      print "\nSyslog-ng changed the permission on the file(s):";
-      foreach my $file (keys %PermFiles) {
-         printf "\n\t$file\t\t%5i Time(s)", $PermFiles{$file};
-      }
-      print "\n";
-   } else {
-      print "\nSyslog-ng changed $Perms time(s) permission on file(s)\n";
-   }
+    if ($Detail >= 5) {
+        print "\nSyslog-ng changed the permission on the file(s):";
+        foreach my $file (keys %PermFiles) {
+ 	    printf "\n\t%-41s %5i Time(s)", $file, $PermFiles{$file};
+	}
+	print "\n";
+    } else {
+	printf "\n$-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
+    }
 }
 
 if ($FileOpenErrors) {
-   if ($Detail >= 5) {
-      print "\nSyslog-ng could not open the file(s):";
-      foreach my $file (keys %OpenFiles) {
-         printf "\n\t$file\t\t%5i Time(s)", $OpenFiles{$file};
-      }
-	   print "\n";
-   } else {
-	   printf "\nSyslog-ng could not open file:\t%5i Time(s)", $FileOpenErrors;
-   }
+    if ($Detail >= 5) {
+        print "\nSyslog-ng could not open the file(s):";
+        foreach my $file (keys %OpenFiles) {
+            printf "\n\t%-41s %5i Time(s)", $file, $OpenFiles{$file};
+        }
+	print "\n";
+    } else {
+	printf "\n%-48s %5i Time(s)\n", "Syslog-ng could not open file:", $FileOpenErrors;
+    }
 }
 
-if (keys %BrokenConns) {
-   if ($Detail >= 5) {
-      print "\nBroken connection(s) to:";
-      foreach my $IP (keys %BrokenConns) {
-         printf "\n\t%-21s\t%5i Time(s)", $IP, $BrokenConns{$IP}; 
-      }
-      print "\n";
-   } else {
-      printf "\nBroken connection(s):\t\t%5i Time(s)\n", $BrokenConnsSum;
-   }
+if (keys %Conns) {
+    foreach my $cat (keys %Conns) {
+        if ($Detail >= 5) {
+            print "\n$cat:";
+            foreach my $IP (keys %{$Conns{$cat}}) {
+                printf "\n\t%-41s %5i Time(s)", $IP, $Conns{$cat}{$IP}; 
+            }
+ 	    print "\n";
+        } else {
+            printf "\n%-48s %5i Time(s)\n", "$cat:", $ConnsSum{$cat};
+        }
+    }
 }
 
 if (keys %WriteErrs) {
-   if ($Detail >= 5) {
-      print "\nWrite Error(s):";
-      foreach my $err (keys %WriteErrs) {
-         printf "\n\tError Number %3i:\t%5i Time(s)", $err, $WriteErrs{$err};
-      }
-      print "\n";
-   } else {
-      printf "\nWrite Error(s): \t\t%5i Time(s)\n", $WriteErrsSum;
-   }
+    if ($Detail >= 5) {
+        print "\nWrite Error(s):";
+        foreach my $err (keys %WriteErrs) {
+            printf "\n\t%-41s %5i Time(s)", "Error Number $err:", $WriteErrs{$err};
+        }
+        print "\n";
+    } else {
+        printf "\n%-48s %5i Time(s)\n", "Write Error(s):", $WriteErrsSum;
+    }
 }
 
-if ($Exceed_Conns && $Detail >= 5) {
-   printf "\nConcurrent Connections Exceeded:%3i Time(s)\n", $Exceed_Conns;
+if ($ExceedConns && $Detail >= 5) {
+    printf "\n%-48s %5i Time(s)\n", "Concurrent Connections Exceeded:", $ExceedConns;
 }
 
 if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
-	 keys %Stats_dropped || keys %Stats_supp || keys %Stats_global ||
+    keys %Stats_dropped || keys %Stats_supp || keys %Stats_global ||
     keys %Stats_stored || keys %Stats_program || keys %Stats_net) {
    my ($lost_rcvd, $lost_dest) = ( 0, 0);
 
@@ -362,85 +385,88 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
       if (keys %Stats_center) {
          print "\nCenter:";
          foreach my $center (sort {$a cmp $b} keys %Stats_center) {
-            printf "\n\t%-30s %12i", $center, $Stats_center{$center};
+            printf "\n\t%-34s %12i", $center, $Stats_center{$center};
          }
       }
       if (keys %Stats_dest) {
          print "\nDestination:";
          foreach my $dest (sort {$a cmp $b} keys %Stats_dest) {
-            printf "\n\t%-30s %12i", $dest, $Stats_dest{$dest};
+            printf "\n\t%-34s %12i", $dest, $Stats_dest{$dest};
          }
       }
       if (keys %Stats_source) {
          print "\nSource:";
          foreach my $source (sort {$a cmp $b} keys %Stats_source) {
-            printf "\n\t%-30s %12i", $source, $Stats_source{$source};
+            printf "\n\t%-34s %12i", $source, $Stats_source{$source};
          }
       }
       if (keys %Stats_net) {
          print "\nNetwork:";
          foreach my $source (sort {$a cmp $b} keys %Stats_net) {
             (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-30s %12i", $short_source, $Stats_net{$source};
+            printf "\n\t%-34s %12i", $short_source, $Stats_net{$source};
          }
       }
       if (keys %Stats_program) {
          print "\nProgram:";
          foreach my $source (sort {$a cmp $b} keys %Stats_program) {
             (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-30s %12i", $short_source, $Stats_program{$source};
+            printf "\n\t%-34s %12i", $short_source, $Stats_program{$source};
          }
       }
       if (keys %Stats_supp) {
          print "\nSuppressed:";
          foreach my $source (sort {$a cmp $b} keys %Stats_supp) {
-            printf "\n\t%-30s %12i", $source, $Stats_supp{$source};
+            printf "\n\t%-34s %12i", $source, $Stats_supp{$source};
          }
       }
       if (keys %Stats_supp_net) {
          print "\nSuppressed(net):";
          foreach my $source (sort {$a cmp $b} keys %Stats_supp_net) {
-            printf "\n\t%-30s %12i", $source, $Stats_supp_net{$source};
+            printf "\n\t%-34s %12i", $source, $Stats_supp_net{$source};
          }
       }
       if (keys %Stats_supp_program) {
          print "\nSuppressed(program):";
          foreach my $source (sort {$a cmp $b} keys %Stats_supp_program) {
-            printf "\n\t%-30s %12i", $source, $Stats_supp_program{$source};
-         }
-      }
-      if (keys %Stats_dropped) {
-         print "\nDropped:";
-         foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
-            printf "\n\t%-30s %12i", $source, $Stats_dropped{$source};
-         }
-      }
-      if (keys %Stats_dropped_net) {
-      print "\nDropped(net):";
-      foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
-            printf "\n\t%-30s %12i", $source, $Stats_dropped_net{$source};
-         }
-      }
-      if (keys %Stats_dropped_program) {
-      print "\nDropped(program):";
-      foreach my $source (sort {$a cmp $b} keys %Stats_dropped_program) {
-            printf "\n\t%-30s %12i", $source, $Stats_dropped_program{$source};
+            printf "\n\t%-34s %12i", $source, $Stats_supp_program{$source};
          }
       }
       if (keys %Stats_stored) {
          print "\nStored:";
          foreach my $source (sort {$a cmp $b} keys %Stats_stored) {
             (my $short_source) = ($source =~ /,?([^,]*)/); 
-            printf "\n\t%-30s %12i", $short_source, $Stats_stored{$source};
+            printf "\n\t%-34s %12i", $short_source, $Stats_stored{$source};
          }
       }
       if (keys %Stats_global) {
          print "\nGlobal:";
          foreach my $source (sort {$a cmp $b} keys %Stats_global) {
-            printf "\n\t%-30s %12i", $source, $Stats_global{$source};
+            printf "\n\t%-34s %12i", $source, $Stats_global{$source};
          }
       }
-	   print "\n";
+   }
+   if (keys %Stats_dropped) {
+      print "\nDropped:";
+      foreach my $source (sort {$a cmp $b} keys %Stats_dropped) {
+         printf "\n\t%-34s %12i", $source, $Stats_dropped{$source};
+      }
+   }
+   if (keys %Stats_dropped_net) {
+   print "\nDropped(net):";
+   foreach my $source (sort {$a cmp $b} keys %Stats_dropped_net) {
+         printf "\n\t%-34s %12i", $source, $Stats_dropped_net{$source};
+      }
+   }
+   if (keys %Stats_dropped_program) {
+   print "\nDropped(program):";
+   foreach my $source (sort {$a cmp $b} keys %Stats_dropped_program) {
+         printf "\n\t%-34s %12i", $source, $Stats_dropped_program{$source};
+      }
+   }
+   if (keys %Stats_center or keys %Stats_dropped or keys %Stats_dropped_net or 
+       keys %Stats_dropped_program) {
+      print "\n";
    }
 }
 
@@ -465,24 +491,26 @@ if (keys %Connections) {
 }
 
 if ($Drops) {
-   print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
+    print "\nSyslog-ng dropped " . $Drops ." line(s)\n";
 }
 
 if (keys %IntErrors) {
-   print "\nInternal Errors:\n";
+   print "\nInternal Errors:";
    foreach my $class (sort {$a cmp $b} keys %IntErrors) {
-      print "    $class\n";
+      print "\n    $class";
       foreach my $error (sort {$a cmp $b} keys %{$IntErrors{$class}}) {
-         print "\t$error : $IntErrors{$class}{$error} Time(s)\n";
+         printf "\n\t%-41s %5i Time(s)", "$error:", $IntErrors{$class}{$error};
       }
    }
+   print "\n";
 }
 
 if (keys %Warnings) {
-   print "\nWarnings:\n";
+   print "\nWarnings:";
    foreach my $warning (keys %Warnings) {
-      print "    $warning : $Warnings{$warning} Time(s)\n";
+      print "\n\t%-41s %5i Time(s)", "$warning:", $Warnings{$warning};
    }
+   print "\n";
 }
 
 if (keys %OtherList) {
