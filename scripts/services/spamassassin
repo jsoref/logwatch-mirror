@@ -80,6 +80,7 @@ while (defined($ThisLine = <STDIN>)) {
       # Sendmail messages to ignore
       ( $ThisLine =~ m/^AUTH=/ ) or
       ( $ThisLine =~ m/^STARTTLS/ ) or
+      ( $ThisLine =~ m/^starting daemon \(/ ) or
       0  # Always last in the list, so all above can say "or" at the end
    ) {
       ; # We don't care about these
