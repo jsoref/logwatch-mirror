@@ -193,11 +193,11 @@ DiskSpace() if (($ENV{PRINTING} eq 'y') or $Detail);
 
 if ( $show_disk_usage == 1 ) { DiskUsage(); }; #Turn on in zz-disk_space.conf
 
-if (($Detail >= 10) || ($show_home_dir_sizes == 1)) { #set in zz-disk_space.conf -mgt
+if (($Detail > 10) || ($show_home_dir_sizes == 1)) { #set in zz-disk_space.conf -mgt
 	HomeDirectorySizes($home_dir);
 }
 
-if (($Detail >= 10) || ($show_mail_dir_sizes == 1)) { #set in zz-disk_space.conf -mgt
+if (($Detail > 10) || ($show_mail_dir_sizes == 1)) { #set in zz-disk_space.conf -mgt
 	MailDirectorySizes($mail_dir);
 }
 
