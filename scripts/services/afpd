@@ -37,8 +37,19 @@ while (defined($ThisLine = <STDIN>)) {
       ) {
       # We don't care about these
    }
-   elsif ( ($Login) = ( $ThisLine =~ /login ([^ ]+)/) ) {
+   elsif ( ($Junk,$Login) = ( $ThisLine =~ /(login|Login by) ([^ ]+)$/) ) {
+      chomp($Login);
       $UserLogin{$Login}++;
+   }
+   elsif ( $ThisLine =~ /started/ ) {
+      $Starts++;
+   }
+   elsif ( $ThisLine =~ /shutting down/ ) {
+      $Stops++;
+   }
+   elsif ( ($Read,$Write) = ( $ThisLine =~ /statistics: (\d+\.\d+) KB read, (\d+\.\d+) KB/) ) {
+      $TotalRead+=$Read;
+      $TotalWritten+=$Write;
    }
    else {
       # Report any unmatched entries...
@@ -46,11 +57,23 @@ while (defined($ThisLine = <STDIN>)) {
    }
 }
 
-if (keys %UserLogin) {
+if (keys %UserLogin and $Detail) {
    print "\nUsers Logged In:\n";
    foreach $Line (keys %UserLogin) {
       print "   $Line : $UserLogin{$Line} Time(s)\n";
    }
+}
+
+if ($Starts and $Detail) {
+   print "\nNumber of server startups: $Starts\n";
+}
+
+if ($Stops and $Detail) {
+   print "\nNumber of server shutdowns: $Stops\n";
+}
+
+if (($TotalRead or $TotalWritten) and $Detail >= 5) {
+   print "\nTransfer Statistics: $TotalRead KB read, $TotalWritten KB written\n";
 }
 
 if (($#OtherList >= 0) and (not $IgnoreUnmatched)) {
