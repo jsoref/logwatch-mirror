@@ -1,7 +1,7 @@
 .\" Process this file with
 .\" groff -man -Tascii foo.1
 .\"
-.TH LOGWATCH 8 "October 2005" Linux "User Manuals"
+.TH LOGWATCH 8 "May 2012" Linux "User Manuals"
 .SH NAME
 logwatch \- system log analyzer and reporter
 .SH SYNOPSIS
@@ -21,8 +21,12 @@ logwatch \- system log analyzer and reporter
 .I file-name
 .B ] [--logdir
 .I directory
+.B ] [--hostlimit
+.I hosts
 .B ] [--hostname
 .I hostname
+.B ] [--html_wrap
+.I number of characters
 .B ] [--hostformat 
 .I host based options
 .B ] [--output
@@ -94,6 +98,8 @@ instead of displaying or mailing it.
 Look in
 .I directory
 for log subdirectories or log files instead of the default directory.
+.IP "\fB--hostlimit\fR host1,host2"
+Limit report to hostname - host1, host2.
 .IP "\fB--hostname\fR hostname"
 Use
 .I hostname
@@ -101,6 +107,8 @@ for the reports instead of this system's hostname.  In addition,
 if HostLimit is set in the logwatch.conf configuration file (see
 \fBMORE INFORMATION\fR, below),
 then only logs from this hostname will be processed (where appropriate).
+.IP "\fB--html_wrap\fR num-characters"
+Number of characters that html output should be wrapped to. Default is 80.
 .IP "\fB--numeric\fR"
 Inhibits additional name lookups, displaying IP addresses numerically.
 .IP "\fB--usage\fR"
@@ -154,4 +162,4 @@ Kirk Bauer <kirk@kaybee.org>
 .RE
 http://www.kaybee.org/~kirk
 .RE
-ftp://ftp.kaybee.org/pub/redhat/RPMS
+http://logwatch.sourceforge.net
