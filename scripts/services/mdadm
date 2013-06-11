@@ -31,6 +31,8 @@ my @devices = ();
 # what is in use.  Use /etc/mdadm.conf instead if it exists.
 if ( -f "/etc/mdadm.conf" ) {
   open(MDADM,"< /etc/mdadm.conf");
+} elsif ( -f "/etc/mdadm/mdadm.conf" ) {
+  open(MDADM,"< /etc/mdadm/mdadm.conf");
 } else {
   open(MDADM,"mdadm --examine --scan 2>/dev/null|");
 }
