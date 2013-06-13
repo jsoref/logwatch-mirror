@@ -129,6 +129,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /INFO \(not boot nor reboot\)/) or
       ($ThisLine =~ /INFO \(running with inotify support\)/) or
       ($ThisLine =~ /INFO \(\@reboot jobs will be run at computer's startup.\)/) or
+      ($ThisLine =~ /INFO \(RANDOM_DELAY will be scaled with factor/) or
       ($ThisLine =~ /logfile turned over/) or
       ($ThisLine =~ /ready to process filesystem events/) or # newsyslog on OpenBSD
       ($ThisLine =~ /loading (system|user) tables/) or
