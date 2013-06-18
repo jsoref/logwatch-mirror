@@ -26,7 +26,7 @@
 # File: install_logwatch.sh 
 # Author: Mike Tremaine [mgt /at/ stellarcore.net]
 # Maintainer: Mike Tremaine [mgt /at/ stellarcore.net]
-# $Id: install_logwatch.sh,v 1.20 2008/05/12 22:53:28 mike Exp $
+# $Id$
 #
 # $Log: install_logwatch.sh,v $
 # Revision 1.20  2008/05/12 22:53:28  mike
