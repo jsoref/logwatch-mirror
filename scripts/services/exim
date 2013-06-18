@@ -1,5 +1,5 @@
 ##########################################################################
-# $Id: exim,v 1.25 2010/09/18 17:31:00 stefan Exp $
+# $Id$
 ##########################################################################
 # $Log: exim,v $
 # Revision 1.25  2010/09/18 17:31:00 stefan
@@ -113,6 +113,8 @@ sub wedlug_liczb {
 # START
 
 my $SearchDate = TimeFilter("%Y-%m-%d %H:%M:%S");
+$StartQueue = 0;
+$EndQueue = 0;
 
 while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
