@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# $Id: Logwatch.pm,v 1.18 2007/02/05 02:31:56 bjorn Exp $
+# $Id$
 
 package Logwatch;
 
