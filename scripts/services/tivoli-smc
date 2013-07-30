@@ -1,0 +1,147 @@
+#!/usr/bin/perl
+# Copyright 2013 by Stefan Jakobs <projects@localside.net>
+###########################################################################
+# $Id$
+###########################################################################
+
+########################################################
+## Copyright (c) 2013 Stefan Jakobs
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+
+my $Detail      = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Version     = "20130212";
+
+my ($ThisLine, %OtherList);
+
+my (%IncBackup, %IncBackupFailure);
+my (%Object, %ObjectSend, %ObjectName);
+my (%Error, %NoConnection, %File);
+my $Interrupted;
+
+### functions ###
+
+sub print_2xhash($$) {
+   my %hash = %{$_[0]};
+   my $desc = $_[1];
+   print "$desc\n";
+   foreach my $item (keys %hash) {
+      printf("  %-44s\n", $item);
+      foreach my $item2 (keys %{$hash{$item}}) {
+         printf("    %-42s %5d time(s)\n", $item2, $hash{$item}{$item2});
+      }
+   }
+   print "\n";
+}
+
+### main ###
+
+while(defined ($ThisLine = <STDIN>)) {
+   chomp $ThisLine;
+
+   # remove when filter script is done
+   #$ThisLine =~ s/^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d //;
+
+ 
+   if ( ($ThisLine =~ /^\w+ Could not establish a session with a TSM server or client agent/ ) ||
+        ($ThisLine =~ /^\w+ Communication with the  TSM server is lost/ ) 
+   ) {
+      # ignore
+   }
+
+   elsif ($ThisLine =~ /(\w+) Incremental backup of '([^']+)' finished with (\d+) failure/) {
+      $IncBackup{"$2"}++;
+      $IncBackupFailure{"$2"}+=$3;
+   } elsif ($ThisLine =~ /(\w+) Sending of object '([^']+)' (.+)/) {
+      $ObjectSend{"$3"}{"$2"}++;
+   } elsif ($ThisLine =~ /(\w+) Object name '([^']+)' (.+)/) {
+      $ObjectName{"$3"}{"$2"}++;
+   } elsif ($ThisLine =~ /(\w+) Object '([^']+)' (.+)/) {
+      $Object{"$3"}{"$2"}++;
+   } elsif ($ThisLine =~ /(\w+) An interrupt has occurred/) {
+      $Interrupted++;
+   } elsif ($ThisLine =~ /(\w+) (.+)\.\s+The TSM return code is ([-0-9]+)/) {
+      $Error{$3}{"$2"}++;
+   } elsif ($ThisLine =~ /(\w+) (Session rejected): (.+)/) {
+      $Error{"$2"}{$3}++;
+   } elsif ($ThisLine =~ /(\w+) (Error processing) '([^']+)': (.+)/) {
+      $Error{"$2"}{$4}++;
+   } elsif ($ThisLine =~ /(\w+) Could not establish a TCP\/IP connection with address '([^']+)'\. The TCP\/IP error is '([^']+)'/) {
+      $NoConnection{"$2"}{$3}++;
+   } elsif ($ThisLine =~ /File '(?:[^']+)' (.*)/) {
+      $File{"$1"}++;
+   }
+
+   else {
+      chomp($ThisLine);
+      $OtherList{$ThisLine}++;
+   }
+
+} # end of while
+
+### generate output ###
+
+if (keys %Error) {
+   print_2xhash(\%Error, "Errors:");
+}
+
+if ($Interrupted) {
+   printf("%-46s %5d time(s)\n\n", "Interrupted", $Interrupted);
+}
+
+if (keys %File) {
+   print "File:\n";
+   foreach my $msg (keys %File) {
+      printf("  %-44s %5d time(s)\n", $msg, $File{$msg});
+   }
+   print "\n";
+}
+
+if (keys %IncBackup) {
+   print "Incremental Backups finished:\n";
+   foreach my $dir (sort {$IncBackup{$b} <=> $IncBackup{$a}} keys %IncBackup) {
+      printf("  %-44s %5d time(s) with %3d failure(s)\n", $dir, $IncBackup{$dir}, $IncBackupFailure{$dir});
+   }
+   print "\n";
+}
+
+if (keys %ObjectSend) {
+   print_2xhash(\%ObjectSend, "Sending of objects:");
+}
+
+if (keys %ObjectName) {
+   print_2xhash(\%ObjectName, "Object Names:");
+}
+
+if (keys %Object) {
+   print_2xhash(\%Object, "Object:");
+}
+
+if (keys %NoConnection) {
+   print_2xhash(\%NoConnection, "NoConnections:");
+}
+
+if (keys %OtherList) {
+   print "\n**** Unmatched entries ****\n";
+   foreach my $Error (keys %OtherList) {
+      print "    $Error : $OtherList{$Error} Time(s)\n";
+   }
+}
+
+### return without a failure ###
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
