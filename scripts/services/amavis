@@ -49,7 +49,7 @@ use warnings;
 no warnings "uninitialized";
 use re 'taint';
 
-our $Version         = '1.51.01';
+our $Version         = '1.51.02';
 our $progname_prefix = 'amavis';
 
 # Specifies the default configuration file for use in standalone mode.
@@ -2015,6 +2015,8 @@ sub create_ignore_list() {
    push @ignore_list_final, qr/^Load low precedence policybank/;
    push @ignore_list_final, qr/^warm restart on /;		# XXX could be placed instartup info
    push @ignore_list_final, qr/^Signalling a SIGHUP to a running daemon/;
+   push @ignore_list_final, qr/^Deleting db files nanny.db in /;
+   push @ignore_list_final, qr/^address modified \(/;
 
       # various forms of "Using ..."
       # more specific, interesting variants already captured: search "Using"
@@ -2159,8 +2161,9 @@ while (<>) {
    # log_level >= 2 || (log_level > 2 && syslog_priority=debug)
    my ($tagtype,$fromto,$isspam,$tags,$tests,$autolearn);
 
-   if (($tagtype,$fromto,$isspam,$tags,$tests,$autolearn) = ($p1 =~ /^(SPAM(?:-TAG)?), (.*), (Yes|No), score=[-+x\d.]+(.*) tests=\[([^\]]*)](?:, autolearn=(\w+))?/) or
-       ($tagtype,$fromto,$isspam,$tags,$tests) =            ($p1 =~ /^(SPAM(?:-TAG)?), (.*), (Yes|No), hits=[-+x\d.]+(.*) tests=(.*)(?:, quarantine )?/)) {
+   # amavisd-new 2.7.0 changes SPAM-TAG to Spam-tag and its log_level to 3
+   if (($tagtype,$fromto,$isspam,$tags,$tests,$autolearn) = ($p1 =~ /^((?i:SPAM(?:-TAG)?)), (.*), (Yes|No), score=[-+x\d.]+(.*) tests=\[([^\]]*)](?:, autolearn=(\w+))?/) or
+       ($tagtype,$fromto,$isspam,$tags,$tests) =            ($p1 =~ /^((?i:SPAM(?:-TAG)?)), (.*), (Yes|No), hits=[-+x\d.]+(.*) tests=(.*)(?:, quarantine )?/)) {
 
       #TD SPAM, <from@example.com> -> <to@sample.com>, Yes, score=17.709 tag=-10 tag2=6.31 kill=6.31 tests=[AWL=-0.678, BAYES_99=4], autolearn=spam, quarantine Cc4+GUJhgpqh (spam-quarantine)
       #TD SPAM, <from@example.com> -> <to@sample.net>, Yes, score=21.161 tag=x tag2=8.15 kill=8.15 tests=[BAYES_99=2.5, FORGED_RCVD_HELO=0.135], autolearn=no, quarantine m6lWPoTGJ2O (spam-quarantine)
@@ -2171,7 +2174,7 @@ while (<>) {
       #TD SPAM-TAG, <from@example.com> -> <to@sample.net>, Yes, hits=6.159 tagged_above=-999 required=3.4 tests=BAYES_99=3.5, FUZZY_CPILL=0.518, HTML_MESSAGE=0.001, URIBL_WS_SURBL=2.14
       #TD SPAM, <from@example.com> -> <to@sample.net>, Yes, hits=8.1 tag1=-999.0 tag2=7.0 kill=7.0 tests=MANGLED_TAKE, UPPERCASE_25_50, quarantine spam-14156-09 (maia-spam-quarantine) 
 
-      $Totals{'tagged'}++   if $tagtype eq 'SPAM-TAG';
+      $Totals{'tagged'}++   if uc($tagtype) eq 'SPAM-TAG';
 
       if ($tests) {
          my $type = $isspam =~ /^Y/ ? 'Spam' : 'Ham';
@@ -2188,7 +2191,7 @@ while (<>) {
 
 
          my $tagstr = $fromto . '/' . $isspam . '/' . $tests;
-         if ($tagtype eq 'SPAM-TAG' and exists $spamtags{$pid}) {
+         if (uc($tagtype) eq 'SPAM-TAG' and exists $spamtags{$pid}) {
             next if ($spamtags{$pid} eq $tagstr);
          }
          $spamtags{$pid} = $tagstr;
@@ -2766,7 +2769,8 @@ while (<>) {
    elsif (($p1 =~ /^\(!+\)/) or
           ($p1 =~ /^TROUBLE/) or
           ($p1 =~ /Can't (?:connect to UNIX|send to) socket/) or
-          ($p1 =~ /.*: Empty result from /) or
+          ($p1 =~ /: Empty result from /) or
+          ($p1 =~ /: Error reading from socket: Connection reset by peer/) or
           ($p1 =~ /open\(.*\): Permission denied/) or
           ($p1 =~ /^_?WARN: /) or
           ($p1 =~ /Can't send SIG \d+ to process \[\d+\]: Operation not permitted/) or
