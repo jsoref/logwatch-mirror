@@ -508,7 +508,7 @@ if (keys %IntErrors) {
 if (keys %Warnings) {
    print "\nWarnings:";
    foreach my $warning (keys %Warnings) {
-      print "\n\t%-41s %5i Time(s)", "$warning:", $Warnings{$warning};
+      printf "\n\t%-41s %5i Time(s)", "$warning:", $Warnings{$warning};
    }
    print "\n";
 }
