@@ -182,7 +182,9 @@ while (defined($ThisLine = <STDIN>)) {
         ($ThisLine =~ /(?:zlib| libcurl|libssh2)\/\d/) ||
 #        ($ThisLine =~ /^\[\d+\]\[.+\]/) ||  # this conflics with the web stats
         ($ThisLine =~ /^Caught signal 15; shutting down/) ||
-        ($ThisLine =~ /^\$Id\$/) 
+        ($ThisLine =~ /^\$Id\$/) ||
+        ($ThisLine =~ /^errno is \d+$/) ||
+        ($ThisLine =~ /\[\d+\]\[\w+\(\d+\)\]\s+$/)
    ) {
       # ignore these lines
    }
@@ -213,9 +215,24 @@ while (defined($ThisLine = <STDIN>)) {
       $Warnings{$2}{$1}++;
    }
 
+   #TD: citserver: unable to lock /var/lib/citadel/data/citadel.control.
+   elsif ($ThisLine =~ /^citserver: (unable to lock .+)\.$/ ) {
+      $Warnings{$1}{""}++
+   }
+
+   #TD: Is another citserver already running?
+   elsif ($ThisLine =~ /^(Is another citserver already running\?)$/ ) {
+      $Warnings{$1}{""}++;
+   }
+
    #TD: This message has a zero length.  Probable data corruption.
    elsif ($ThisLine =~ /^(This message has a zero length)\. {1,2}(Probable data corruption)\.$/) {
       $Warnings{$2}{$1}++;
+   }
+
+   #TD: pthread_create() : Cannot allocate memory
+   elsif ($ThisLine =~ /^pthread_create\(\) : (Cannot allocate memory)$/) {
+      $Warnings{$1}{""}++;
    }
 
    ### Thread processing ###
@@ -261,11 +278,13 @@ while (defined($ThisLine = <STDIN>)) {
 
    ### Sessions ###
    elsif ( ($ThisLine =~ /^\[[ \d]+\] Session ended/) ||
-           ($ThisLine =~ /^\Context: \[[ \d]+\]SRV\[(?:citadel-(?:TCP|UDS)|CitNetworker|rssclient|POP1aggr|DICT_TCP|IMAPS|LMTP|SMTP_Send|SMTP-MSA)\] Session ended/) ||
+           ($ThisLine =~ /^\Context: \[[ \d]+\]SRV\[(?:citadel-(?:TCP|UDS)|CitNetworker|rssclient|POP1aggr|POP3|POP3S|DICT_TCP|IMAP|IMAPS|LMTP|SMTP_Send|SMTP-MSA)\] Session ended/) ||
            ($ThisLine =~ /^C(?:itadel c)?lient disconnected: ending session\.$/) ||
            ($ThisLine =~ /^New client socket \d+$/) ||
            ($ThisLine =~ /^Terminated \d+ idle sessions$/) ||
            ($ThisLine =~ /^Context: Scheduled \d+ idle sessions for termination$/) ||
+           ($ThisLine =~ /^Context: Flushed \d+ stuck sessions$/) ||
+           ($ThisLine =~ /^Context: terminate_all_sessions\(\) is murdering/) ||
            ($ThisLine =~ /^(Modules: )?\[(?:citadel-TCP|DICT_TCP)\] closing service$/) 
    ) {
       # ignore these lines
@@ -409,7 +428,7 @@ while (defined($ThisLine = <STDIN>)) {
       }
 
       #TD: SMTP server: DATA
-      elsif ($ThisLine =~ /^SMTP server: (DATA|QUIT|STARTTLS|AUTH PLAIN)/i) {
+      elsif ($ThisLine =~ /^SMTP server: (DATA|QUIT|STARTTLS|AUTH PLAIN|RSET)/i) {
          $SMTPserverCMDS{$1}++;
       }
 
@@ -441,7 +460,8 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    #TD: SSL_read got error 5
-   elsif ($ThisLine =~ /^SSL_(\S+) got error (\d+)$/) {
+   #TD: SSL_accept failed: retval=0, errval=5, err=error:00000005:lib(0):func(0):DH lib
+   elsif ($ThisLine =~ /^SSL_(\S+) (?:got error |failed: retval=[-0-9]+, errval=)(\d+)/) {
       $SMTPSSLError{$1}{$2}++;
    }
 
@@ -499,7 +519,7 @@ while (defined($ThisLine = <STDIN>)) {
    #TD: Context: <Stefan> logged in
    elsif ($ThisLine =~ /^(?:Context: )?<(.+)> logged in$/) {
       # this can be a POP or IMAP login
-      my $user = $1;
+      my $user = lc($1);
       if ($Session =~ /^IMAPS?$/) {
          $IMAPUserLogin{$user}++;
       } elsif ($Session =~ /^POPS?/) {
@@ -784,7 +804,8 @@ while (defined($ThisLine = <STDIN>)) {
    }
 
    #TD: EVCURL:IO[4515]CC[4515] error description: Recv failure: Connection reset by peer
-   elsif ($ThisLine =~ /^EVCURL:IO\[[ \d]+\]CC\[\d+\] error description: (Recv failure: |Couldn't resolve host |Empty reply from server)(.*)/) {
+   #TD: EVCURL:IO[2152]CC[2752] error description: The requested URL returned error: 404
+   elsif ($ThisLine =~ /^EVCURL:IO\[[ \d]+\]CC\[\d+\] error description: (Recv failure: |Couldn't resolve host |Empty reply from server|The requested URL returned error: )(.*)/) {
       $NetNoConnect{"$2"}{"$1"}{""}++;
    }
 
@@ -793,7 +814,6 @@ while (defined($ThisLine = <STDIN>)) {
       $NetNoConnect{"$1"}{$NetNode}{$NetHost}++;
       # That isn't correct !!!
    }
-
 
    #TD: network: processing 0 bytes from /var/spool/citadel/network/spoolin//genux.0e73.012a
    #TD: CC[0]network: processing 426944 bytes from /var/spool/citadel/network/spoolin//wk.64c1.000a
@@ -848,7 +868,7 @@ while (defined($ThisLine = <STDIN>)) {
            ($ThisLine =~ /^username: /) ||
            ($ThisLine =~ /^Setting chosen part: <[\.\d]+>$/) ||
            # ToDo: these are commands from webcit, count them ??
-           ($ThisLine =~ /^(?:\[\d+\]\[.*\] )?(?:ICAL|INFO|MSGP|QUIT|GOTO|MSGS|MSG\d|EUID|MESG|CHEK|READ|OPEN|SEEN|NOOP|DLAT|RDIR|MOVE|OIMG|NDOP|NETP|GTSN|LKR[AN]|LFLR|RWHO|CLOS|UCLS|SLRP|TIME|NUOP|RINF|IPGM|DOWN|UOPN|ENT0|DELF|WRIT|GVSN|GVEA|OPNA|GPEX|SPEX|AUTO|GNUR|LIST|ECHO|CONF|CREU|DELE|GNET|LOUT|AGUP|LBIO|ASUP|ISME|SEXP|GEXP|RBIO|NEWU|GREG|VIEW|CULL|GETR|MSIV|GETA|WHOK)/) ||
+           ($ThisLine =~ /^(?:\[\d+\]\[.*\] )?(?:ICAL|INFO|MSGP|QUIT|GOTO|MSGS|MSG\d|EUID|MESG|CHEK|READ|OPEN|SEEN|NOOP|DLAT|RDIR|MOVE|OIMG|NDOP|NETP|GTSN|LKR[AN]|LFLR|RWHO|CLOS|UCLS|SLRP|TIME|NUOP|RINF|IPGM|DOWN|UOPN|ENT0|DELF|WRIT|GVSN|GVEA|OPNA|GPEX|SPEX|AUTO|GNUR|LIST|ECHO|CONF|CREU|DELE|GNET|LOUT|AGUP|LBIO|ASUP|ISME|SEXP|GEXP|RBIO|NEWU|GREG|VIEW|CULL|GETR|MSIV|GETA|WHOK|MRTG|RCHT)/i) ||
            ($ThisLine =~ /^Done with RemoveContext\(\)/) ||
            ($ThisLine =~ /^RemoveContext\(\) session/) ||
            ($ThisLine =~ /^Purging session \d+/) ||
@@ -867,13 +887,13 @@ while (defined($ThisLine = <STDIN>)) {
    #TD: Bad password specified for <Stefan>
    #TD: Context: Bad password specified for <Stefan> Service <citadel-TCP> Port <504> Remote <example.com / >
    elsif ($ThisLine =~ /^(?:Context: )?Bad password specified for <(\w*)>(?: Service <\w+> Port <\d+> Remote <(.*)>)?/) {
-      $WebLoginFailure{$1}{$2}++;
+      $WebLoginFailure{lc($1)}{$2}++;
    }
 
    #TD: USER stefan
    #TD: [3231][(not logged in)(0)] USER Stefan
    elsif ($ThisLine =~ /^(?:\[\d+\]\[.*\] )?USER (\S*)$/) {
-      $WebUserLogin{$1}++;
+      $WebUserLogin{lc($1)}++;
    }
 
    ### XMPP ###
@@ -985,7 +1005,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    ### POP3 server ###
    elsif ( ($ThisLine =~ /^Performing POP3 cleanup hook$/) ||
-           ($ThisLine =~ /^Client disconnected: ending session/) ||
+           ($ThisLine =~ /^POP3 client disconnected: ending session/) ||
            ($ThisLine =~ /^(Modules: )?\[POP3S?\] closing service$/) 
    ) {
       # ignore these lines
@@ -993,7 +1013,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD: POP3 authenticated stefan
    elsif ($ThisLine =~ /^POP3 authenticated (.+)$/) {
-      $POPDauth{$1}++;
+      $POPDauth{lc($1)}++;
    }
 
    #TD: POP3: LIST
