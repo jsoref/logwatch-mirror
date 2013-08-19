@@ -80,6 +80,7 @@ while (defined($ThisLine = <STDIN>)) {
          ( $ThisLine =~ /^FTP session closed/ ) or
          ( $ThisLine =~ /^(ANONYMOUS )?FTP login as \'.*\' from [^ ]+ \[.*\] to .*/ ) or
          ( $ThisLine =~ /(PAM|pam_unix)\(.*\): [Aa]uthentication failure/ ) or
+         ( $ThisLine =~ /(PAM|pam_unix)\(.*\): session (opened|closed) for user/ ) or
          ( $ThisLine =~ /^data_sendfile/ ) or
          ( $ThisLine =~ /(:| \-) FTP session (closed|opened)/ ) or
          ( $ThisLine =~ /(:| \-) No certificate files found/ ) or

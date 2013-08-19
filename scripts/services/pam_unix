@@ -163,7 +163,7 @@ while ($line = <STDIN>) {
    }
    #lowercase the service
    $service = lc($service);
-   if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd rsh remote rlogin rexec/) {
+   if ( grep $_ eq $service, qw/ssh sshd login ftp vsftpd proftpd rsh remote rlogin rexec/) {
       if ($line =~ s/^session opened for user (.+) by \(uid=\d+\)/$1/) {
 	 ($Detail >= 5) && $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ s/^session opened for user ([^ ]*) by ([^ ]*)\(uid=\d+\)/$1 by $2/) {

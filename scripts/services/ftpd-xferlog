@@ -49,7 +49,7 @@ $TotalBytesIn = 0;
 while (defined($ThisLine = <STDIN>)) {
    # Remove transfer time if it is there
    if ( ($RemoteHost,$Size,$FileName,$Direction,$AccessMode,$UserName) =
-         ( $ThisLine =~ /^([^ ]+) (\d+) (.*) . . (.) (.) (.*) ftp . .*$/ ) ) {
+         ( $ThisLine =~ /^([^ ]+) (\d+) (.*) . . (.) (.) (.*) ftps? . .*$/ ) ) {
       if ($Detail < 15) {
          $FileName = dirname($FileName);
       }
