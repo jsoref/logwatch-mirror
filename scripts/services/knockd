@@ -1,0 +1,80 @@
+###########################################################################
+# $Id$
+###########################################################################
+# Copyright (c) 2013 Brian Masney
+# Covered under the included MIT/X-Consortium License:
+#    http://www.opensource.org/licenses/mit-license.php
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+###########################################################################
+
+my %commands;
+my %stages;
+my %unknown;
+
+while (defined($ThisLine = <STDIN>)) {
+    chomp($ThisLine);
+
+    next if $ThisLine =~ /^starting up, listening on /;
+    next if $ThisLine =~ /OPEN SESAME$/;
+    next if $ThisLine =~ /: sequence timeout /;
+
+    ($name, $command) = $ThisLine =~ /^(.*?): running command: (.*)/;
+    if (defined($name)) {
+        $commands{"$name: $command"}++;
+        next;
+    }
+
+    ($ip, $name, $stage) = $ThisLine =~ /^(\d+\.\d+\.\d+\.\d+): (.*?): Stage (\d+)/;
+    if (defined ($ip)) {
+        $stages{$name}{$stage}{$ip}++;
+        next;
+    }
+ 
+    $unknown{$ThisLine}++;
+}
+
+
+if (keys %stages) {
+    print "knockd stages reached\n";
+    foreach my $name (sort keys %stages) {
+        print "\t$name\n";
+        foreach my $stage (sort keys %{$stages{$name}}) {
+            print "\t\tStage $stage\n";
+            foreach my $ip (sort keys %{$stages{$name}{$stage}}) {
+                print "\t\t\tFrom $ip: " . $stages{$name}{$stage}{$ip} . " time(s)\n";
+            }
+        }
+    }
+}
+
+if (keys %commands) {
+    print "\n";
+    print "knockd commands executed\n";
+    foreach my $command (sort keys %commands) {
+        print "\t" . $commands{$command} . " time(s): $command\n";
+    }
+}
+
+if (keys %unknown) {
+    print "\n";
+    print "knockd unknown log entries\n";
+    foreach my $line (sort keys %unknown) {
+        print "\t" . $unknown{$line} . " time(s): $line\n";
+    }
+}
