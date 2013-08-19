@@ -81,6 +81,8 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ m/^AUTH=/ ) or
       ( $ThisLine =~ m/^STARTTLS/ ) or
       ( $ThisLine =~ m/^starting daemon \(/ ) or
+      ( $ThisLine =~ m/^ruleset=trust_auth/ ) or
+      ( $ThisLine =~ m/^ruleset=check_relay/ ) or
       0  # Always last in the list, so all above can say "or" at the end
    ) {
       ; # We don't care about these
