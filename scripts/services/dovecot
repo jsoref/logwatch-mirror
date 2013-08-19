@@ -260,8 +260,13 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{$Reason}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
       $Disconnected{$Reason}++;
+   } elsif ($ThisLine =~ /Disconnected (bytes|top)=.*/) {
+      $Disconnected{"No reason"}++;
    } elsif (($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
       $TLSInitFail++;
+   } elsif (($Host) = ($ThisLine =~ /Aborted login:.* rip=(.*),/) ) {
+      $Host = hostName($Host);
+      $Aborted{$Host}++;
    } elsif (($Host) = ($ThisLine =~ /Aborted login \[(.*)\]/) ) {
       $Host = hostName($Host);
       $Aborted{$Host}++;
