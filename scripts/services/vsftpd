@@ -48,37 +48,37 @@ while (defined($ThisLine = <STDIN>)) {
       $Temp = "   " . $FileName . " <- " . $IP . " (User: " . $User . ")\n";
       $TotalBytesIn+= $FileSize;
       push @UploadedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] FAIL UPLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] FAIL UPLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
       $Temp = "   " . $FileName . " <- " . $IP . " (User: " . $User . ")\n";
       $TotalBytesIn+= $FileSize;
       push @FailedUploadedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] OK DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] OK DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
       $Temp = "   " . $FileName . " -> " . $IP . " (User: " . $User . ")\n";
       $TotalBytesOut+= $FileSize;
       push @DownloadedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] FAIL DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
+   } elsif ( ($User,$IP,$FileName,$FileSize) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] FAIL DOWNLOAD: Client \"(.*)\", \"(.*)\", (?:(\d+) bytes)?/ ) ) {
       $Temp = "   " . $FileName . " -> " . $IP . " (User: " . $User . ")\n";
       $TotalBytesOut+= $FileSize;
       push @FailedDownloadedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] OK DELETE: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] OK DELETE: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " >< " . $IP . " (User: " . $User . ")\n";
       $TotalDeleted++;
       push @DeletedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] FAIL DELETE: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] FAIL DELETE: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " <> " . $IP . " (User: " . $User . ")\n";
       push @FailedDeletedFiles,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] OK MKDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] OK MKDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " <- " . $IP . " (User: " . $User . ")\n";
       $TotalCreatedDirs++;
       push @CreatedDirs,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] FAIL MKDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] FAIL MKDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " xx " . $IP . " (User: " . $User . ")\n";
       push @FailedCreatedDirs,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] OK RMDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] OK RMDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " >< " . $IP . " (User: " . $User . ")\n";
       $TotalRemovedDirs++;
       push @RemovedDirs,$Temp;
-   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[(.*)\] )?\[(.*)\] FAIL RMDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
+   } elsif ( ($User,$IP,$FileName) = ( $ThisLine =~ /(?:\[.*\] )?\[(.*)\] FAIL RMDIR: Client \"(.*)\", \"(.*)\"/ ) ) {
       $Temp = "   " . $FileName . " <> " . $IP . " (User: " . $User . ")\n";
       push @FailedRemovedDirs,$Temp;
    } elsif ( ($Date, $IP,$FileSize,$FileName,$Direction,$AccessMode,$User) =
