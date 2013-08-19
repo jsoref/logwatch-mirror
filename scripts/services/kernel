@@ -57,6 +57,7 @@ my $Ignore_faults = $ENV{'ignore_faults'};
 my $Ignore_rpcsec_expired = $ENV{'ignore_rpcsec_expired'} || 0;
 my %SYNflood = ();
 my %RAIDErrors = ();
+my %DRBDErrors = ();
 my %SegFaults = ();
 my %GPFaults = ();
 my %TrapInt3s = ();
@@ -103,6 +104,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       # Standard boot messages
       next if $ThisLine =~ /Giving out device to /;
       $EDACs{$1}++;
+   } elsif ($ThisLine =~ /block (drbd\d+): Online verify found (\d+) \d+k block out of sync/) {
+      $DRBDErrors{$1} = $2;
    } elsif ( ( my $errormsg ) = ( $ThisLine =~ /(.*?error.{0,17})/i ) ) {
       # filter out smb open/read errors cased by insufficient permissions
       my $SkipError = 0;
@@ -131,6 +134,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SkipError = 1 if $ThisLine =~ /smb_readpage_sync: .*open failed, error=-13/;
       $SkipError = 1 if $ThisLine =~ /smb_open: .* open failed, result=-13/;
       $SkipError = 1 if $ThisLine =~ /smb_open: .* open failed, error=-13/;
+      $SkipError = 1 if $ThisLine =~ /block drbd\d+: Out of sync: start=\d+/;
       $Kernel{$ThisLine}++ if ( (! $SkipError) || ($Detail > 8)) ;
    }
 }
@@ -149,6 +153,13 @@ if (keys %RAIDErrors) {
    print "\nWARNING:  RAID Errors Present\n";
    foreach my $Thisone ( sort {$a cmp $b} keys %RAIDErrors ) {
       print "   $Thisone ...:  $RAIDErrors{$Thisone} Time(s)\n";
+   }
+}
+
+if (keys %DRBDErrors) {
+   print "\nWARNING:  DRBD Errors Present\n";
+   foreach my $Thisone ( sort {$a cmp $b} keys %DRBDErrors ) {
+      print "   $Thisone :  $DRBDErrors{$Thisone} block(s) out of sync\n";
    }
 }
 
