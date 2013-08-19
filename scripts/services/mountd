@@ -47,6 +47,10 @@ while (defined($ThisLine = <STDIN>)) {
       $Mount = "      " . $Mount;
       $Attempted{$Name}{$Mount}++;
    }
+   elsif ( ($Name,$Mount) = ($ThisLine =~ /^authenticated (?:un)?mount request from (.+):\d+ for ([^ ]+)/) ) {
+      $Mount = "      " . $Mount;
+      $Mounted{$Name}{$Mount}++;
+   }
    elsif ( ($Name) = ($ThisLine =~ /^authenticated (?:un)?mount request from ([\w:]+)/) ) {
       $Mount = "      unknown";
       $Mounted{$Name}{$Mount}++;
