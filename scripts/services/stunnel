@@ -37,6 +37,7 @@ my @OtherList = ();
 my %OtherList = ();
 my %connections = ();
 my %connectionsAllowed = ();
+my %log_connections = ();
 my %versioninfo = ();
 my $sockdata = 0;
 my $ssldata = 0;
@@ -70,6 +71,7 @@ while (defined($ThisLine = <STDIN>)) {
       $DebugCounter++;
    }
    chomp($ThisLine);
+   my ($logid) = ($ThisLine =~ /^LOG\d\[(\d+:\d+)\]:/);
    # remove leading log level and ID, eg 'LOG5[2411:3084352400]: '
    $ThisLine =~ s/^LOG\d\[\d+:\d+\]: //;
 
@@ -84,12 +86,20 @@ while (defined($ThisLine = <STDIN>)) {
       } else {
          ++$connections{$service}{$ip};
       }
+   } elsif ($ThisLine =~ m/^stunnel accepted connection from (\d+\.\d+\.\d+\.\d+):\d+/) {
+      $log_connections{$logid}{client} = $1;
+   } elsif ($ThisLine =~ m/^stunnel connected remote server from (\d+\.\d+\.\d+\.\d+):\d+/) {
+      $log_connections{$logid}{source} = $1;
+   } elsif ($ThisLine =~ m/^connect_blocking: connected (\d+\.\d+\.\d+\.\d+:\d+)/) {
+      $log_connections{$logid}{service} = $1;
    } elsif ($ThisLine =~ m/^Connection (reset|closed): (\d+) bytes sent to SSL, (\d+) bytes sent to socket/) {
       $ssldata += $2;
       $sockdata += $3;
    } elsif ($ThisLine =~ m/^Connection (reset|closed)/) {
       # ignore
-   } elsif ($ThisLine =~ m/^stunnel [\d\.]+ on [\w\-]+ [\w\+]+ with OpenSSL [\w\.]+ \d+ \w+ \d+/) {
+   } elsif ($ThisLine =~ m/^Threading:[\w]+ SSL:[\w]+/) {
+      # ignore
+   } elsif ($ThisLine =~ m/^stunnel [\d\.]+ on [\w\-]+([\w\+\s]+)?with OpenSSL [\w\.\-]+ \d+ \w+ \d+/) {
       $versioninfo{$ThisLine} = 1;
    } else {
       # Report any unmatched entries...
@@ -97,10 +107,19 @@ while (defined($ThisLine = <STDIN>)) {
    }
 }
 
+if (keys %log_connections) {
+   foreach my $entry (keys %log_connections) {
+      my $ip = $log_connections{$entry}{client};
+      my $service = $log_connections{$entry}{service};
+      $service = "Unknown" if not $service;
+      $connections{$service}{$ip}++;
+   }
+}
+
 if (keys %connections) {
-   print "\nNumber of connections per service per ip:\n";
+   print "Number of connections per service per ip:\n\n";
    foreach my $service (sort keys %connections) {
-     printf " %7s \n", $service;
+     printf " To %s\n", $service;
      my $ips = $connections{$service};
      foreach my $ip (sort keys %$ips) {
         printf "    %15s : %5d time(s)\n", $ip, $ips->{$ip};
