@@ -116,6 +116,10 @@ my $SearchDate = TimeFilter("%Y-%m-%d %H:%M:%S");
 $StartQueue = 0;
 $EndQueue = 0;
 
+# Regex to match IPv4 addresses and IPv6 addresses
+# IPv6 part could be made more strict
+my $IPAddress = qr/\d+\.\d+\.\d+\.\d+|[a-fA-F0-9]*:[a-fA-F0-9:]+/;
+
 while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
     # pobierz dzisiejsza date z 2002-03-31 22:13:48 ...
@@ -384,7 +388,7 @@ if ($Detail >= $LvlVirus) {
          # Link date and time (looks cleaner)...
          $aa = "$mdate $mtime";
          # Extract the REAL IP address...
-         ($bb) = ($ThisOne =~ m/\s\[(\d+\.\d+\.\d+\.\d+)\]\s/);
+         ($bb) = ($ThisOne =~ m/\s\[($IPAddress)\]\s/);
             # Exim >= 4.50 compiled with, WITH_CONTENT_SCAN=yes
          # Default warning looks like this...
             # rejected after DATA: This message contains a [vV]irus (%s).
@@ -442,19 +446,19 @@ if ($Detail >= $LvlDontAccept) {
          }
          elsif ( $ThisOne =~ m/contains attached ".(.*)" file, which is blacklisted/ ) {
             $cc = "Blocked Attachment";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /believed to be spam/ ) {
             $cc = "Blocked Fragmented Message";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /[Ww]arning: dnsbl\.sorbs\.net/ ) {
             $cc = "Blocked by DNSBL (SORBS)";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /fragments administratively prohibited/ ) {
             $cc = "Blocked Fragmented Message";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ m/unqualified sender rejected: <(.*)>/ ) {
             $cc = "Unqualified Sender";
@@ -466,7 +470,7 @@ if ($Detail >= $LvlDontAccept) {
          }
          elsif ( $ThisOne =~ m/not accept Windows executables/ ) {
             $cc = "Blocked Attachment";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ m/remote host address is the local host/ ) {
             $cc = "Invalid local domain";
@@ -519,39 +523,39 @@ if ($Detail >= $LvlProtocl) {
 
          if ( $ThisOne =~ m/SMTP protocol violation\:\s(.*?\(.*?\))\:/ ) {
             $cc = $1;
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /unexpected disconnection while reading SMTP command/ ) {
             $cc = "Sudden disconnect while expecting remote input";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
-         elsif ( $ThisOne =~ m/rejected ([HE][EH])LO from \[(\d+\.\d+\.\d+\.\d+)\]\:\s(.*?):\s(.*?)$/ ) {
+         elsif ( $ThisOne =~ m/rejected ([HE][EH])LO from \[($IPAddress)\]\:\s(.*?):\s(.*?)$/ ) {
             $cc = "Rejected HELO/EHLO: $3";
             $bb = "$2 ($1LO $4)";
          }
          elsif ( $ThisOne =~ /SMTP data timeout \(message abandoned\) on connection from/ ) {
             $cc = "SMTP Timeout errors";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /SMTP command timeout on connection from/ ) {
             $cc = "SMTP Timeout errors";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /syntactically invalid argument/ ) {
             $cc = "SMTP Syntax errors";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /SMTP syntax error in/ ) {
             $cc = "SMTP Syntax errors";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /remote host used my name in HELO/ ) {
             $cc = "My name in HELO";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /remote host used IP address in HELO/ ) {
             $cc = "IP address in HELO";
-            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
+            ( $bb ) = ($ThisOne =~ m/\[($IPAddress)\]/);
          }
          elsif ( $ThisOne =~ /incomplete transaction (\(.*\))/ ) {
             $bb = "SMTP transaction cut short $1";
