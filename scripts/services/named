@@ -350,8 +350,8 @@ while (defined($ThisLine = <STDIN>)) {
       $NonAuthoritative{$Zone}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: retry limit for master \S+ exceeded/) ) {
       $RetryLimit{$Zone}++; 
-   } elsif ( ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving/) ){
-      $UnexpRCODE{$1}++;
+   } elsif ( ($Rcode, $Zone, $Host) = ($ThisLine =~ /(?:error \()?unexpected RCODE\)? \(?(.*?)\)? resolving '(.*)': (.*)$/) ){
+      $UnexpRCODE{$Rcode}{$Zone}{$Host}++;
    } elsif ( ($ThisLine =~ /(?:error \()?FORMERR\)? resolving '[^ ]+: [.0-9a-fA-F:#]+/) or
              ($ThisLine =~ /DNS format error from [^ ]+ resolving [^ ]+( for client [^ ]+)?: .*/) ) {
       chomp($ThisLine);
@@ -662,8 +662,14 @@ if (keys %ConfProb) {
 
 if (($Detail >= 5) and (keys %UnexpRCODE)) {
    print "\n Unexpected DNS RCODEs:\n";
-   foreach $ThisOne (keys %UnexpRCODE) {
-      print "   " . $ThisOne . ": " . $UnexpRCODE{$ThisOne} . " Time(s)\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %UnexpRCODE) {
+      print "   " . $ThisOne . ":\n";
+      foreach $Zone (sort {$a cmp $b} keys %{$UnexpRCODE{$ThisOne}}) {
+         print "     " . $Zone . ":\n";
+         foreach $Host (sort SortIP keys %{$UnexpRCODE{$ThisOne}{$Zone}}) {
+            print "         " . $Host . ": " . $UnexpRCODE{$ThisOne}{$Zone}{$Host} . " Time(s)\n";
+         }
+      }
    }
 }
 
