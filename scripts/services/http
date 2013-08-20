@@ -1,108 +1,6 @@
 ##########################################################################
 # $Id$
 ##########################################################################
-# $Log: http,v $
-# Revision 1.40  2008/06/30 20:47:20  kirk
-# fixed copyright holders for files where I know who they should be
-#
-# Revision 1.39  2008/03/24 23:31:26  kirk
-# added copyright/license notice to each script
-#
-# Revision 1.38  2007/12/26 06:07:27  bjorn
-# Restored use of $HTTP_IGNORE_ERROR_HACKS.  When set to 1, ignores accesses
-# flagged in @exploits string.
-#
-# Revision 1.37  2007/03/05 04:53:42  bjorn
-# Added HTTP_IGNORE_IPS to ignore IP addresses, and added user logging, by
-# Mike Bremford (modified to use programmable user logging)
-#
-# Revision 1.36  2006/03/01 03:13:00  bjorn
-# Clarified why printing out possible successful probes of potential exploits.
-#
-# Revision 1.35  2006/02/18 03:12:24  bjorn
-# Corrected log.
-#
-# Revision 1.34  2006/02/18 03:09:27  bjorn
-# For exploit "null" match on full string.  Reported by Gilbert E. Detillieux.
-#
-# Revision 1.33  2006/01/04 21:26:08  bjorn
-# Properly escaping periods, by Ivana Varekova.
-#
-# Revision 1.32  2005/10/19 05:27:21  bjorn
-# Added http_rc_detail_rep facility, by David Baldwin
-#
-# Revision 1.31  2005/09/07 21:03:39  bjorn
-# Added HTTP_IGNORE_URLS option, by Lance Cleveland
-#
-# Revision 1.30  2005/08/23 22:25:51  mike
-# Patch from Taco IJsselmuiden fixes debian bug 323919 -mgt
-#
-# Revision 1.29  2005/07/21 05:41:58  bjorn
-# Deleted two exploit strings, submitted by Gilles Detilllieux, and
-# corrected typo, submitted by Eric Oberlander.
-#
-# Revision 1.28  2005/06/14 05:16:17  bjorn
-# Patch for handling /\G.../gc construct in perl 5.6
-#
-# Revision 1.27  2005/06/06 18:38:41  bjorn
-# Deleted reference to phpmyadmin
-#
-# Revision 1.26  2005/06/01 17:39:49  bjorn
-# Using new $LogFormat variable.  $HTTP_FIELDS and $HTTP_FORMAT deprecated.
-#
-# Revision 1.25  2005/05/08 16:52:34  bjorn
-# Allow for extra spaces in request field
-#
-# Revision 1.24  2005/05/02 17:06:25  bjorn
-# Tightened up check for 'passwd' exploit
-#
-# Revision 1.23  2005/04/28 16:05:22  bjorn
-# Made 'exploits' match case-insensitive, as well
-#
-# Revision 1.22  2005/04/28 15:50:36  bjorn
-# Added file types, made case-insensitive, from Markus Lude
-#
-# Revision 1.21  2005/04/25 16:37:46  bjorn
-# Commented out 'use diagnostics' for release
-#
-# Revision 1.20  2005/04/23 14:39:05  bjorn
-# Support for .html.language-extension and sqwebmaili, from Willi Mann.
-#
-# Revision 1.19  2005/04/22 13:46:02  bjorn
-# Adds filetype extensions, per Paweł Gołaszewski
-#
-# Revision 1.18  2005/04/17 19:12:14  bjorn
-# Changes to needs_exam to deal with error codes, and many print format changes
-#
-# Revision 1.17  2005/02/24 22:51:45  kirk
-# added "/.".
-# removed the duplicate '\/' from the ends of some lines.
-# added "/mailman/.*".
-# added "/announce", "/scrape", and the extension "torrent".
-# added vl2 to the archive extensions. (It's a zip file for a game.)
-#
-# Revision 1.16  2005/02/24 17:08:04  kirk
-# Applying consolidated patches from Mike Tremaine
-#
-# Revision 1.8  2005/02/21 19:09:52  mgt
-# Bump to 5.2.8 removed some cvs logs -mgt
-#
-# Revision 1.7  2005/02/16 00:43:28  mgt
-# Added #vi tag to everything, updated ignore.conf with comments, added emerge and netopia to the tree from Laurent -mgt
-#
-# Revision 1.6  2005/02/13 23:50:42  mgt
-# Tons of patches from Pawel and PLD Linux folks...Thanks! -mgt
-#
-# Revision 1.5  2004/10/11 18:37:15  mgt
-# patches from Pawel -mgt
-#
-# Revision 1.4  2004/07/29 19:33:29  mgt
-# Chmod and removed perl call -mgt
-#
-# Revision 1.3  2004/07/10 01:54:34  mgt
-# sync with kirk -mgt
-#
-##########################################################################
 
 #####################################################
 # Copyright (c) 2008 Michael Romeo <michaelromeo@mromeo.com>
@@ -134,6 +32,7 @@ use Logwatch ':sort';
 my $detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $ignoreURLs = $ENV{'http_ignore_urls'};
 my $ignoreIPs = $ENV{'http_ignore_ips'};
+my $ignoreEval = $ENV{'http_ignore_eval'};
 my $ignore_error_hacks = $ENV{'http_ignore_error_hacks'} || 0;
 my $user_display = $ENV{'http_user_display'};
 my $logformat = "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"|%h %l %u %t \"%r\" %>s %b|%t %h %{SSL_PROTOCOL}x %{SSL_CIPHER}x \"%r\" %b";
@@ -584,9 +483,7 @@ while (my $line = <STDIN>) {
       $other_count += 1;
       $other_bytes += $field{bytes_transfered};
    }
-   if ( ($field{http_rc} >= 400) &&
-         !((defined $ignoreURLs) && ($field{url} =~ /$ignoreURLs/)) &&
-         !((defined $ignoreIPs) && ($field{client_ip} =~ /$ignoreIPs/)) ) {
+   if ( ($field{http_rc} >= 400) && !shouldIgnore("needs_exam") ) {
       my $fmt_url = $field{url};
       if (length($field{url}) > 60) {
          $fmt_url = substr($field{url},0,42) . " ... " .
@@ -595,9 +492,7 @@ while (my $line = <STDIN>) {
       $needs_exam{$field{http_rc}}{$fmt_url}++;
    }
    if (defined $field{userid} && $field{userid} ne "-" &&
-         (eval $user_display) &&
-         !((defined $ignoreURLs) && ($field{url} =~ /$ignoreURLs/)) &&
-         !((defined $ignoreIPs) && ($field{client_ip} =~ /$ignoreIPs/)) ) {
+         (eval $user_display) && !shouldIgnore("users_logged") ) {
        $users_logged{$field{userid}}{$field{client_ip}}++;
    }
 
@@ -801,6 +696,16 @@ if ($notparsed) {
 }
 
 exit (0);
+
+sub shouldIgnore {
+   my($context)=@_;
+
+   if( ((defined $ignoreURLs) && ($field{url} =~ /$ignoreURLs/)) ||
+       ((defined $ignoreIPs) && ($field{client_ip} =~ /$ignoreIPs/)) ) {
+      return 1;
+   }
+   return (eval $ignoreEval);
+}
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
 # Local Variables:
