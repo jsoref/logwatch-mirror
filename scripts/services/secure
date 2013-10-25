@@ -438,11 +438,11 @@ while (defined($ThisLine = <STDIN>)) {
       $GroupChanged{"$ThisLine"}++;
    } elsif ( $ThisLine =~ s/^groupmod\[\d+\]: group changed in \/etc\/group \(group (.+)\/\d+, new name: (.+)\).*/$1 -> $2/) {
       $GroupChanged{"$ThisLine"}++;
-   } elsif ( ($User,$Home,$NewHome) = ($ThisLine =~ /^usermod\[\d+\]: change user `(.*)' home from `(.*)' to `(.*)'/)) {
+   } elsif ( ($Pid,$User,$Home,$NewHome) = ($ThisLine =~ /^usermod(\[\d+\])?: change user [`'](.*)' home from [`'](.*)' to [`'](.*)'/)) {
       $HomeChange{$User}{"$Home -> $NewHome"}++;
-   } elsif ( ($User,$From,$To) = ($ThisLine =~ /^usermod\[\d+\]:change user `(.*)' UID from `(.*)' to `(.*)'/)) {
+   } elsif ( ($User,$From,$To) = ($ThisLine =~ /^usermod(\[\d+\])?:change user `(.*)' UID from `(.*)' to `(.*)'/)) {
       $UidChange{"$User: $From -> $To"}++;
-   } elsif ( ($User,$From,$To) = ($ThisLine =~ /^usermod\[\d+\]: change user `(.*)' GID from `(.*)' to `(.*)'/)) {
+   } elsif ( ($User,$From,$To) = ($ThisLine =~ /^usermod(\[\d+\])?: change user `(.*)' GID from `(.*)' to `(.*)'/)) {
       $GidChange{"$User: $From -> $To"}++;
    # checkpassword-pam
    } elsif ( ($PID) = ($ThisLine =~ /^checkpassword-pam\[(\d+)\]: Reading username and password/)) {
@@ -496,8 +496,9 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Client,$User) = ($ThisLine =~ /vmware-authd\[\d+\]: login from ([0-9\.]+) as ([^ ]+)/) ) {
       $UserLogin{$User}++;
    } elsif ( ($User) = ($ThisLine =~ /vmware-authd\[\d+\]: pam_unix_auth\(vmware-authd:auth\): authentication failure; logname= uid=0 euid=0 tty= ruser= rhost=  user=([^ ]*)/) ) {
-   } elsif ( ($User) = ($ThisLine =~ /useradd.*failed adding user [`'](.*)', data deleted/) ) {# failed adding user/)) {# (.*), data deleted/)) {
+   } elsif ( ($User) = ($ThisLine =~ /useradd.*failed adding user [`'](.*)',/) ) {
       # useradd: failed adding user `rpcuser', data deleted
+      # useradd: failed adding user `mysql', exit code: 9
       $FailedAddUsers{$User}++;
    } elsif (($User,$Reason) = ($ThisLine =~ /dovecot-auth: pam_userdb\(dovecot:auth\): user `(.*)' denied access \((.*)\)/)) {
       # dovecot-auth: pam_userdb(dovecot:auth): user `bobok' denied access (incorrect password)
