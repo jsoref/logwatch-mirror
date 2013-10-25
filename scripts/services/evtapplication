@@ -49,7 +49,7 @@ while (defined($ThisLine = <STDIN>)) {
       print STDERR "Cannot parse $ThisLine";
       next;
    }
-   next if $EventLogType eq "Information";
+   next if $EventLogType eq "Information" and $ExpandedString !~ "BlueScreen";
 
    #print STDERR "ExpandedString = $ExpandedString\n";
    if ($Application =~ /Userenv/) {

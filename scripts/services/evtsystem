@@ -50,55 +50,156 @@ while (defined($ThisLine = <STDIN>)) {
    }
    #print STDERR "ExpandedString = $ExpandedString\n";
 
-   if ($System =~ /Application Popup/) {
+   if ($System eq "Application Popup") {
       #Ignore these
       next if $ExpandedString =~ /Initialization Failed : The application failed to initialize because the window station is shutting down/;
+      next if $ExpandedString =~ /^Application popup: Windows : Other people are logged on to this computer. Shutting down Windows might cause them to lose data\.    Do you want to continue shutting down\?$/;
+      next if $ExpandedString =~ /^Application popup: Message from .*: Automatic software deployment is currently updating your system\. Please save all your documents as the the system might reboot without further notice\. Thank you\./;
+      next if $ExpandedString =~ /^Application popup: Message from .*: The automated software installation utility has completed installing or updating software on your system\. No reboot was necessary\. All updates are complete\./;
    }
 
-   if ($System =~ /EventLog/) {
+   if ($System eq "BTHUSB") {
+      next if $ExpandedString =~ /^Windows cannot store Bluetooth authentication codes \(link keys\) on the local adapter\. Bluetooth keyboards might not work in the system BIOS during startup\.$/ and $Detail < 5;
+   }
+
+   if ($System =~ "EventLog") {
       #Ignore these
       next if $ExpandedString =~ /Microsoft \(R\) Windows \(R\) \d+\.\d+\. \d+ Service Pack \d/;
-      next if $ExpandedString =~ /The Event log service was started./;
-      next if $ExpandedString =~ /The Event log service was stopped./;
-      next if $ExpandedString =~ /The system uptime is \d+ seconds/;
+      next if $ExpandedString =~ /^The Event log service was started./;
+      next if $ExpandedString =~ /^The Event log service was stopped./;
+      next if $ExpandedString =~ /^The system uptime is \d+ seconds/;
    }
 
-   if ($System =~ /Microsoft-Windows-Kernel-Power/) {
+   if ($System =~ "LsaSrv") {
+      #Ignore these
+      next if $ExpandedString =~ /^A logon cache entry for user .* was the oldest entry and was removed\. The timestamp of this entry was/;
+   }
+
+   if ($System eq "Microsoft-Windows-Application-Experience") {
+      #Ignore these
+      next if $ExpandedString eq "The Program Compatibility Assistant service successfully performed phase two initialization.";
+   }
+
+   if ($System eq "Microsoft-Windows-FilterManager") {
+      #Ignore these
+      next if $ExpandedString =~ /^File System Filter .* has successfully loaded and registered with Filter Manager\.$/;
+   }
+
+   if ($System eq "Microsoft-Windows-Kernel-General") {
       #High Detail
-      next if $ExpandedString =~ /The system is entering sleep/ and $Detail < 10;
+      next if $ExpandedString =~ /^The operating system started at system time/ and $Detail < 10;
+      next if $ExpandedString =~ /^The operating system is shutting down at system time/ and $Detail < 10;
+      #TODO - We should warn is this is big
+      next if $ExpandedString =~ /^The system time has changed to .* from/;
    }
 
-   if ($System =~ /Microsoft-Windows-Power-Troubleshooter/) {
+   if ($System eq "Microsoft-Windows-Kernel-Power") {
       #High Detail
-      next if $ExpandedString =~ /The system has resumed from sleep/ and $Detail < 10;
+      next if $ExpandedString =~ /^The system is entering sleep/ and $Detail < 10;
+      next if $ExpandedString =~ /^The kernel power manager has initiated a shutdown transition\.$/ and $Detail < 10;
+
+      #Ignore these
+      next if $ExpandedString =~ /^ACPI thermal zone .* has been enumerated/;
    }
 
-   if ($System =~ /Microsoft-Windows-Time-Service/) {
+   if ($System eq "Microsoft-Windows-Kernel-Processor-Power") {
+      #Ignore these
+      next if $ExpandedString =~ /^Processor \d+ in group \d+ exposes the following:/;
+   }
+
+   if ($System eq "Microsoft-Windows-GroupPolicy") {
+      #Ignore these
+      next if $ExpandedString =~ /^Group Policy settings for the computer were processed successfully\. There were no changes detected since the last successful processing of Group Policy\.$/;
+   }
+
+   if ($System eq "Microsoft-Windows-Power-Troubleshooter") {
       #High Detail
-      next if $ExpandedString =~ /The time provider NtpClient is currently receiving valid time data from/ and $Detail < 10;
+      next if $ExpandedString =~ /^The system has resumed from sleep/ and $Detail < 10;
    }
 
-   if ($System =~ /Microsoft-Windows-Winlogon/) {
+   if ($System eq "Microsoft-Windows-Time-Service") {
+      #High Detail
+      next if $ExpandedString =~ /^The time provider NtpClient is currently receiving valid time data from/ and $Detail < 10;
+      next if $ExpandedString =~ /^The time service is now synchronizing the system time with the time source/ and $Detail < 10;
+   }
+
+   if ($System eq "Microsoft-Windows-WindowsUpdateClient" or
+       $System eq "Windows Update Agent") {
+      #High Detail
+      next if $ExpandedString =~ /^Automatic Updates is now paused\.$/ and $Detail < 10;
+      
+      #Updates
+      if (($InstallDateTime, $Updates) = $ExpandedString =~ /^Installation Ready: The following updates are downloaded and ready for installation. This computer is currently scheduled to install these updates on (.*):  - (.*)$/) {
+          $UpdatesReadyForInstall{$Hostname}->{$InstallDateTime} = $Updates;
+          next;
+      }
+      if (($Update) = $ExpandedString =~ /^Installation Successful: Windows successfully installed the following update: (.*)$/) {
+          push(@{$UpdatesInstalled{$Hostname}},$Update);
+          next;
+      }
+      if ($ExpandedString =~ /^Restart Required:/) {
+          $RestartRequired{$Hostname} = 1;
+          next;
+      }
+   }
+
+   if ($System eq "Microsoft-Windows-Winlogon") {
       #High Detail
       next if $ExpandedString =~ /User \w+ Notification for Customer Experience Improvement Program/ and $Detail < 10;
    }
 
-   if ($System =~ /Virtual Disk Service/) {
+   if ($System eq "Service Control Manager") {
+      #Ignore these
+      next if $ExpandedString =~ /^The (.*) service entered the running state\./;
+      next if $ExpandedString =~ /^The (.*) service entered the stopped state\./;
+      next if $ExpandedString =~ /^The (.*) service was successfully sent a start control\./;
+      next if $ExpandedString =~ /^The (.*) service was successfully sent a stop control\./;
+   }
+
+   if ($System eq "USER32") {
+      #High Detail
+      next if $ExpandedString =~ /^The process .* has initiated the power off of computer \w+ on behalf of user .* for the following reason: .*$/ and $Detail < 10;
+   }
+
+   if ($System eq "Virtual Disk Service") {
       #High Detail
       next if $ExpandedString =~ /Service (started|stopped)/ and $Detail < 10;
    }
 
-   if ($System =~ /Service Control Manager/) {
+   if ($System eq "atikmdag") {
       #Ignore these
-      next if $ExpandedString =~ /The (.*) service entered the running state./;
-      next if $ExpandedString =~ /The (.*) service entered the stopped state./;
-      next if $ExpandedString =~ /The (.*) service was successfully sent a start control./;
-      next if $ExpandedString =~ /The (.*) service was successfully sent a stop control./;
+      next if $ExpandedString =~ /^UVD Information$/;
+      #High Detail
+      next if $ExpandedString =~ /^Display is not active$/ and $Detail < 10;
    }
+
+   if ($System eq "volsnap") {
+      #Med Detail
+      next if $ExpandedString =~ /^The oldest shadow copy of volume .* was deleted to keep disk space usage for shadow copies of volume .* below the user defined limit\.$/ and $Detail < 5;
+   }
+
+   next if $ExpandedString =~ /client service is started$/ and $Detail < 10;
+   next if $ExpandedString =~ /started successfully\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /has successfully (started|stopped)\./ and $Detail < 10;
+   next if $ExpandedString =~ /^Service .* (started|stopped)\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /Driver initialized successfully\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /Network controller configured for .* link\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /^The driver package installation has succeeded\.$/ and $Detail < 10;
 
    # Add to the list
    $Systems{$System}->{"$Hostname $ExpandedString"}++;
 }
+
+# Handle high priority errors first
+$System = "Microsoft-Windows-WER-SystemErrorReporting";
+if (defined($Systems{$System})) {
+   print "\nSYSTEM ERRORS!:\n";
+   foreach $Error (sort(keys %{$Systems{$System}})) {
+      print "    $Error : $Systems{$System}->{$Error} Times\n";
+   }
+   delete($Systems{$System});
+}
+print "\n";
 
 if (keys %Systems) {
    foreach $System (sort(keys %Systems)) {
@@ -107,6 +208,27 @@ if (keys %Systems) {
          print "    $Error : $Systems{$System}->{$Error} Times\n";
       }
    }
+}
+
+if (keys %UpdatesReadyForInstall or keys %UpdatesInstalled) {
+   print "\nWindows Update Summary:\n";
+   foreach $Hostname (sort(keys %UpdatesReadyForInstall)) {
+      foreach $InstallDateTime (sort(keys %{$UpdatesReadyForInstall{$Hostname}})) {
+         print "    Updates ready for install on $Hostname on $InstallDateTime:\n"; 
+         print "        $UpdatesReadyForInstall{$Hostname}->{$InstallDateTime}\n";
+      }
+   }
+   foreach $Hostname (sort(keys %UpdatesInstalled)) {
+      print "    Updates successfully installed on $Hostname:\n";
+      foreach $Update (@{$UpdatesInstalled{$Hostname}}) {
+          print "        $Update\n";
+      }
+   }
+   print "    Restart required on hosts: " if keys %RestartRequired;
+   foreach $Hostname (sort(keys %RestartRequired)) {
+      print "$Hostname ";
+   }
+   print "\n";
 }
 
 exit(0);
