@@ -46,7 +46,7 @@ if (length($ARGV[0])) {      #put in or override the host id
 my $line;
 while (defined($line = <STDIN>)) {
    if ($hostname) {
-      if ($line =~ m/^... .. ..:..:.. $hostname\b/io) {
+      if ($line =~ m/^... .. ..:..:.. $hostname\s/io) {
          print $line;
       }
    } else {
