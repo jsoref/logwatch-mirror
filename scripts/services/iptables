@@ -142,7 +142,7 @@ while (defined($ThisLine = <STDIN>)) {
       $ipt2{$actionType}{$if}{$toport}{$proto}{$fromip}{$toip}{"$chain,$if"}++;
    }
    # IPTABLES
-   elsif (($chain,$ifin,$ifout,$fromip,$toip,$proto,$rest) = ($ThisLine =~ /^(.*?)\s*IN=([\w\.]*).*?OUT=([\w\.]*).*?SRC=([\w\.:]+).*?DST=([\w\.:]+).*?PROTO=(\w+)(.*)/ )) {
+   elsif (($chain,$ifin,$ifout,$fromip,$toip,$proto,$rest) = ($ThisLine =~ /^(.*?)\s*IN=([\w\.\-]*).*?OUT=([\w\.\-]*).*?SRC=([\w\.:]+).*?DST=([\w\.:]+).*?PROTO=(\w+)(.*)/ )) {
 
       # get a destination port number  (or icmp type) if there is one
       if (! ( ($toport) = ( $rest =~ /TYPE=(\w+)/ ) ) ) {
