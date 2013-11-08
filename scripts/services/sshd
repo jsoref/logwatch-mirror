@@ -278,6 +278,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^nss_ldap: reconnect/) or
        ($ThisLine =~ m/^pam_ldap: error trying to bind as user "[^"]+" \(Invalid credentials\)/) or
        ($ThisLine =~ m/^pam_ldap: ldap_starttls_s: Can't contact LDAP server/) or
+       ($ThisLine =~ m/^pam_sss\(sshd:.*\)/) or
        ($ThisLine =~ m/^\(pam_unix\) .*/) or
        ($ThisLine =~ m/^pam_unix\(.*:.*\)/) or
        ($ThisLine =~ m/^pam_unix_auth:/) or
