@@ -27,20 +27,14 @@
 #Output sensors stats
 
 my $pathto_sensors = $ENV{'pathto_sensors'} || '/usr/bin/sensors';
-my $query_hddtemp  = $ENV{'query_hddtemp'}  || '/usr/bin/nc 127.0.0.1 7634';
 my $get_kvm_status = $ENV{'get_kvm_status'} || 'cat /proc/cpuinfo | grep -c "QEMU Virtual CPU"';
 
-my $sensors = qx($pathto_sensors);
-my $hdd     = qx($query_hddtemp);
 my $kvm     = qx($get_kvm_status);
 
-if ($kvm == 0) {
+if ($kvm == 0 and (($ENV{PRINTING} eq 'y') or $Detail)) {
+   my $sensors = qx($pathto_sensors);
    if ($sensors) {
       print $sensors;
-   }
-   if ($hdd) {
-      print $hdd;
-      print "\n";
    }
 }
 
