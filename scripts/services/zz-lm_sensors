@@ -27,7 +27,7 @@
 #Output sensors stats
 
 my $pathto_sensors = $ENV{'pathto_sensors'} || '/usr/bin/sensors';
-my $get_kvm_status = $ENV{'get_kvm_status'} || 'cat /proc/cpuinfo | grep -c "QEMU Virtual CPU"';
+my $get_kvm_status = $ENV{'get_kvm_status'} || 'grep -c "QEMU Virtual CPU" /proc/cpuinfo';
 
 my $kvm     = qx($get_kvm_status);
 
