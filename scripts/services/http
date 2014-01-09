@@ -411,7 +411,7 @@ while (my $line = <STDIN>) {
             $hacks{$field{client_ip}}{$exploits[$i]}++;
             $total_hack_count += 1;
             $ban_ip{$field{client_ip}} = " ";
-            if ($field{http_rc} < 400) {
+            if ($field{http_rc} < 300) {
                $hack_success{$field{url}} = $field{http_rc};
             }
          }
