@@ -62,6 +62,10 @@ while(<>) {
 	$time = timelocal($6, $5, $4, $3, $2-1, $1);
     }
 
+   # Count lines with increasing number as one:
+   #  [Warning] Aborted connection 107194 to db: ...
+   $line =~ s/(Aborted connection) \d+ (to db)/$1 $2/;
+
     foreach my $cur_cat (@message_categories) {
 	if($line =~ /$cur_cat->[1]/) {
 	    my $msgs = $cur_cat->[2];
