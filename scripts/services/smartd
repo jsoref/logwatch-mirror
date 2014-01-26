@@ -54,7 +54,7 @@ my $StartupFailed = 0;
 my %NotInDatabase = ();
 my %CantMonitor = ();
 my $UnableToMonitor = 0;
-my %SelfTest = ();
+my %DriveTest = ();
 my %Failed = ();
 my %OtherList = ();
 my $DLine = 0;
@@ -162,8 +162,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( my ($Device, $Num) = ($ThisLine =~ /^Device: ([^,]+), (\d+) Offline uncorrectable sectors/) ) {
       $Offsectors{$Device}++;
       $NumOffsectors{$Device} = $Num;
-   } elsif ( my ($Device,$TestType) = ($ThisLine =~ /^Device: ([^,]+), starting scheduled (Short|Long) Self-Test/) ) {
-      $SelfTest{$Device}{$TestType}++;
+   } elsif ( my ($Device,$TestType) = ($ThisLine =~ /^Device: ([^,]+), starting scheduled ((?:Short|Long|Conveyance|Selective) Self-|Offline Immediate )Test/) ) {
+      $DriveTest{$Device}{$TestType}++;
    } elsif ( my ($Device,$AttribType,$Code,$Name) = ($ThisLine =~ /^Device: ([^,]+), Failed SMART ([A-Za-z]+) Attribute: ([0-9]+) ([A-Za-z_]+)/)) {
       $Failed{$Device}{"$AttribType attribute: $Name ($Code)"}++;
    } elsif ( my ($Device, $Text) = ($ThisLine =~ /^Device: ([^,]+), failed (.*)$/) ) {
@@ -313,11 +313,11 @@ if (keys %Failed) {
    }
 }
 
-if (keys %SelfTest) {
-   foreach my $Device (sort keys %SelfTest) {
+if (keys %DriveTest) {
+   foreach my $Device (sort keys %DriveTest) {
       print "\n$Device :\n";
-      foreach my $Type (sort keys %{$SelfTest{$Device}}) {
-         print "   started scheduled $Type self-test " . $SelfTest{$Device}{$Type} . " Time(s)\n";
+      foreach my $Type (sort keys %{$DriveTest{$Device}}) {
+         print "   started scheduled ${Type}Test " . $DriveTest{$Device}{$Type} . " Time(s)\n";
       }
    }
 }
