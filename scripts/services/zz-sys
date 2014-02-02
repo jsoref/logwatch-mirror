@@ -60,9 +60,11 @@ if ($@) {
    print STDERR "No Sys::MemInfo module installed.  To install, execute the command:\n";
    print STDERR "   perl -MCPAN -e 'install Sys::MemInfo' \n\n";
 } else {
-   import Sys::MemInfo qw(totalmem freemem);
+   import Sys::MemInfo qw(totalmem freemem totalswap freeswap);
+   my $swapused = &totalswap - &freeswap;
    printf "   Total Memory:  %6d MB\n", ((&totalmem - (&totalmem % (1024*1024))) / (1024*1024));
-   printf "   Free Memory:   %6d MB\n", ((&freemem - (&freemem % (1024*1024))) / (1024*1024)); 
+   printf "   Free Memory:   %6d MB\n", ((&freemem - (&freemem % (1024*1024))) / (1024*1024));
+   printf "   Swap Used:     %6d MB\n", (($swapused - ($swapused % (1024*1024))) / (1024*1024));
 }
 
 # vi: shiftwidth=3 tabstop=3 syntax=perl et
