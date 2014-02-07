@@ -231,7 +231,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /^su\[\d+\]: [+-] .+/) or
       ( $ThisLine =~ /^su\[\d+\]: FAILED su for \S+ by \S+/) or #debian: done in pam_unix
       ( $ThisLine =~ /^login\[\d+\]: ROOT LOGIN  on '\S+'/) or #debian: done in pam_unix (Similar message on other system is reported)
-      ( $ThisLine =~ /^login\[\d+\]: FAILED LOGIN \(\d+\) on ['`]\S+' FOR `\S+', (Authentication failure|User not known to the underlying authentication module)/) or #debian: done in pam_unix
+      ( $ThisLine =~ /^login(?:\[\d+\])?: FAILED LOGIN \(\d+\) on ['`]\S+' FOR `\S+', (Authentication failure|User not known to the underlying authentication module)/) or #debian: done in pam_unix
       ( $ThisLine =~ /^login: FAILED LOGIN 2 FROM (.*) FOR .*, (Authentication failure|User not known to the underlying authentication module)/) or
       ( $ThisLine =~ /^login: pam_securetty(.*): unexpected response from failed conversation function/) or
       ( $ThisLine =~ /^login: pam_securetty(.*): access denied: tty '.*' is not secure/) or
@@ -389,23 +389,23 @@ while (defined($ThisLine = <STDIN>)) {
       $UserLogin{$User}++;
    } elsif ( ($User,undef) = ($ThisLine =~ /^com.apple.SecurityServer: authinternal authenticated user ([^ ]+) .*/ )) {
       $UserLogin{$User}++;
-   } elsif ( $ThisLine =~ s/^userdel\[\d+\]: delete user ['`](.+)'/$1/ ) {
+   } elsif ( $ThisLine =~ s/^userdel(?:\[\d+\])?: delete user [`'](.+)'/$1/ ) {
       $DeletedUsers .= "   $ThisLine\n";
-   } elsif ( $ThisLine =~ s/^(?:useradd|adduser)\[\d+\]: new user: name=(.+), (?:uid|UID)=(\d+).*$/$1 ($2)/ ) {
+   } elsif ( $ThisLine =~ s/^(?:useradd|adduser)(?:\[\d+\])?: new user: name=(.+), (?:uid|UID)=(\d+).*$/$1 ($2)/ ) {
       $NewUsers .= "   $ThisLine\n";
    } elsif ( $ThisLine =~ s/^userdel(?:\[\d+\])?: remove(?:d)? group [`'](\S+)'( owned by \S+)?/$1/ ) {
       $DeletedGroups .= "   $ThisLine\n";
-   } elsif ( $ThisLine =~ s/^groupdel\[\d+\]: remove group `(.+)'/$1/ ) {
+   } elsif ( $ThisLine =~ s/^groupdel(?:\[\d+\])?: remove group `(.+)'/$1/ ) {
       $DeletedGroups .= "   $ThisLine\n";
-   } elsif ( $ThisLine =~ s/^(?:useradd|adduser)\[\d+\]: new group: name=(.+), (?:gid|GID)=(\d+).*$/$1 ($2)/ ) {
+   } elsif ( $ThisLine =~ s/^(?:useradd|adduser)(?:\[\d+\])?: new group: name=(.+), (?:gid|GID)=(\d+).*$/$1 ($2)/ ) {
       $NewGroups .= "   $ThisLine\n";
-   } elsif ( (undef,$User,,undef,$Group) = ($ThisLine =~ /(usermod|useradd)\[\d+\]: add [`']([^ ]+)' to (shadow|)group [`']([^ ]+)'/ )) {
+   } elsif ( (undef,$User,,undef,$Group) = ($ThisLine =~ /(usermod|useradd)(?:\[\d+\])?: add [`']([^ ]+)' to (shadow ?|)group [`']([^ ]+)'/ )) {
       $AddToGroup{$Group}{$User}++;
-   } elsif ( $ThisLine =~ s/^groupadd\[\d+\]: new group: name=(.+), (?:gid|GID)=(\d+).*$/$1 ($2)/ ) {
+   } elsif ( $ThisLine =~ s/^groupadd(?:\[\d+\])?: new group: name=(.+), (?:gid|GID)=(\d+).*$/$1 ($2)/ ) {
       $NewGroups .= "   $ThisLine\n";
-   } elsif ( $ThisLine =~ s/^gpasswd\[\d+\]: set members of // ) {
+   } elsif ( $ThisLine =~ s/^gpasswd(?:\[\d+\])?: set members of // ) {
       $SetGroupMembers .= "   $ThisLine\n";
-   } elsif ( $ThisLine =~ /^(?:userdel|usermod)\[\d+\]: delete [`'](.*)' from (shadow |)group [`'](.*)'\s*$/ ) {
+   } elsif ( $ThisLine =~ /^(?:userdel|usermod)(?:\[\d+\])?: delete [`'](.*)' from (shadow |)group [`'](.*)'\s*$/ ) {
       push @RemoveFromGroup, "    user $1 from group $3\n";
       # This is an inetd lookup... $1 is the service (i.e. ftp), $2 is the response
       # I don't think these are important to log at this time
