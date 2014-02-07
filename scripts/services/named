@@ -196,7 +196,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Malformed response from/) or
       ($ThisLine =~ /client .* response from Internet for .*/) or
       ($ThisLine =~ /client .+ query \(cache\) '.*' denied/) or
-      ($ThisLine =~ /client .+#\d+: query:/) or
+      ($ThisLine =~ /client .+(?: \([^)]+\))?: query:/) or
       # Do we really want to ignore these?
       #($ThisLine =~ /unknown logging category/) or
       ($ThisLine =~ /could not open entropy source/) or
