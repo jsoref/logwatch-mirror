@@ -116,8 +116,12 @@ while (defined($ThisLine = <STDIN>)) {
 
    #TD syslog-ng[4833]: Syslog connection closed; fd='45', client='AF_INET(192.168.1.1:40280)', local='AF_INET(192.168.1.10:625)'
    #TD syslog-ng[4833]: Syslog connection accepted; fd='52', client='AF_INET(192.168.1.1:40280)', local='AF_INET(192.168.1.10:625)'
-   elsif ($ThisLine =~ /^Syslog connection (\S+); fd='\d+', client='AF_INET\(([.\d]+):\d+\)', local='AF_INET\(([.\d]+:\d+)\)'$/) {
-      $Connections{$1}{$3}{$2}++;
+   # syslog-ng v3.X
+   #TD Syslog connection broken; fd='63', server='AF_INET(192.169.1.1:514)', time_reopen='60' : 44 Time(s)
+   #TD Syslog connection established; fd='48', server='AF_INET(192.168.1.1:514)', local='AF_INET(0.0.0.0:0)' 
+   elsif ($ThisLine =~ /^Syslog connection (\S+); fd='\d+', (server|client)='AF_INET\(([.\d]+):\d+\)', (?:local='AF_INET\(([.\d]+:\d+)\)'|time_reopen='\d+')?$/) {
+      my $loc = defined($4) ? $4 : '0.0.0.0';
+      $Connections{"$1 ($2)"}{$loc}{$3}++;
    }
 
    #TD syslog-ng[4833]: Connection broken to AF_INET(XXX.YYY.ZZZ.AAA:BBB), reopening in 60 seconds
