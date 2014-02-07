@@ -71,6 +71,8 @@ while(defined ($ThisLine = <STDIN>)) {
       $ObjectName{"$3"}{"$2"}++;
    } elsif ($ThisLine =~ /(\w+) Object '([^']+)' (.+)/) {
       $Object{"$3"}{"$2"}++;
+   } elsif ($ThisLine =~ /cuGetBackQryResp: (.*):0,(.*)$/) {
+      $Object{$1}{$2}++;
    } elsif ($ThisLine =~ /(\w+) An interrupt has occurred/) {
       $Interrupted++;
    } elsif ($ThisLine =~ /(\w+) (.+)\.\s+The TSM return code is ([-0-9]+)/) {
@@ -81,6 +83,8 @@ while(defined ($ThisLine = <STDIN>)) {
       $Error{"$2"}{$4}++;
    } elsif ($ThisLine =~ /(\w+) Could not establish a TCP\/IP connection with address '([^']+)'\. The TCP\/IP error is '([^']+)'/) {
       $NoConnection{"$2"}{$3}++;
+   } elsif ($ThisLine =~ /(\w+) (An invalid TCP\/IP address was specified)/) {
+      $Error{"$2"}{$1}++;
    } elsif ($ThisLine =~ /File '(?:[^']+)' (.*)/) {
       $File{"$1"}++;
    }
