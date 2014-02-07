@@ -54,7 +54,8 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /FileBucket adding/) or
       ($ThisLine =~ /^Caching certificate/) or
       ($ThisLine =~ /^Certificate Request fingerprint/) or
-      ($ThisLine =~ /^Creating state file/)
+      ($ThisLine =~ /^Creating state file/) or
+      ($ThisLine =~ /Provider useradd does not support features manages/)
    ) {
       # Ignore
    } elsif (($junk, $failure, $reason) = ($ThisLine =~ /^(\(.*\) |)Could not ([^:]*): (.*)/)) {
@@ -104,6 +105,8 @@ while (defined($ThisLine = <STDIN>)) {
       $ServiceStops{$1}++;
    } elsif ($ThisLine =~ /User\[(.+)\].+changed password/) {
       $PasswordChanged{$1}++;
+   } elsif ($ThisLine =~ /User\[(.+)\].+defined \'expiry\' as \'([0-9-]{10})\'/) {
+      $ExpiryChanged{$1}{$2}++;
 
    # Generic rules need to be last
    } elsif (($type, $name, $attr) = $ThisLine =~ /([^\/]+)\[([^\]]+)\]\/([^\/]+)\) (created|defined content)/) {
@@ -226,6 +229,16 @@ if (keys %PasswordChanged) {
    print "\nPassword changed:\n";
    foreach $ThisOne (keys %PasswordChanged) {
       print "    $ThisOne: $PasswordChanged{$ThisOne} Time(s)\n";
+   }
+}
+
+if (keys %ExpiryChanged) {
+   print "\nExpiry changed:\n";
+   foreach $ThisOne (keys %ExpiryChanged) {
+      print "    $ThisOne:\n";
+      foreach $date (keys %{${ExpiryChanged}{$ThisOne}}) {
+         print "        $date: $ExpiryChanged{$ThisOne}{$date} Time(s)\n";
+      }
    }
 }
 
