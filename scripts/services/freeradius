@@ -31,8 +31,9 @@ my %wrongPassword = ();
 my %wrongUser = ();
 my %wrong_ip = ();
 my %invalidUser = ();
-my %discardRequest = ();
+my %discards = ();
 my %warnings = ();
+my %givingUps = ();
 my $killedChilds = 0;
 
 my $ThisLine;
@@ -49,7 +50,10 @@ while (defined($ThisLine = <STDIN>)) {
         ( $ThisLine =~ /^(?:SSL|TLS|rlm_(?:unix|eap|sql|radutmp)|    TLS_accept|  \[ldap\])/ ) ||
         ( $ThisLine =~ /^Ready to process requests\.$/ ) ||
         ( $ThisLine =~ /^Exiting normally\.$/ ) ||
-        ( $ThisLine =~ /^Loaded virtual server/ ) 
+        ( $ThisLine =~ /^Loaded virtual server/ ) ||
+        ( $ThisLine =~ /^HUP - / ) ||
+        ( $ThisLine =~ /^Received HUP signal\.$/ ) ||
+        ( $ThisLine =~ /^ ?Module: Reloaded module/ ) 
       ) {
       # ignore
    }
@@ -65,8 +69,8 @@ while (defined($ThisLine = <STDIN>)) {
    # TD: Login incorrect (mschap: External script says Logon failure (0xc000006d)): [user@example.com] (from client radius port 13 cli aa-bb-cc-11-22-33 via TLS tunnel)
    # TD: Login incorrect (TLS Alert write:fatal:handshake failure): [user@example.com] (from client radius port 13 cli aa-bb-cc-11-22-33)
    # TD: 
-   elsif ( my ($user, $ip) = ( $ThisLine =~ m/^(?:Auth: )?Login incorrect \(.+\): \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "not named"; }
+   elsif ( my ($user, $ip) = ( $ThisLine =~ m/^(?:Auth: )?Login incorrect(?: \(.+\))?: \[(.*)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+)(?:;\w+)?)?(?: via TLS tunnel)?\)/) ) {
+      if (! $ip) { $ip = "*not named*"; }
       $wrongUser{$ip}{$user}++;
       $wrong_ip{$ip}++;
 
@@ -75,20 +79,28 @@ while (defined($ThisLine = <STDIN>)) {
    # TD: Login incorrect: [user@example.com] (from client radius port 175143 cli cc08.e051.a240)
    # TD: Login incorrect: [user@example.com] (from client radius1 port 0) 
    elsif ( my ($user, $ip) = ($ThisLine =~ m/^(?:Auth: )?Login incorrect: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "not named"; }
+      if (! $ip) { $ip = "*not named*"; }
       $wrongPassword{$ip}{$user}++;
       $wrong_ip{$ip}++;
    }
 
    # TD: Invalid user (  [ldap] Access Attribute denies access): [user@example.com] (from client radius port 13 cli aa-bb-cc-dd-ee-11 via TLS tunnel)
-   elsif ( my ($reason, $user, $ip) = ($ThisLine =~ m/^(?:Auth: )?Invalid user \(\s*(.+)\): \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
-      if (! $ip) { $ip = "not named"; }
+   # TD: Invalid user: [user@example.com] (from client <host> port 13 cli aa-bb-cc-dd-ee-11)
+   elsif ( my ($reason, $user, $ip) = ($ThisLine =~ m/^(?:Auth: )?Invalid user(?: \(\s*(.+)\))?: \[(.+)\] \(from client [^ ]* port \d{1,10}(?: cli ([-0-9a-fA-F.:]+))?(?: via TLS tunnel)?\)/) ) {
+      if (! $ip) { $ip = "*not named*"; }
+      if (! $reason) { $reason = "*no reason*"; }
       $invalidUser{$reason}{$user}++;
    }
 
    # TD: Discarding duplicate request from client <host> port 47609 - ID: 182 due to unfinished request 12713766
-   elsif ( my ($client) = ($ThisLine =~ /Discarding duplicate request from client (\S+) port \d+ - ID: \d+ due to unfinished request/) ) {
-      $discardRequest{$client}++;
+   # TD: Discarding conflicting packet from client <host> port 42221 - ID: 85 due to recent request 9008535.
+   elsif ( my ($reason, $client) = ($ThisLine =~ /Discarding (duplicate request|conflicting packet) from client (\S+) port \d+ - ID: \d+ due to (unfinished|recent) request/) ) {
+      $discards{$reason}{$client}++;
+   }
+
+   # TD: Received conflicting packet from client radius2 port 60612 - ID: 30 due to unfinished request 1136681.  Giving up on old request.
+   elsif ( my ($client) = ($ThisLine =~ /Received conflicting packet from client ([^ ]+) port \d{1,10} - ID: \d+ due to unfinished request \d+/) ) {
+      $givingUps{$client}++;
    }
 
    # TD: Child PID 57436 is taking too much time: forcing failure and killing child.
@@ -99,7 +111,12 @@ while (defined($ThisLine = <STDIN>)) {
    # TD: WARNING: Unresponsive child for request 4737598, in component accounting module unix
    # TD: WARNING: Child is hung for request 4737598 in component accounting module unix.
    elsif ( $ThisLine =~ m/^WARNING: (Unresponsive child|Child is hung) for request \d+,? in component (\w+) module ?(\w*)/ ) {
-      $warnings{$1}{"$2 [module: $3]"}++;
+      $warnings{"$1 in component:"}{"$2 [module: $3]"}++;
+   }
+
+   # TD: WARNING: Allowing fast client radius2 port 60612 - ID: 102 for recent request 9035637.
+   elsif ( $ThisLine =~ m/^WARNING: (Allowing fast client) ([^ ]+) port \d{1,10} - ID: \d+/ ) {
+      $warnings{"${1}s:"}{$2}++;
    }
 
    else {
@@ -208,11 +225,22 @@ if (keys %invalidUser) {
    }
 }
 
-if (keys %discardRequest) {
-   print "\nDuplicate requests discarded from client:\n";
-   foreach my $client (keys %discardRequest) {
-      printf "  %-40s : %5d time(s)\n", $client, $discardRequest{$client};
+if (keys %discards) {
+   print "\nDiscards:\n";
+   foreach my $reason (keys %discards) {
+      my $clients = $discards{$reason};
+      printf "  %-40s\n", $reason;
+      foreach my $client (keys %$clients) {
+         printf "    %-38s : %5d time(s)\n", $client, $clients->{$client};
+      }
    }
+}
+
+if (keys %givingUps) {
+  print "\nGiving up on old requests:\n";
+  foreach my $client (keys %givingUps) {
+     printf "  %-40s : %5d time(s)\n", $client, $givingUps{$client};
+  }
 }
 
 if ($killedChilds) {
@@ -223,7 +251,7 @@ if (%warnings) {
    print "\nWarnings:\n";
    foreach my $warning (keys %warnings) {
       my $components = $warnings{$warning};
-      printf "  %-40s\n", "$warning in component:";
+      printf "  %-40s\n", $warning;
       foreach my $component (keys %$components) {
          printf "    %-38s : %5d time(s)\n", $component, $components->{$component};
       }
