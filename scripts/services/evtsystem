@@ -109,7 +109,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    if ($System eq "Microsoft-Windows-GroupPolicy") {
       #Ignore these
-      next if $ExpandedString =~ /^Group Policy settings for the computer were processed successfully\. There were no changes detected since the last successful processing of Group Policy\.$/;
+      next if $ExpandedString =~ /^The Group Policy settings for the computer were processed successfully\. There were no changes detected since the last successful processing of Group Policy\.$/;
    }
 
    if ($System eq "Microsoft-Windows-Power-Troubleshooter") {
