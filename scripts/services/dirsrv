@@ -1,0 +1,119 @@
+########################################################
+## Copyright (c) 2014 Orion Poplawski
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %Errors;
+my %Warnings;
+my %Startup;
+my $Stop;
+my %BackupStarted;
+my $BackupCompleted;
+my %BackupFile;
+my %Export;
+my %OtherList;
+my $PreviousLine = '';
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   
+   if ($ThisLine =~ /^Listening for new connections again$/
+       or $ThisLine =~ /Listening on .* port/
+       or $ThisLine =~ /^Waiting for \d+ database threads to stop/
+       or $ThisLine =~ /^slapd shutting down - /
+      ) {
+      #Ignore
+   } elsif ($ThisLine =~ /error/i
+       or $ThisLine =~ /^Detected Disorderly Shutdown/) {
+      $Errors{$ThisLine}++;
+   } elsif ($ThisLine =~ /^Not listening for new connections/) {
+      $Warnings{$ThisLine}++;
+   } elsif ($ThisLine =~ /^(.*) starting up$/) {
+      $Startup{$1}++;
+   } elsif ($ThisLine =~ /^slapd stopped\.$/) {
+      $Stop++;
+   } elsif ($ThisLine =~ /^Beginning backup of '(.*)'$/) {
+      $BackupStarted{$1}++;
+   } elsif ($ThisLine =~ /^Backup finished\.$/) {
+      $BackupCompleted++;
+   } elsif ($ThisLine =~ /^Backing up file \d+ \((.*)\)$/) {
+      $BackupFile{$1}++;
+   } elsif ($ThisLine =~ /^export (\w+: Processed \d+ entries \(\d+%\)\.)$/) {
+      $Export{$1}++;
+   } elsif ($ThisLine =~ /^All database threads now stopped$/) {
+      #This line follows the previous normally in backups
+      $OtherList{$ThisLine}++ unless $PreviousLine =~ /^(export \w+: Processed \d+ entries|Waiting for \d+ database threads to stop|Backing up file)/;
+   } else {
+      $OtherList{$ThisLine}++;
+   }
+   $PreviousLine = $ThisLine;
+}
+
+if (keys %Errors) {
+   print "\n** ERRORS **\n";
+   foreach my $line (sort {$a cmp $b} keys %Errors) {
+      print "   $line: $Errors{$line} Time(s)\n";
+   }
+}
+
+if (keys %Warnings) {
+   print "\n** Warnings:\n";
+   foreach my $line (sort {$a cmp $b} keys %Warnings) {
+      print "   $line: $Warnings{$line} Time(s)\n";
+   }
+}
+
+if (keys %Startup and $Detail >= 5) {
+   foreach my $Version (keys %Startup) {
+      print "\nStart up version $Version: $Startup{$Version} Time(s)\n";
+   }
+}
+
+if ($Stop and $Detail) {
+   print "\nStopped: $Stop Time(s)\n";
+}
+
+if (keys %BackupStarted and $Detail) {
+   foreach my $Database (keys %BackupStarted) {
+      print "\nBackup started for $Database: $BackupStarted{$Database} Time(s)\n";
+   }
+}
+
+if (keys %BackupFile and $Detail >= 7) {
+   print "\nBacked up files:\n";
+   foreach my $File (sort {$a cmp $b} keys %BackupFile) {
+      print "    $File: $BackupFile{$File} Time(s)\n";
+   }
+}
+
+if ($BackupCompleted and $Detail) {
+   print "\nBackup completed: $BackupCompleted Time(s)\n";
+}
+
+if (keys %Export and $Detail) {
+   print "\nExports:\n";
+   foreach my $Line (keys %Export) {
+      print "  $Line $Export{$Line} Time(s)\n";
+   }
+}
+
+if (keys %OtherList) {
+   print "\n**Unmatched Entries**\n";
+   foreach my $line (sort {$a cmp $b} keys %OtherList) {
+      print "   $line: $OtherList{$line} Time(s)\n";
+   }
+}
+
