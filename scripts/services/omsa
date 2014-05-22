@@ -29,6 +29,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    if ($Message =~ /fail|disable|replace/i) {
       $ServiceError{$Service}->{$Message}++;
    } elsif (defined($Service)) {
+      # Skip informational messages if needed
+      next if (($Service == "Storage Service") and ($Message =~ /^The Patrol Read has (started|stopped)/) and ($Detail < 5));
       $ServiceMessage{$Service}->{$Message}++;
    } else {
       $OtherList{$ThisLine}++;
