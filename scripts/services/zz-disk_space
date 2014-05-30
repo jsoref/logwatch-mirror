@@ -171,23 +171,6 @@ sub DiskSpace ()
 	print "\n";
 }
 
-sub LVSpace ()
-{
-	if ( $ENV{'lvs_options'} ) {
-		$lvs_options = $ENV{'lvs_options'};
-	};
-
-	$lvs_cmd = "lvs $lvs_options";
-
-	if ( $ENV{'lvs_cmd'} ) {
-		$lvs_cmd = $ENV{'lvs_cmd'};
-	};
-
-	system($lvs_cmd);
-
-	print "\n";
-}
-
 sub DiskFull {
 	my $o = `$disk_cmd`;
 	my @rows = split('\n', $o);
@@ -206,10 +189,7 @@ sub DiskFull {
 #Main
 
 #Only show disk space "df" by default -mgt
-if (($ENV{PRINTING} eq 'y') or $Detail) {
-	DiskSpace();
-	LVSpace();
-}
+DiskSpace() if (($ENV{PRINTING} eq 'y') or $Detail);
 
 if ( $show_disk_usage == 1 ) { DiskUsage(); }; #Turn on in zz-disk_space.conf
 

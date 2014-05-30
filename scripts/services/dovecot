@@ -181,43 +181,43 @@ while (defined($ThisLine = <STDIN>)) {
       }
 
 # 'lda' for dovecot 2.0, 'deliver' for earlier versions
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^(?:$dovecottag )?(?:lda|deliver)\((.*)\):(?: Info:)? msgid=.*: saved mail to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): msgid=.*: saved mail to (\S+)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # For Sieve-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^(?:$dovecottag )?(?:lda\(|deliver\(|lmtp\(\d+, )(.*)\): (?:[^:]+: )?sieve: msgid=.*: stored mail into mailbox '([^']*)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda\(|deliver\(|lmtp\(\d+, )(.*)\): (?:[^:]+: )?sieve: msgid=.*: stored mail into mailbox '([^']*)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^(?:$dovecottag )?lmtp\(\d+, (.*)\): [^:]+: msgid=.*: saved mail to (\S+)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): [^:]+: msgid=.*: saved mail to (\S+)/ ) ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782, cloyce@headgear.org): jBt1EfjCMk3uMQAAm9eMBA: msgid=<4D32DB1F.3080707@c-dot.co.uk>: saved mail to INBOX
       $Deliver{$User}{$Mailbox}++;
 
 # sieve forward
-    } elsif (($User, $Recip) = ($ThisLine =~ /^(?:$dovecottag )?(?:lda|deliver)\((.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
       $Forwarded{$User}{$Recip}++;
 
 # sieve vacation
-    } elsif (($User, $Recip) = ($ThisLine =~ /^(?:$dovecottag )?(?:lda|deliver)\((.*)\): sieve: msgid=.* sent vacation response to \<(.*)\>/)) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* sent vacation response to \<(.*)\>/)) {
       $VacationResponse{$User}{$Recip}++;
 
-    } elsif (($User, $Recip) = ($ThisLine =~ /^(?:$dovecottag )?(?:lda|deliver)\((.*)\): sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
       $VacationDup{$User}{$Recip}++;
 
-    } elsif ( $ThisLine =~ /^(?:$dovecottag )?(?:lda|deliver)\(.*\): sieve: msgid=.* marked message to be discarded if not explicitly delivered/ ) {
+    } elsif ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\(.*\): sieve: msgid=.* marked message to be discarded if not explicitly delivered/ ) {
     # dovecot: lda(joe): sieve: msgid=<m$01$@com>: marked message to be discarded if not explicitly delivered (discard action)
     # IGNORE
-    } elsif ( $ThisLine =~ /^(?:$dovecottag )?lmtp\(.*\): Connect from/ ) {
+    } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Connect from/ ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782): Connect from local: 1 Time(s)
     # IGNORE
 
-    } elsif ( $ThisLine =~ /^(?:$dovecottag )?lmtp\(.*\): Disconnect from/ ) {
+    } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Disconnect from/ ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782): Disconnect from local: Client quit: 1 Time(s)
     # IGNORE
 
 
 # This is for Dovecot 1.0 series
-    } elsif ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
+    } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag pop3-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Host = hostName($Host);
          $Login{$User}{$Host}++;
@@ -225,7 +225,7 @@ while (defined($ThisLine = <STDIN>)) {
          $ConnectionPOP3{$Host}++;
          $Connection{$Host}++;
       }
-   } elsif ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/) ) {
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag imap-login: Login: user=\<(.*?)\>.*rip=(.*)\, lip=/) ) {
       if ($Host !~ /$IgnoreHost/) {
          $Host = hostName($Host);
          $Login{$User}{$Host}++;
@@ -235,14 +235,14 @@ while (defined($ThisLine = <STDIN>)) {
        }
 
    # Dovecot 2.0 proxy
-   } elsif ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?pop3-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag pop3-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $ProxyLogin{$User}{$Host}++;
          $ProxyLoginPOP3{$User}++;
          $ProxyConnectionPOP3{$Host}++;
          $ProxyConnection{$Host}++;
       }
-   } elsif ( ($User, $Host) = ( $ThisLine =~ /^(?:$dovecottag )?imap-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
+   } elsif ( ($User, $Host) = ( $ThisLine =~ /^$dovecottag imap-login: proxy\((.*)\): started proxying to .*: user=<.*>, method=.*, rip=(.*), lip=/ ) ) {
       if ($Host !~ /$IgnoreHost/) {
          $ProxyLogin{$User}{$Host}++;
          $ProxyLoginIMAP{$User}++;
@@ -306,7 +306,7 @@ while (defined($ThisLine = <STDIN>)) {
    # dovecot: child 23747 (login) returned error 89
    # dovecot: log: Error: service(auth): child 19654 returned error 89 (Fatal failure)
       $ChildErr{$Error}++;
-   } elsif (($Name) = ($ThisLine =~ /(?:$dovecottag )?IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/i)) {
+   } elsif (($Name) = ($ThisLine =~ /$dovecottag IMAP\((.*)\): .*(.*) failed: Disk quota exceeded/i)) {
    # dovecot: IMAP(podracka): mkdir(/home/LF/KLINIKY/podracka/mail/.imap/saved-messages) failed: Disk quota exceeded
       $DiskQuotaExceed{$Name}++;
    } else {
