@@ -52,7 +52,13 @@ while (defined($ThisLine = <STDIN>)) {
       $SuccessAuditUsers{$UserName}++;
    }
    elsif ($EventLogType eq "Failure Audit") {
-      $FailureAudits{"$Hostname $ExpandedString"}++;
+      if (($account,$domain,$reason) = ($ExpandedString =~ /^An account failed to log on\..*Account For Which Logon Failed:.*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Failure Reason:\s+(.+)\s+Status:.*Sub Status:/)) {
+         $FailureAudits{"$Hostname Log On Failure for $domain\\$account: $reason"}++;
+      } elsif (($account,$domain,$process) = ($ExpandedString =~ /^A privileged service was called\..*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Process Name:\s+(.+)\sService/)) {
+         $FailureAudits{"$Hostname Privileged service called for $domain\\$account: $process"}++ if $Detail;
+      } else {
+         $FailureAudits{"$Hostname $ExpandedString"}++;
+      }
    }
    else {
       # Report any unmatched entries...
@@ -70,7 +76,7 @@ if ($SucessAudits and ($Detail >=0) ) {
 
 if (keys %FailureAudits) {
    print "\nFailure Audits\n";
-   foreach $Error (keys %FailureAudits) {
+   foreach $Error (sort keys %FailureAudits) {
       print "    $Error : $FailureAudits{$Error} Times\n";
    }
 }
