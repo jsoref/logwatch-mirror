@@ -109,7 +109,8 @@ while (defined($ThisLine = <STDIN>)) {
 
    if ($System eq "Microsoft-Windows-GroupPolicy") {
       #Ignore these
-      next if $ExpandedString =~ /^The Group Policy settings for the computer were processed successfully\. There were no changes detected since the last successful processing of Group Policy\.$/;
+      next if $ExpandedString =~ /^The Group Policy settings for the (computer|user) were processed successfully\. There were no changes detected since the last successful processing of Group Policy\.$/;
+      next if $ExpandedString =~ /^The Group Policy settings for the (computer|user) were processed successfully\. New settings from \d+ Group Policy objects were detected and applied\.$/ and $Detail == 0;
    }
 
    if ($System eq "Microsoft-Windows-Power-Troubleshooter") {
@@ -185,6 +186,8 @@ while (defined($ThisLine = <STDIN>)) {
    next if $ExpandedString =~ /Driver initialized successfully\.$/ and $Detail < 10;
    next if $ExpandedString =~ /Network controller configured for .* link\.$/ and $Detail < 10;
    next if $ExpandedString =~ /^The driver package installation has succeeded\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /^UVD Information$/;
+   next if $ExpandedString =~ /Link has been established:/;
 
    # Add to the list
    $Systems{$System}->{"$Hostname $ExpandedString"}++;
