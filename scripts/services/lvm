@@ -1,0 +1,88 @@
+########################################################
+## Copyright (c) 2014 Orion Poplawski
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $PoolThreshold = $ENV{'pool_threshold'} || 0;
+my %PoolUsed;
+my $SnapshotThreshold = $ENV{'snapshot_threshold'} || 0;
+my %SnapshotUsed;
+my %MonitoringOn;
+my %MonitoringOff;
+my %OtherList;
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   if ($ThisLine =~ /^Thin (\S+) is now (\d+)% full/) {
+      $PoolUsed{$1} = $2 if $2 >= $PoolThreshold;
+   } elsif ($ThisLine =~ /^Monitoring thin (\S+)\./) {
+      $MonitoringOn{$1}++;
+   } elsif ($ThisLine =~ /^No longer monitoring thin (\S+)\./) {
+      $MonitoringOff{$1}++;
+   } elsif ($ThisLine =~ /^Snapshot (\S+) is now (\d+)% full/) {
+      $SnapshotUsed{$1} = $2 if $2 >= $SnapshotThreshold;
+   } else {
+      $OtherList{$ThisLine}++;
+   }
+}
+
+if (keys %PoolUsed) {
+   print "Thin Pool Usage:\n";
+   foreach my $Pool (sort {$a cmp $b} keys %PoolUsed) {
+      print "    $Pool: $PoolUsed{$Pool}% full\n";
+   }
+   print "\n";
+}
+
+if (keys %SnapshotUsed) {
+   print "Snapshot Usage:\n";
+   foreach my $Snapshot (sort {$a cmp $b} keys %SnapshotUsed) {
+      print "    $Snapshot: $SnapshotUsed{$Snapshot}% full\n";
+   }
+   print "\n";
+}
+
+if (keys %MonitoringOn and $Detail) {
+   print "Monitoring started for:\n";
+   foreach my $Pool (sort {$a cmp $b} keys %MonitoringOn) {
+      print "    $Pool: $MonitoringOn{$Pool} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %MonitoringOff and $Detail) {
+   print "Monitoring stopped for:\n";
+   foreach my $Pool (sort {$a cmp $b} keys %MonitoringOff) {
+      print "    $Pool: $MonitoringOff{$Pool} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %OtherList) {
+   print "\n**Unmatched Entries**\n";
+   foreach my $line (sort {$a cmp $b} keys %OtherList) {
+      print "   $line: $OtherList{$line} Time(s)\n";
+   }
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
