@@ -39,7 +39,7 @@ while (defined($ThisLine = <STDIN>)) {
    $ThisLine =~ s/^([\S]+)\/([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+) //;
 
    if (
-      ($ThisLine =~ /^\[[\w.-]+\] Inactivity timeout \(--ping-restart\), restarting/) or
+      ($ThisLine =~ /Inactivity timeout \(--ping-restart\), restarting/) or
       ($ThisLine =~ /^\/sbin\//) or
       ($ThisLine =~ /^Attempting to establish TCP connection with [\d.]+:\d+/) or
       ($ThisLine =~ /^Closing TUN\/TAP interface/) or
@@ -48,6 +48,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /^Control Channel MTU parms/) or
       ($ThisLine =~ /CRL CHECK OK: \/.*\//) or
       ($ThisLine =~ /^Data Channel MTU parms/) or
+      ($ThisLine =~ /^Delayed exit in \d+ seconds/) or
       ($ThisLine =~ /^Diffie-Hellman initialized/) or
       ($ThisLine =~ /^event_wait : Interrupted system call \(code=\d+\)/) or
       ($ThisLine =~ /^Exiting/) or
@@ -65,15 +66,21 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /^MULTI: primary virtual IP for/) or
       ($ThisLine =~ /^MULTI: TCP INIT maxclients=\d+ maxevents=\d+/) or
       ($ThisLine =~ /^MULTI: bad source address from client .*, packet dropped/) or
+      ($ThisLine =~ /^MULTI_sva: pool returned IPv4=/) or
       ($ThisLine =~ /^Need IPv6 code in mroute_extract_addr_from_packet/) or
       ($ThisLine =~ /^NOTE: UID\/GID downgrade will be delayed because of --client, --pull, or --up-delay/) or
       ($ThisLine =~ /OpenVPN .* built on [A-Z][a-z]{2} [ 12]?[0-9] [0-9]{4}/) or
       ($ThisLine =~ /^OPTIONS IMPORT/) or
+      ($ThisLine =~ /^PLUGIN_CALL: plugin function /) or
+      ($ThisLine =~ /^PLUGIN_INIT: POST .* intercepted=/) or
       ($ThisLine =~ /^Preserving previous TUN\/TAP instance: \w+/) or
       ($ThisLine =~ /^PUSH: Received control message/) or
+      ($ThisLine =~ /^Re-using pre-shared static key/) or
       ($ThisLine =~ /^Re-using SSL\/TLS context/) or
       ($ThisLine =~ /read UDPv4 \[.*\]: No route to host \(code=[0-9]*\)/) or
       ($ThisLine =~ /^Restart pause, \d+ second\(s\)/) or
+      ($ThisLine =~ /^ROUTE_GATEWAY/) or
+      ($ThisLine =~ /^send_push_reply/) or
       ($ThisLine =~ /^SENT CONTROL/) or
       ($ThisLine =~ /^SIGTERM\[hard,[^\]]*\] received, process exiting/) or
       ($ThisLine =~ /^SIGUSR1\[soft,(connection-reset|ping-restart)\] received, (process|client-instance) restarting/) or
@@ -103,20 +110,25 @@ while (defined($ThisLine = <STDIN>)) {
       # Don't care about these...
    }  elsif (($status, $depth, $dn) = ( $ThisLine =~ /^VERIFY (.*): depth=(.*), (.*)/ )) {
 
-		#TLS: tls_process: killed expiring key:
 		#VERIFY OK: depth=0, /C=US/ST=TX/O=Aidant.Enterprises/OU=IT/CN=delta.aidant.net/Email=keymaster@aidant.net: 23 Time(s)
       $VerifyList{"status: $status depth: $depth DN: $dn"}++;
    }  elsif (($status, $dn) = ( $ThisLine =~ /^VERIFY X509NAME (.*): (.*)/ )) {
       #VERIFY X509NAME OK: /C=US/ST=TX/O=Aidant.Enterprises/OU=IT/CN=delta.aidant.net/Email=keymaster@aidant.net: 23 Time(s)
       $VerifyList{"status: $status X509Name DN: $dn"}++;
+   }  elsif (($status, $dn) = ( $ThisLine =~ /^CRL CHECK (.*): (.*)/ )) {
+
+		#CRL CHECK OK: C=US, ST=CO, L=Boulder, O=NWRA, OU=Boulder, CN=user, name=root, emailAddress=xxxx@xxxx.xxx
+      $VerifyList{"CRL check status: $status DN: $dn"}++;
    } elsif ($ThisLine =~ /^TLS: Username\/Password authentication/) {
       $VerifyList{$ThisLine}++;
    } elsif ($ThisLine =~ m/^MULTI: new incoming connection would exceed maximum number of clients/) {
       $MaxClients++;
    } elsif ($ThisLine =~ m/^OpenVPN [\d.]+ [\w-]+ [\[\]\w ]+ built on [\w]+ +[\d]+ [\d]+$/) {
       $VersionInfo{$ThisLine} = 1;
-   } elsif (($config, $peer, $port) = ($ThisLine =~ m/^\[([\S]+)\] Peer Connection Initiated with ([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)$/)) {
+   } elsif (($config, $peer, $port) = ($ThisLine =~ m/^\[([\S]+)\] Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)$/)) {
       push (@{$Connections{$config}{$peer}}, $port);
+   } elsif (($peer, $port) = ($ThisLine =~ m/^Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)$/)) {
+      push (@{$Connections{"client"}{$peer}}, $port);
    } elsif (($dir, $channel, $bits, $algo) = ($ThisLine =~ /^(Incoming|Outgoing) (Control Channel) Authentication: Using ([\d]+ bit) message hash '(\S+)' for HMAC authentication/)) {
       $Auth{$channel}{$dir}{"$bits $algo"}++;
    } elsif (($channel, $dir, $bits, $algo) = ($ThisLine =~ /^(Data Channel) (Encrypt|Decrypt): Using ([\d]+ bit) message hash '(\S+)' for HMAC authentication/)) {
