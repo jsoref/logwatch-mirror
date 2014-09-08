@@ -61,6 +61,8 @@ my $DLine = 0;
 my %UnavailableDev = ();
 my %SataDisk = ();
 my %CheckFailed = ();
+my %Monitoring = ();
+my %DeviceInfo = ();
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $IgnoreUnmatched = $ENV{'smartd_ignore_unmatched'} || 0;
@@ -69,7 +71,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    if ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), No such device(?: or address)?, open\(\) failed/ )) {
        # ignore
-   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), is SMART capable. Adding to "monitor" list./ )) {
+   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), open\(\) failed: No such device(?: or address)?/ )) {
        # ignore
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), found in smartd database./ )) {
        # ignore
@@ -116,8 +118,9 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^ *$/ )) {
        # ignore empty lines
    } elsif ( ($ThisLine =~ /^smartd version/)
+          || ($ThisLine =~ /^smartd [0-9.]+ [0-9-]+ r[0-9]+ \[.*\]/)
           || ($ThisLine =~ /^Home page/)
-          || ($ThisLine =~ /^smartd .*Copyright \(C\) [0-9-]+ by Bruce Allen/)
+          || ($ThisLine =~ /Copyright \(C\) [0-9-]+ by Bruce Allen/)
           || ($ThisLine =~ /configuration file/i)
           || ($ThisLine =~ /\[trip Temperature is \d+ Celsius\]/)
           || ($ThisLine =~ /^Monitoring/)
@@ -135,6 +138,10 @@ while (defined(my $ThisLine = <STDIN>)) {
    {
        # ignore
 
+   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), is SMART capable. Adding to "monitor" list./ )) {
+      $Monitoring{$Device} = 1;
+   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), ([^,]+, S\/N:[^,]+, WWN:[^,]+, FW:.*)/ )) {
+      $DeviceInfo{$Device} = $Msg;
 #   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), (.*)$/)) {
 #      $ParamChanges{$Device}{$Msg}++;
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), not found in smartd database./ )) {
@@ -358,6 +365,18 @@ if (%SataDisk) {
       print "  " .$Device .": Try adding '-d ata' or '-d sat' to the smartd.conf config file line\n";
    }
    print "\n";
+}
+
+if (keys %Monitoring and $Detail > 7) {
+   print "\nMonitoring:\n";
+   foreach my $Device (sort keys %Monitoring) {
+      print "\t$Device";
+      if (defined($DeviceInfo{$Device})) {
+         print ": $DeviceInfo{$Device}\n";
+      } else {
+         print "\n";
+      }
+   }
 }
 
 if ((%OtherList) and (not $IgnoreUnmatched)){
