@@ -288,6 +288,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* OK/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): Moving/) or
        ($ThisLine =~ /PAM \d+ more authentication failures?;/) or
+       ($ThisLine =~ /^PAM service\(sshd\) ignoring max retries;/) or
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
        ($ThisLine =~ /^Keyboard-interactive \(PAM\) userauth failed/ ) or
        ($ThisLine =~ /^debug1: /) or
