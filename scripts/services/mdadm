@@ -44,8 +44,14 @@ close(MDADM);
 foreach my $dev (@devices) {
   my %mdhash;
 
-  open(MDADM,"mdadm --misc --detail $dev |");
+  open(MDADM,"mdadm --misc --detail $dev 2>&1 |");
   while (<MDADM>) {
+    if ($_ =~ /cannot open .*: No such file or directory/) {
+      print $_;
+      close(MDADM);
+      next;
+    }
+
     $mdhash{'level'} = $1 if ($_ =~ /Raid Level ?: ?(.*)$/);
     $mdhash{'active'} = $1 if ($_ =~ /Active Devices ?: ?(.*)$/);
     $mdhash{'working'} = $1 if ($_ =~ /Working Devices ?: ?(.*)$/);
