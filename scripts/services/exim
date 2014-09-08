@@ -474,7 +474,7 @@ if ($Detail >= $LvlDontAccept) {
          }
          elsif ( $ThisOne =~ m/remote host address is the local host/ ) {
             $cc = "Invalid local domain";
-            ( $bb ) = ($ThisOne =~ m/\@\[^>]+/);
+            ( $bb ) = ($ThisOne =~ m/\@[^>]+/);
          }
          else {
             # If we picked up a malfunction but didn't collect it here,
