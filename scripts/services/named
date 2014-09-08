@@ -181,8 +181,6 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Response from unexpected source/) or
       ($ThisLine =~ /No root nameservers for class IN/) or
       ($ThisLine =~ /recvfrom: No route to host/) or
-      ($ThisLine =~ /(C|c)onnection refused/) or
-      ($ThisLine =~ /lame server resolving/) or
       ($ThisLine =~ /transfer of/) or
       ($ThisLine =~ /using \d+ CPU/) or
       ($ThisLine =~ /loading configuration/) or
@@ -298,8 +296,10 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneExpired{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\: loaded serial/ ) ) {
       $ZoneLoaded{$Zone}++;
+   } elsif ( (undef,$Addr,$Server) = ( $ThisLine =~ /(C|c)onnection refused resolving '(.+)': (.+)/ ) ) {
+      $ConnectionRefused{$Addr}{$Server}++;
    } elsif ( (undef,$Addr,undef,$Server) = ( $ThisLine =~ /ame server (on|resolving) '(.+)' \(in .+\):\s+(\[.+\]\.\d+)?\s*'?(.+)'?:?/ ) ) {
-      $LameServer{"$Addr ($Server)"}++;
+      $LameServer{$Addr}{$Server}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /Zone \"(.+)\" was removed/ ) ) {
       $ZoneRemoved{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /received notify for zone '(.*)'/ ) ) {
@@ -393,6 +393,11 @@ while (defined($ThisLine = <STDIN>)) {
       $NoSOA{$Client}++;
    } elsif (($Hint) = ($ThisLine =~ /checkhints: (.*)/) ) {
       $Hints{$Hint}++;
+   } elsif ($ThisLine =~ /^samba_dlz:/) {
+      if ( ($Rhost, $Error) = ($ThisLine =~ /disallowing update of signer=.* name=(.*) type=.* error=(.*)/ )) {
+            $UpdateDenied{"$Rhost ($Error)"}++;
+      }
+      # ignore rest of samba4 dlz entries for now
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
@@ -543,10 +548,23 @@ if ( ( $Detail >= 5 ) and (keys %ZoneFileErrors) ) {
    }
 }
 
+if ( ( $Detail >= 10 ) and (keys %ConnectionRefused) ) {
+   print "\nConnection refused resolving:\n";
+   foreach $Addr (sort keys %ConnectionRefused) {
+      print "   $Addr:\n";
+      foreach $Server (sort SortIP keys %{$ConnectionRefused{$Addr}}) {
+         print "      $Server: $ConnectionRefused{$Addr}{$Server} Time(s)\n";
+      }
+   }
+}
+
 if ( ( $Detail >= 10 ) and (keys %LameServer) ) {
    print "\nThese addresses had lame server references:\n";
-   foreach $ThisOne (keys %LameServer) {
-      print "   $ThisOne: $LameServer{$ThisOne} Time(s)\n";
+   foreach $Addr (sort keys %LameServer) {
+      print "   $Addr:\n";
+      foreach $Server (sort SortIP keys %{$LameServer{$Addr}}) {
+         print "      $Server: $LameServer{$Addr}{$Server} Time(s)\n";
+      }
    }
 }
 
