@@ -171,7 +171,8 @@ while ($line = <STDIN>) {
       } elsif ($line =~ s/^session opened for user (.+) by LOGIN\(uid=\d+\)/$1/) {
 	 $data{$service}{'Sessions Opened'}{$line}++;
       } elsif ($line =~ /session closed for user/) {
-	# ignore this line
+      } elsif ($line =~ /^service\(sshd\) ignoring max retries/) {
+	# ignore these lines
       } elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s+user=(\S*)$/$2 ($1)/) {
  	 $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^authentication failure; .*rhost=(\S*)\s*$/unknown ($1)/) {
@@ -182,7 +183,7 @@ while ($line = <STDIN>) {
          $data{$service}{'Authentication Failures'}{$line}++;
       } elsif ($line =~ s/^(\d+) more authentication failures?; .*rhost=(\S*)\s+user=(\S*)$/$3 ($2)/) {
          $data{$service}{'Authentication Failures'}{$line} += $1;
-      } elsif ($line =~ s/^(\d+) more authentication failures?; .*rhost=(\S*)$/unknown ($2)/) {
+      } elsif ($line =~ s/^(\d+) more authentication failures?; .*rhost=(\S*)\s*$/unknown ($2)/) {
          $data{$service}{'Authentication Failures'}{$line} += $1;
       } elsif ($line =~ /check pass; user unknown/) {
          $data{$service}{'Invalid Users'}{'Unknown Account'}++;
