@@ -262,6 +262,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{$Reason}++;
    } elsif ($ThisLine =~ /Disconnected (bytes|top)=.*/) {
       $Disconnected{"No reason"}++;
+   } elsif ($ThisLine =~ /Server shutting down./) {
+      $ConnectionCl{"Server shutting down"}++;
    } elsif (($Reason, $Host) = ($ThisLine =~ /TLS initialization failed/) ) {
       $TLSInitFail++;
    } elsif (($Host) = ($ThisLine =~ /Aborted login:.* rip=(.*),/) ) {
