@@ -55,7 +55,7 @@ use warnings;
 no warnings "uninitialized";
 use re 'taint';
 
-our $Version          = '1.40.00';
+our $Version          = '1.40.03';
 our $progname_prefix  = 'postfix';
 
 # Specifies the default configuration file for use in standalone mode.
@@ -3586,7 +3586,7 @@ sys     0m3.005s
    }
 
    # Client TLS messages
-   elsif ( ($status,$host,$type) = ($p1 =~ /^(?:(Verified|Trusted|Untrusted) )?TLS connection established to ([^ ]*): (.*)$/o)) {
+   elsif ( ($status,$host,$type) = ($p1 =~ /^(?:(Verified|Trusted|Untrusted|Anonymous) )?TLS connection established to ([^ ]*): (.*)$/o)) {
       #TD TLS connection established to example.com: TLSv1 with cipher AES256-SHA (256/256 bits)
       # Postfix 2.5+: peer verification status: Untrusted, Trusted or Verified when
       # server's trust chain is valid and peername is matched
@@ -3931,6 +3931,8 @@ sub create_ignore_list() {
    push @ignore_list, qr/^report recipient to all milters /;
    push @ignore_list, qr/_action = defer_if_permit$/;
    push @ignore_list, qr/^reject_invalid_hostname: /;
+   push @ignore_list, qr/^cfg_get_/;
+   push @ignore_list, qr/^sacl_check: /;
 
    # non-anchored
    #push @ignore_list, qr/: Greylisted for /;
@@ -4738,6 +4740,17 @@ sub postfix_warning($) {
       #TDsd warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11 
       #TDs warning: Read failed in network_biopair_interop with errno=0: num_read=0, want_read=11 
       $warning =~ s/^(Read failed in network_biopair_interop) with .*$/$1/;
+
+=cut
+      $warning =~ s/^(TLS library problem: )\d+:(error:.*)$/$1$2/;
+      $warning =~ s/^(network_biopair_interop: error reading) \d+ bytes(.*)$/$1$2/;
+
+1      TLS library problem: 10212:error:1408A0C1:SSL routines:SSL3_GET_CLIENT_HELLO:no shared cipher...
+1      TLS library problem: 10217:error:1408A0C1:SSL routines:SSL3_GET_CLIENT_HELLO:no shared cipher...
+1      network_biopair_interop: error reading 1102 bytes from the network: Connection reset by peer
+1      network_biopair_interop: error reading 1120 bytes from the network: Connection reset by peer
+=cut
+
 
       $Totals{'warningsother'}++; return unless ($Collecting{'warningsother'});
       $Counts{'warningsother'}{$warning}++;
