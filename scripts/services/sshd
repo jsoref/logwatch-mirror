@@ -323,6 +323,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ m/^fatal: Read from socket failed: No route to host/) or
       ($ThisLine =~ m/^fatal: Write failed: Network is unreachable/ ) or
       ($ThisLine =~ m/^fatal: Write failed: Broken pipe/) or
+      ($ThisLine =~ m/^fatal: Write failed: Connection reset by peer/) or
       ($ThisLine =~ m/^channel \d+: open failed: (?:connect failed: Channel open failed\.|administratively prohibited: open failed)/) or
       ($ThisLine =~ m/^session_input_channel_req: no session \d+ req window-change/) or
       ($ThisLine =~ m/^error: chan_shutdown_read failed for .+/)
