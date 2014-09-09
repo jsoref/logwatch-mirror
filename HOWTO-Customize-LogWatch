@@ -7,15 +7,15 @@ HOWTO-Customize-LogWatch
   1. Table of Contents
   2. Introduction
   3. Directory Structure
-        A. Configuration Structure
-        B. Executable Structure
+    A. Configuration Structure
+    B. Executable Structure
   4. Customizing the Configuration
   5. Customizing the Scripts
   6. Creating New Service Filters
-	A. Logfile Groups
-	B. Service Filter Configuration
-	C. Service Filer Executable
-        D. Shared Script Commands
+    A. Logfile Groups
+    B. Service Filter Configuration
+    C. Service Filer Executable
+    D. Shared Script Commands
   7. For More Information
 
 
@@ -558,8 +558,8 @@ In addition, the website http://www.logwatch.org contains:
 	- access to the svn repository, for the very latest code.
 
 If you do create new services or enhancements that you feel would be useful
-to other people, please send them to the logwatch-devel mailing list
-at logwatch.org.
+to other people, please send them to the mailing list 'logwatch-devel at
+lists.sourceforge.net'.
 
 If you send patches, please make sure that you have the latest version
 of the file from svn, and send the patch file in unified format

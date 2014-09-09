@@ -66,9 +66,6 @@ See the file HOWTO-Customize-LogWatch for more information.
 You can also use it from the command line (as documented in the
 man page).
 
-There is some documentation available in Italian here:
-   http://openskills.info/view/boxdetail.php?IDbox=656
-
 ------------------------------------------------------------------
 
 If you want me to add support for a new set of log entries, please
@@ -79,15 +76,6 @@ and write your own!
 ------------------------------------------------------------------
 
 Mailing lists available!
-
-Logwatch List:
-   For general discussion and questions about Logwatch.
-   To Subscribe:  echo "subscribe" | mail logwatch-request@kaybee.org
-   Send Mail To:  logwatch@kaybee.org
-
-Logwatch Announcements List:
-   For important announcements about Logwatch.
-   To Subscribe:  echo "subscribe" | mail logwatch-announce-request@kaybee.org
 
 Logwatch Development List:
    For discussion about Logwatch development.
@@ -109,5 +97,5 @@ AUTHOR CONTACT INFORMATION:
    http://www.kaybee.org/kirk/
 
 Newest releases can be found at:
-   ftp://ftp.logwatch.org/pub/redhat/RPMS
-   http://www.logwatch.org
+   https://sourceforge.net/projects/logwatch/files/
+
