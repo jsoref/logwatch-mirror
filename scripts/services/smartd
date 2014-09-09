@@ -2,23 +2,6 @@
 ##########################################################################
 # $Id$
 ##########################################################################
-# $Log: smartd,v $
-# Revision 1.26  2009/06/02 15:01:34  mike
-# Fedora patch from Ivan Varekova -mgt
-#
-# Revision 1.25  2008/12/09 18:24:24  mike
-# Patch from Stefan Jakobs for new smartd with SATA support -mgt
-#
-# Revision 1.24  2008/06/30 20:47:20  kirk
-# fixed copyright holders for files where I know who they should be
-#
-# Revision 1.23  2008/03/24 23:31:27  kirk
-# added copyright/license notice to each script
-#
-# Revision 1.22  2008/01/16 20:22:38  bjorn
-# Makes reporting of SCSI and IDE uniform, by Tom Shield.
-#
-##########################################################################
 
 #######################################################
 ## Copyright (c) 2008 Jaco Botha <jaco_botha@hotmail.com>
@@ -118,23 +101,23 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^ *$/ )) {
        # ignore empty lines
    } elsif ( ($ThisLine =~ /^smartd version/)
-          || ($ThisLine =~ /^smartd [0-9.]+ [0-9-]+ r[0-9]+ \[.*\]/)
-          || ($ThisLine =~ /^Home page/)
-          || ($ThisLine =~ /Copyright \(C\) [0-9-]+ by Bruce Allen/)
-          || ($ThisLine =~ /configuration file/i)
-          || ($ThisLine =~ /\[trip Temperature is \d+ Celsius\]/)
-          || ($ThisLine =~ /^Monitoring/)
-          || ($ThisLine =~ /smartd received signal 15: Terminated/)
-          || ($ThisLine =~ /smartd is exiting \(exit status 0\)/)
-          || ($ThisLine =~ /smartd has fork/)
-	  || ($ThisLine =~ /smartd (startup|shutdown) succeeded/)
-	  || ($ThisLine =~ /Unable to register device (.*) \(no Directive -d removable\). Exiting/)
-	  || ($ThisLine =~ /Device (.*), SATA disks accessed via libata are not currently supported by smartmontools./)
-	  || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device Try '.*' to turn on SMART features/)
-	  || ($ThisLine =~ /Device: (.*), Bad IEC (SMART) mode page, err=-5, skip device/)
-	  || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
-	  || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/)
-	  || ($ThisLine =~ /System clock time adjusted to the past/) )
+      || ($ThisLine =~ /^smartd [0-9.]+ [0-9-]+ r[0-9]+ \[.*\]/)
+      || ($ThisLine =~ /^Home page/)
+      || ($ThisLine =~ /Copyright \(C\) [0-9-]+(?: by|,) Bruce Allen/)
+      || ($ThisLine =~ /configuration file/i)
+      || ($ThisLine =~ /\[trip Temperature is \d+ Celsius\]/)
+      || ($ThisLine =~ /^Monitoring/)
+      || ($ThisLine =~ /smartd received signal 15: Terminated/)
+      || ($ThisLine =~ /smartd is exiting \(exit status 0\)/)
+      || ($ThisLine =~ /smartd has fork/)
+      || ($ThisLine =~ /smartd (startup|shutdown) succeeded/)
+      || ($ThisLine =~ /Unable to register device (.*) \(no Directive -d removable\). Exiting/)
+      || ($ThisLine =~ /Device (.*), SATA disks accessed via libata are not currently supported by smartmontools./)
+      || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device Try '.*' to turn on SMART features/)
+      || ($ThisLine =~ /Device: (.*), Bad IEC (SMART) mode page, err=-5, skip device/)
+      || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
+      || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/)
+      || ($ThisLine =~ /System clock time adjusted to the past/) )
    {
        # ignore
 
