@@ -146,7 +146,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 #      $ParamChanges{$Device}{$Msg}++;
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), not found in smartd database./ )) {
       $NotInDatabase{$Device}++;
-   } elsif ( my ($Device,$AttribType,$Code,$Name,undef,undef,undef,$RawVal) = ($ThisLine =~ /^Device: ([^,]+), SMART ([A-Za-z]+) Attribute: ([0-9]+) (Temperature_Celsius) changed from ([0-9]+) (\[Raw [0-9]+\]) to ([0-9]+) \[Raw ([0-9]+)\]/)) {
+	 } elsif ( my ($Device,$AttribType,$Code,$Name,undef,undef,undef,$RawVal) = ($ThisLine =~ /^Device: ([^,]+), SMART ([A-Za-z]+) Attribute: ([0-9]+) (Temperature_Celsius) changed from ([0-9]+) (\[Raw [0-9]+(?: \([0-9]+\s[0-9]+\s[0-9]+\s[0-9]+(?:\s[0-9])?\))?\]) to ([0-9]+) \[Raw ([0-9]+)(?: \([0-9]+\s[0-9]+\s[0-9]+\s[0-9]+(?:\s[0-9])?\))?\]/)) {
       push @{$TempChanges{$Device}}, $RawVal;
    # smartd reports temperature changes this way only for SCSI disks
    } elsif ( my ($Device,$AttribType,$Code,$Name,undef,undef,$NewVal) = ($ThisLine =~ /^Device: ([^,]+), SMART ([A-Za-z]+) Attribute: ([0-9]+) ([A-Za-z_]+) changed from ([0-9]+) (\[Raw [0-9]+\] )?to ([0-9]+)/)) {
