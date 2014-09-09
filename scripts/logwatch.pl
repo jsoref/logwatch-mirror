@@ -520,9 +520,9 @@ for $ThisFile (@logfiles) {
             } else {
                $LogFileData{$ThisLogFile}{$ReadConfigNames[$i]} = $ReadConfigValues[$i];
             }
-            for my $i (0..$#CmdList) {
-                $LogFileData{$ThisLogFile}{+sprintf("%03d-%s", $i, $CmdList[$i])} = $CmdArgList[$i];
-            }
+         }
+         for my $i (0..$#CmdList) {
+             $LogFileData{$ThisLogFile}{+sprintf("%03d-%s", $i, $CmdList[$i])} = $CmdArgList[$i];
          }
       }
 }
