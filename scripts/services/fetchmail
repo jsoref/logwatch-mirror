@@ -51,6 +51,8 @@ while (defined($ThisLine = <STDIN>)) {
       $conn_fail{"${1} -- ${2}"}++;
    } elsif($ThisLine =~ s/^(\d+) messages? for (\S+) at (\S+).*.//) {
       $messages_for{"${2} at ${3}"} += $1;
+   } elsif($ThisLine =~ s/^(\d+) messages? \((\d+) seen\) for (\S+) at (\S+).*.//) {
+      $messages_for{"${3} at ${4}"} += ($1-$2);
    } else {
       chomp($ThisLine);
       # Report any unmatched entries...
