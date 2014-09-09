@@ -143,7 +143,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SkipError = 1 if $ThisLine =~ /block drbd\d+: Out of sync: start=\d+/;
       $SkipError = 1 if $ThisLine =~ /block drbd\d+: updated( sync)? UUIDs?/i;
       $SkipError = 1 if $ThisLine =~ /block drbd\d+: Resync done/;
-      $SkipError = 1 if $ThisLine =~ /block drbd\d+: cs:Ahead rs_left/;
+      $SkipError = 1 if $ThisLine =~ /block drbd\d+: cs:(?:Ahead|Behind) rs_left/;
       $SkipError = 1 if $ThisLine =~ /block drbd\d+: \d+ % had equal checksums, eliminated:/;
       $Kernel{$ThisLine}++ if ( (! $SkipError) || ($Detail > 8)) ;
    }

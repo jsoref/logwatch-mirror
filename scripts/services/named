@@ -191,7 +191,7 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneExpired{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\: loaded serial/ ) ) {
       $ZoneLoaded{$Zone}++;
-   } elsif ( (undef,$Addr,$Server) = ( $ThisLine =~ /(C|c)onnection refused resolving '(.+)': (.+)/ ) ) {
+   } elsif ( (undef,$Addr,$Server) = ( $ThisLine =~ /(C|c)onnection refused resolving\)? '(.+)': (.+)/ ) ) {
       $ConnectionRefused{$Addr}{$Server}++;
    } elsif ( (undef,$Addr,undef,$Server) = ( $ThisLine =~ /ame server (on|resolving) '(.+)' \(in .+\):\s+(\[.+\]\.\d+)?\s*'?(.+)'?:?/ ) ) {
       $LameServer{$Addr}{$Server}++;
