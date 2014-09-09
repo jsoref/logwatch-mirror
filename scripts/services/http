@@ -113,7 +113,7 @@ my $notparsed_count =0;
 
 ######################
 # file type comparisons are case-insensitive
-my $image_types =    '(\.bmp|\.cdr|\.emz|\.gif|\.ico|\.jpeg|\.jpg|\.png|\.svg|\.sxd|\.tif|\.tiff|\.wbmp|\.wmf|\.wmz|\.xdm)';
+my $image_types =    '(\.bmp|\.cdr|\.emz|\.gif|\.ico|\.jpe?g|\.png|\.svg|\.sxd|\.tiff?|\.wbmp|\.webp|\.wmf|\.wmz|\.xdm)';
 my $content_types =  '(';
    $content_types =  $content_types.'\/server-status|\/server-info';
    $content_types =  $content_types.'|\.htm|\.html|\.jhtml|\.phtml|\.shtml|\/\.?';
@@ -127,18 +127,18 @@ my $content_types =  '(';
    $content_types =  $content_types.'|\.fla|\.swf|\.rdf';
    $content_types =  $content_types.'|\.class|\.jsp|\.jar|\.java';
    $content_types =  $content_types.'|COPYRIGHT|README|FAQ|INSTALL|\.txt)';
-my $docs_types =     '(\.asc|\.bib|\.djvu|\.doc|\.dot|\.dtd|\.dvi|\.gnumeric|\.mcd|\.mso|\.pdf|\.pps|\.ppt|\.ps|\.rtf|\.sxi|\.tex|\.text|\.tm|\.xls|\.xml)';
-my $archive_types =  '(\.ace|\.bz2|\.cab|\.deb|\.dsc|\.ed2k|\.gz|\.hqx|\.md5|\.rar|\.rpm|\.sig|\.sign|\.tar|\.tbz2|\.tgz|\.vl2|\.z|\.zip|\.hdr)';
-my $sound_types =    '(\.au|\.aud|\.mid|\.mp3|\.ogg|\.pls|\.ram|\.raw|\.rm|\.wav|\.wma|\.wmv|\.xsm)';
-my $movie_types =    '(\.asf|\.ass|\.avi|\.idx|\.mid|\.mpg|\.mpeg|\.mov|\.qt|\.psb|\.srt|\.ssa|\.smi|\.sub)';
+my $docs_types =     '(\.asc|\.bib|\.djvu|\.docx?|\.dot|\.dtd|\.dvi|\.gnumeric|\.mcd|\.mso|\.pdf|\.pps|\.pptx?|\.ps|\.rtf|\.sxi|\.tex|\.text|\.tm|\.xlsx?|\.xml)';
+my $archive_types =  '(\.7z|\.ace|\.bz2|\.cab|\.deb|\.dsc|\.ed2k|\.gz|\.hqx|\.md5|\.rar|\.rpm|\.sig|\.sign|\.tar|\.tbz2|\.tgz|\.vl2|\.z|\.zip|\.hdr)';
+my $sound_types =    '(\.aac|\.au|\.aud|\.m4a|\.mid|\.mp3|\.oga|\.pls|\.ram|\.raw|\.rm|\.wav|\.wma|\.xsm)';
+my $movie_types =    '(\.asf|\.ass|\.avi|\.idx|\.flv|\.m2?ts|\.mkv|\.mp4|\.mpe?g|\.mov|\.ogg|\.ogv|\.qt|\.psb|\.srt|\.ssa|\.smi|\.sub|\.webm|\.wmv)';
 my $winexec_types =  '(\.bat|\.com|\.exe|\.dll)';
 my $wpad_files =     '(wpad\.dat|wspad\.dat|proxy\.pac)';
 my $program_src =    '(';
-   $program_src =    $program_src.'\.bas|\.c|\.cpp|\.diff|\.f|\.h|\.init|\.m|\.mo|\.pas|\.patch|\.po|\.pot|\.py|\.sh|\.spec';
+   $program_src =    $program_src.'\.bas|\.cs?|\.cpp|\.diff|\.f|\.h|\.init|\.m|\.mo|\.pas|\.patch|\.po|\.pot|\.py|\.sh|\.spec';
    $program_src =    $program_src.'|Makefile|Makefile_c|Makefile_f77)';
 my $images_types =   '(\.bin|\.cue|\.img|\.iso|\.run)';
 my $logs_types =     '(\.log|_log|-log|\.logs|\.out|\.wyniki)';
-my $fonts_types =    '(\.aft|\.ttf)';
+my $fonts_types =    '(\.aft|\.otf|\.ttf|\.woff)';
 my $config_types =   '(\.cfg|\.conf|\.config|\.ini|\.properties)';
 my $xpcomext_types = '(\.xpt)';
 my $mozext_types =   '(\.xul)';
