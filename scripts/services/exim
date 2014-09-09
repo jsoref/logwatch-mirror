@@ -1,46 +1,6 @@
 ##########################################################################
 # $Id$
 ##########################################################################
-# $Log: exim,v $
-# Revision 1.25  2010/09/18 17:31:00 stefan
-# removing unused variable $tz
-#
-# Revision 1.24  2009/06/02 14:50:37  mike
-# Patch from Fedora (Ivan Varekova) -mgt
-#
-# Revision 1.23  2008/06/30 23:07:51  kirk
-# fixed copyright holders for files where I know who they should be
-#
-# Revision 1.22  2008/03/24 23:31:26  kirk
-# added copyright/license notice to each script
-#
-# Revision 1.21  2008/01/16 20:29:18  bjorn
-# Optimizing by using push, as per Steve Holden.
-#
-# Revision 1.20  2007/02/11 01:50:47  bjorn
-# New handling of problem addresses, DNSBL warnings, and other transaction
-# and connection errors, by Nigel Metheringham
-#
-# Revision 1.19  2006/08/23 21:19:02  bjorn
-# Process Greylisting, by Jan Pazdziora.
-#
-# Revision 1.18  2006/03/02 16:22:23  bjorn
-# Additional error detection, by Gary Allen Vollink.
-#
-# Revision 1.17  2005/11/02 17:03:12  bjorn
-# Additional patches, from Ruth Ivimey-Cook.
-#
-# Revision 1.16  2005/11/02 16:05:18  bjorn
-# Significant expansion of detecting and reporting error messages, by
-# Ruth Ivimey-Cook; deleted redundant errors, by Gary Allen Vollink
-#
-# Revision 1.15  2005/09/27 19:52:42  bjorn
-# Handle reverse lookup failures, by Stig Brautaset
-#
-# Revision 1.14  2005/05/25 23:09:28  bjorn
-# Added filters for malware/viruses, and protocol errors, by Gary Allen Vollink.
-#
-##########################################################################
 
 ########################################################
 # Originally written by:
@@ -162,6 +122,10 @@ while (defined($ThisLine = <STDIN>)) {
       $DontAccept{$ThisLine}++;
    }
    elsif ( $ThisLine =~ /do not accept mail / ) {
+      $DontAccept{$ThisLine}++;
+   }
+   elsif ( $ThisLine =~ /rejected connection in .connect. ACL/ ) {
+      # Likely policy rejections
       $DontAccept{$ThisLine}++;
    }
    elsif ( $ThisLine =~ /believed to be spam/ ) {
@@ -421,7 +385,7 @@ if ($Detail >= $LvlVirus) {
 if ($Detail >= $LvlDontAccept) {
    # Print Administrative Prohibitions
    if (%DontAccept) {
-      my (%spam);
+      my (%spam, %detail);
       my (@errList);
 
       # Probable SPAM hosts...
@@ -439,6 +403,10 @@ if ($Detail >= $LvlDontAccept) {
          if ( $ThisOne =~ m/do not accept mail from ([\w\*-._]+)@([\w.-_]+)/ ) {
             $cc = "Blocked Email Domain";
             $bb = "$1\@$2";
+         }
+         elsif ( $ThisOne =~ m/rejected connection in .connect. ACL/ ) {
+            $cc = "Blocked Host";
+            ( $bb ) = ($ThisOne =~ m/\[(\d+\.\d+\.\d+\.\d+)\]/);
          }
          elsif ( $ThisOne =~ m/mail not permitted from sender ([\w\*-_.]+)@([\w.-_]+)/ ) {
             $cc = "Blocked Email Address";
@@ -483,16 +451,49 @@ if ($Detail >= $LvlDontAccept) {
             #next;
             print "Didn't Summarize: $ThisOne\n";
          }
-         if (defined( $spam{$cc} )) {
-            $mid = $spam{$cc};
+         if ($cc =~ m/Blocked/ ) {
+            # hash of blocked things
+            my $h = {};
+            if (!defined($detail{$cc})) {
+               # debug print "add type $cc\n" ;
+               $detail{$cc} = $h;
+            }
+            $h = $detail{$cc};
+
+            if (defined($h{$bb})) {
+               # debug print "add $bb to ".$h{$bb}."\n" ;
+               $h{$bb} = $h{$bb} + 1;
+            }
+            else {
+               $h{$bb} = 1;
+               # debug print "start $bb at ".$h{$bb}."\n" ;
+            }
+            # marker
+            $spam{$cc} = ""; 
          }
-         $spam{$cc} = "$mid$aa : $bb,";
+         else {
+
+            if (defined( $spam{$cc} )) {
+               $mid = $spam{$cc};
+            }
+            $spam{$cc} = "$mid$aa : $bb,";
+ 
+         }
       }
       foreach $ThisOne (sort(keys %spam)) {
          if ($Detail >= $LvlDontAcceptLines) {
-            print "  $ThisOne\n";
-            foreach $aa ( sort( split /,/, $spam{$ThisOne} )) {
-               print "    $aa\n";
+            if ($spam{$cc} eq "") {
+               print "  $ThisOne\n";
+               my $h = $detail{$ThisOne};
+               foreach $aa (sort(keys %h) ) {
+                  print "    $aa : ".$h{$aa}." times\n";
+               }
+            }
+            else {
+               print "  $ThisOne\n";
+               foreach $aa ( sort( split /,/, $spam{$ThisOne} )) {
+                  print "    $aa\n";
+               }
             }
          }
          else {
