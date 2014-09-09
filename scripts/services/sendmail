@@ -905,14 +905,14 @@ next unless $ThisLine;
    } elsif ($ThisLine=~ /^headers too large .* from (.*) during message collect$/) {
       $LargeHdrs{$1}++;
    # file=srvrsmtp.c, LogLevel>5, LOG_INFO
-   } elsif ($ThisLine=~ /(\S*) ?\[([0-9\.]+)\](?: \(may be forged\))?: (\S+) (\S+) \[rejected\]/i) {
-      chomp($Host=$2." ". (defined($1) ? "(".$1.")" : "(unresolved)") );
-      $Luser=$4;
-      $RejCmd=uc $3;
+   } elsif ($ThisLine=~ /(\S*) ?\[(IPv6:)?([0-9A-F\.:]+)\](?: \(may be forged\))?: (\S+) (\S+) \[rejected\]/i) {
+      chomp($Host=$3." ". (defined($1) ? "(".$1.")" : "(unresolved)") );
+      $Luser=$5;
+      $RejCmd=uc $4;
       $Abuse{$Host}{$Luser}{$RejCmd}++;
    # file=srvrsmtp.c, LogLevel>5, LOG_INFO
-   } elsif ( $ThisLine =~ /\[([0-9\.]+)]: ETRN (\S+)/ ) {
-      chomp($ETRN=$2." from ".$1);
+   } elsif ( $ThisLine =~ /\[(IPv6:)?([0-9A-F\.:]+)]: ETRN (\S+)/i ) {
+      chomp($ETRN=$3." from ".$2);
       $ETRNs{$ETRN}++;
    # file=conf.c, LogLevel>8, LOG_NOTICE
    } elsif ( $ThisLine =~ /rejecting connections on daemon [^ ]+: load average: ([0-9]+)/ ) {
