@@ -256,7 +256,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{"no reason"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) \[/) ) {
       $Disconnected{$Reason}++;
-   } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top)=.*/) ) {
+   } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top|in)=.*/) ) {
       $Disconnected{$Reason}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
       $Disconnected{$Reason}++;
