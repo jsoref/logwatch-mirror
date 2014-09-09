@@ -142,7 +142,7 @@ while ($ThisLine = <STDIN>) {
       $NumberOfDStarts++;
     } elsif ( $ThisLine =~ /The audit daemon is exiting./) {
       $NumberOfDStops++;
-    } elsif ( $ThisLine =~ /audit_lost=[0-9]+ audit_backlog=[0-9]+ audit_rate_limit=[0-9]+ audit_backlog_limit=[0-9]+$/) {
+    } elsif ( $ThisLine =~ /audit_lost=[0-9]+ (audit_backlog=[0-9]+ )?audit_rate_limit=[0-9]+ audit_backlog_limit=[0-9]+$/) {
       $NumberOfLostMessages++;
     } elsif ( $ThisLine =~ /auditd startup succeeded/) {
       $NumberOfDdStarts++;
