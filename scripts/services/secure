@@ -351,7 +351,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Service,undef,$Name,$IP) = ($ThisLine =~ /^([^ ]+)\[\d+\]: warning: ([^ ]+), line \d+: host name\/name mismatch: ([^ ]+) != ([^ ]+)$/) ) {
       $NameVerifyFail{$Service}{"$Name != $IP"}++;
    } elsif ( ($Display, $User) = ($ThisLine =~ /^xscreensaver\[\d+\]: FAILED LOGIN \d ON DISPLAY \"([^ ]+)\", FOR \"([^ ]+)\"$/) ) {
-      $FailedSaver{$User}{$Display}++;
+      $FailedSaver->{$User}->{$Display}++;
    } elsif ( $ThisLine =~ s/^([^ ]+)\[\d+\]: warning: can\'t get client address: No route to host$/$1/ ) {
       $NoIP->{$ThisLine}++;
    } elsif ( $ThisLine =~ s/^([^ ]+)\[\d+\]: warning: can\'t get client address: Network is unreachable$/$1/ ) {
@@ -688,8 +688,8 @@ if (keys %{$FailedSaver}) {
    print "\nFailed screensaver disable:\n";
    foreach $User (sort {$a cmp $b} keys %{$FailedSaver}) {
       print "   User $User on displays:\n";
-      foreach $Display (sort {$a cmp $b} keys %{$FailedSaver{$User}}) {
-         print "      $Display : $FailedSaver{$User}{$Display} Time(s)\n";
+      foreach $Display (sort {$a cmp $b} keys %{$FailedSaver->{$User}}) {
+         print "      $Display : " . $FailedSaver->{$User}->{$Display} . " Time(s)\n";
       }
    }
 }
