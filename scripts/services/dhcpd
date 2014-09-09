@@ -161,17 +161,25 @@ while (my $line = <STDIN>) {
       if ($Detail >= 5) {
          $data{'Addresses Released'}{$line}++;
       }
-   } elsif ($line =~ s/^added reverse map from ([\d]+).([\d]+).([\d]+).([\d]+).in-addr.arpa. to ([a-zA-Z\d._-]+)\s*$/Add reverse $4.$3.$2.$1 -> $5/) {
+   } elsif ($line =~ s/^[Aa]dded reverse map from ([\d]+)\.([\d]+)\.([\d]+)\.([\d]+)\.in-addr\.arpa\.? to ([a-zA-Z\d._-]+)\s*$/Add reverse $4.$3.$2.$1 -> $5/) {
       if ($Detail >= 7) {
          $data{'DNS Mappings'}{$line}++;
       }
-   } elsif ($line =~ s/^removed reverse map on ([\d]+).([\d]+).([\d]+).([\d]+).in-addr.arpa.\s*$/Remove reverse $4.$3.$2.$1/) {
+   } elsif ($line =~ s/^[Rr]emoved reverse map on ([\d]+)\.([\d]+)\.([\d]+)\.([\d]+)\.in-addr\.arpa\.?\s*$/Remove reverse $4.$3.$2.$1/) {
       if ($Detail >= 7) {
          $data{'DNS Mappings'}{$line}++;
       }
    } elsif ($line =~ s/^Added new forward map from ([a-zA-Z\d\-_.]+) to ([\d.]+)\s*$/Add forward $1 -> $2/) {
       if ($Detail >= 7) {
          $data{'DNS Mappings'}{$line}++;
+      }
+   } elsif ($line =~ s/^Removed forward map from ([a-zA-Z\d\-_.]+) to ([\d.]+)\s*$/Remove forward $1 -> $2/) {
+      if ($Detail >= 7) {
+         $data{'DNS Mappings'}{$line}++;
+      }
+   } elsif ($line =~ /^No hostname for [\d.]+\s*$/) {
+      if ($Detail >= 7) {
+         $data{'Warnings'}{$line}++;
       }
    } elsif ($line =~ s/^if ([a-zA-Z\d\-_.]+) IN A rrset doesn't exist delete ([a-zA-Z\d\-_.]+) IN TXT "([a-f\d]+)": success.\s*$/Remove forward TXT from $1 (TXT "$3")/) {
       if ($Detail >= 7) {
