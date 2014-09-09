@@ -2,81 +2,6 @@
 ##########################################################################
 # $Id$
 ##########################################################################
-# $Log: xntpd,v $
-# Revision 1.23  2010/05/05 12:30:51  stefan
-# added: Operation not permitted, fixed: typo in Errors
-#
-# Revision 1.22  2008/06/30 23:07:51  kirk
-# fixed copyright holders for files where I know who they should be
-#
-# Revision 1.21  2008/05/14 18:22:21  mike
-# Interfaces numbers can be greater then 9 -mgt
-#
-# Revision 1.20  2008/05/13 16:04:48  mike
-# Patch from David Baldwin -mgt
-#
-# Revision 1.19  2008/05/04 15:26:08  mike
-# Patch from Fedora tree -mgt
-#
-# Revision 1.18  2008/03/24 23:31:27  kirk
-# added copyright/license notice to each script
-#
-# Revision 1.17  2007/05/24 03:59:42  kirk
-# http://bugs.gentoo.org/show_bug.cgi?id=141649
-#
-# Revision 1.16  2007/04/16 03:11:11  bjorn
-# Modified filtering for Listening entries to accommodate interface numbers.
-#
-# Revision 1.15  2007/04/16 02:34:27  bjorn
-# Filtering Listening...Disabled statements.
-#
-# Revision 1.14  2007/02/17 19:36:11  bjorn
-# Reverting back to version 1.12 - ignore changes to 1.13.
-#
-# Revision 1.13  2007/02/17 16:28:44  bjorn
-# Deleted superfluous lines - probably from malformed diff.
-#
-# Revision 1.12  2007/02/16 03:57:50  bjorn
-# Additional filtering, by Ivana Varekova.
-#
-# Revision 1.11  2005/11/01 15:01:40  bjorn
-# Adjustment to synchronized messages in Solaris, by David Baldwin
-#
-# Revision 1.10  2005/10/19 05:45:12  bjorn
-# Filtering redundant failed message, by David Baldwin
-#
-# Revision 1.9  2005/10/19 05:35:30  bjorn
-# Code cleanup, better handling of Unmatched, and additional filtering, by
-# David Baldwin
-#
-# Revision 1.8  2005/10/02 15:00:34  bjorn
-# Corrections to last commit
-#
-# Revision 1.7  2005/10/01 18:30:12  bjorn
-# Added filtering for listening and synchronized statements, by Gilles Detillieux
-#
-# Revision 1.6  2005/09/28 17:39:04  mike
-# Patch from David Baldwin, plus a few other tweaks -mgt
-#
-# Revision 1.5  2005/07/05 22:16:23  mike
-# Small patch from Paul Chambers -mgt
-#
-# Revision 1.4  2005/05/23 17:35:55  bjorn
-# Patch for an older ntpd (4.1.1a-9), by Michael Evans
-#
-# Revision 1.3  2005/05/04 15:52:51  bjorn
-# Removed shell path to perl in first line
-#
-# Revision 1.2  2005/02/24 17:08:05  kirk
-# Applying consolidated patches from Mike Tremaine
-#
-# Revision 1.2  2005/02/16 00:43:28  mgt
-# Added #vi tag to everything, updated ignore.conf with comments, added emerge and netopia to the tree from Laurent -mgt
-#
-# Revision 1.1  2005/02/13 01:25:13  mgt
-# Inital code check in from David Baldwin -mgt
-#
-##########################################################################
 
 ########################################################
 # This was written and is maintained by:
@@ -154,10 +79,10 @@ while (defined(my $ThisLine = <STDIN>)) {
         ($ThisLine =~ /Listening on interface .* Disabled/) or
         ($ThisLine =~ /Listen and drop on /) or
         ($ThisLine =~ /Listening on routing socket on/) or
-	($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/) or
-	($ThisLine =~ /peers refreshed$/) or
-	($ThisLine =~ /restrict: error in address/) or
-	($ThisLine =~ /syntax error in .+ line \d+, column \d+$/)
+        ($ThisLine =~ /ntp_io: estimated max descriptors: \d*, initial socket boundary: \d*/) or
+        ($ThisLine =~ /peers refreshed$/) or
+        ($ThisLine =~ /restrict: error in address/) or
+        ($ThisLine =~ /syntax error in .+ line \d+, column \d+$/)
     ) {
        # Ignore these
     } elsif ($ThisLine =~ m/ntpd [\d\-\.\w@]+ ... ... .. ..:..:.. /) {

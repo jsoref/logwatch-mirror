@@ -176,7 +176,7 @@ echo "### Installing"
 
 #OS Tests for known issues
 if [ $OS = "Darwin" ]; then
-   munge_gzcat = 1
+   munge_gzcat=1
 fi
 
 #Install is borked under IRIX
@@ -280,7 +280,7 @@ if [ -d $MANDIR/man5 ] && [ -d $MANDIR/man8 ] && [ -d $MANDIR/man1 ] && [ $HAVE_
       else
          #MacOS X aka Darwin no -u [even thought the manpage says]
          if [ $OS = "Darwin" ]; then
-            makewhatis -s "1 5 8" $MANDIR
+            makewhatis -o "1 5 8" $MANDIR
          else
          #Linux
             makewhatis -u -s "1 5 8" $MANDIR
