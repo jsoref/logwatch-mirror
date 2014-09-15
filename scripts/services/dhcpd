@@ -78,7 +78,7 @@ while (my $line = <STDIN>) {
    } elsif (
       ($line =~ /^you want, please write a subnet declaration/) or
       ($line =~ /^in your dhcpd.conf file for the network segment/) or
-      ($line =~ /^to which interface [a-z\d]+ is attached./) or
+      ($line =~ /^to which interface [a-z\d\.]+ is attached./) or
 
       ($line =~ /^If you did not get this software from ftp.isc.org, please/) or
       ($line =~ /^get the latest from ftp.isc.org and install that before/) or
@@ -111,9 +111,9 @@ while (my $line = <STDIN>) {
       $data{'Generic error'}{$line}++;
    } elsif ($line =~ /^There's already a DHCP server running./) {
       $data{'Generic error'}{$line}++;
-   } elsif ($line =~ s/^\*\* Ignoring requests on ([a-z\d]+).  If this is not what\s*$/Ignoring interface $1/) {
+   } elsif ($line =~ s/^\*\* Ignoring requests on ([a-z\d\.]+).  If this is not what\s*$/Ignoring interface $1/) {
       $data{'Config error'}{$line}++;
-   } elsif ($line =~ s/^No subnet6? declaration for ([a-z\d]+) ([\(\)\d\.ia-fA-F:]+).\s*$/No subnet declaration for $1 $2/) {
+   } elsif ($line =~ s/^No subnet6? declaration for ([a-z\d\.]+) ([\(\)\d\.ia-fA-F:]+).\s*$/No subnet declaration for $1 $2/) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ /^If this DHCP server is authoritative for that subnet,$/) {
       $data{'Config error'}{'missing authoritative directive'}++; 
