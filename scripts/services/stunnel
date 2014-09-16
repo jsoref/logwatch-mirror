@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 
 ##########################################################################
 # $Id$
@@ -24,9 +25,9 @@ use strict;
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-my $allowedServicesInput = $ENV{'stunnel_allowed_services'} || "";
 
 my $DebugCounter = 0;
+my $Top = $ENV{'stunnel_print_top'} || 20;
 
 if ( $Debug >= 5 ) {
    print STDERR "\n\nDEBUG: Inside stunnel Filter \n\n";
@@ -36,23 +37,11 @@ if ( $Debug >= 5 ) {
 my @OtherList = ();
 my %OtherList = ();
 my %connections = ();
-my %connectionsAllowed = ();
-my %log_connections = ();
 my %versioninfo = ();
+my %errors = ();
+my %notices = ();
 my $sockdata = 0;
 my $ssldata = 0;
-
-$allowedServicesInput =~ s/[\t ]*,[\t ]*/,/g;
-my %allowedServices = ();
-@allowedServices{split(/,/, $allowedServicesInput)} = ();
-
-if ($Debug >= 5) {
-  print "Allowed services are set to: \n";
-  foreach my $allowedService (sort keys %allowedServices) {
-     print $allowedService, "\n";
-  }
-  print "\n\n\n";
-}
 
 sub other {
    my $msg = shift;
@@ -66,80 +55,95 @@ sub other {
 
 my $ThisLine;
 while (defined($ThisLine = <STDIN>)) {
+   $ThisLine =~ s/LOG\d\[\d{1,5}:\d{15}\]: (.*)/$1/;
    if ( $Debug >= 5 ) {
       print STDERR "DEBUG($DebugCounter): $ThisLine";
       $DebugCounter++;
    }
    chomp($ThisLine);
-   my ($logid) = ($ThisLine =~ /^LOG\d\[(\d+:\d+)\]:/);
-   # remove leading log level and ID, eg 'LOG5[2411:3084352400]: '
-   $ThisLine =~ s/^LOG\d\[\d+:\d+\]: //;
-
-   if ( ($ThisLine =~ m/^SSL_read: Connection reset by peer/)
-   ) {
-      # ignore
-   } elsif ($ThisLine =~ m/^(.+) connected from (\d+\.\d+\.\d+\.\d+)/) {
+   my $origline = $ThisLine;
+   if ($ThisLine =~ m/^(.+) connected from (\d+\.\d+\.\d+\.\d+)/) {
       my $service = $1;
       my $ip = $2;
-      if (exists($allowedServices{$service})) {
-         ++$connectionsAllowed{$service};
-      } else {
-         ++$connections{$service}{$ip};
+      if (! exists($connections{$service}{$ip})) {
+        $connections{$service}{$ip} = 0;
       }
-   } elsif ($ThisLine =~ m/^stunnel accepted connection from (\d+\.\d+\.\d+\.\d+):\d+/) {
-      $log_connections{$logid}{client} = $1;
-   } elsif ($ThisLine =~ m/^stunnel connected remote server from (\d+\.\d+\.\d+\.\d+):\d+/) {
-      $log_connections{$logid}{source} = $1;
-   } elsif ($ThisLine =~ m/^connect_blocking: connected (\d+\.\d+\.\d+\.\d+:\d+)/) {
-      $log_connections{$logid}{service} = $1;
+      ++$connections{$service}{$ip};
    } elsif ($ThisLine =~ m/^Connection (reset|closed): (\d+) bytes sent to SSL, (\d+) bytes sent to socket/) {
       $ssldata += $2;
       $sockdata += $3;
    } elsif ($ThisLine =~ m/^Connection (reset|closed)/) {
       # ignore
-   } elsif ($ThisLine =~ m/^Threading:[\w]+ SSL:[\w]+/) {
+   } elsif ($ThisLine =~ m/^connect_blocking: connected/) {
       # ignore
-   } elsif ($ThisLine =~ m/^stunnel [\d\.]+ on [\w\-]+([\w\+\s]+)?with OpenSSL [\w\.\-]+ \d+ \w+ \d+/) {
+   } elsif ($ThisLine =~ m/^Log file reopened$/) {
+      # ignore
+   } elsif ($ThisLine =~ m/^SSL socket closed on SSL_read with \d+ byte\(s\) in buffer$/) {
+      # ignore
+   } elsif ($ThisLine =~ m/^stunnel [\d\.]+ on [\w\-]+ [\w\+]+ with OpenSSL [\w\.]+ \d+ \w+ \d+/) {
       $versioninfo{$ThisLine} = 1;
+   } elsif ($ThisLine =~ m/^Service (\S+) accepted connection from ([0-9a-fA-F.:]+):\d{1,5}/) {
+      $connections{$1}{$2}++;
+   } elsif ($ThisLine =~ m/^Service (\S+) connected remote server from ([0-9a-fA-F.:]+):\d{1,5}/) {
+      $connections{"remote: $1"}{$2}++;
+   } elsif ($ThisLine =~ m/^Error detected on (SSL|socket) \((read|write)\) file descriptor: (.*) \(\d+\)/) {
+      $errors{"$1 $2 file descriptor: $3"}++;
+   } elsif ($ThisLine =~ m/^transfer: s_poll_wait: TIMEOUTclose exceeded: closing$/) {
+      $notices{"TIMEOUTclose exceeded: closing connection"}++;
+   } elsif ($ThisLine =~ m/^(SSL_(?:accept|read|shutdown): .*|getpeerbyname: .*)(?: \(\d+\))?$/) {
+      $notices{$1}++;
    } else {
       # Report any unmatched entries...
       other($ThisLine);
    }
 }
 
-if (keys %log_connections) {
-   foreach my $entry (keys %log_connections) {
-      my $ip = $log_connections{$entry}{client};
-      my $service = $log_connections{$entry}{service};
-      $service = "Unknown" if not $service;
-      $connections{$service}{$ip}++;
+if (keys %errors) {
+   print "\nErrors:\n";
+   foreach my $e (sort keys %errors) {
+      printf "  %-50s  %6d time(s)\n", $e, $errors{$e};
+   }
+}
+
+if (keys %notices) {
+   print "\nNotices:\n";
+   foreach my $n (sort keys %notices) {
+      printf "  %-50s  %6d time(s)\n", $n, $notices{$n};
    }
 }
 
 if (keys %connections) {
-   print "Number of connections per service per ip:\n\n";
+   print "\nconnections:\n";
    foreach my $service (sort keys %connections) {
-     printf " To %s\n", $service;
+     print "  $service\n";
      my $ips = $connections{$service};
-     foreach my $ip (sort keys %$ips) {
-        printf "    %15s : %5d time(s)\n", $ip, $ips->{$ip};
+     my $i = 0;
+     foreach my $ip (sort {$connections{$service}{$b} <=> $connections{$service}{$a}} keys %{$connections{$service}}) {
+        if ($i >= $Top) {
+           printf "    %-48s\n", "... only top $Top printed ...";
+           last;
+        } else {
+           printf "    %-48s  %6d time(s)\n", $ip, $connections{$service}{$ip};
+           $i++;
+        }
      }
    }
 }
 
-if (keys %connectionsAllowed) {
-   print "\nNumber of connections per allowed service:\n";
-   foreach my $service (sort keys %connectionsAllowed) {
-     printf " %18s : %5d time(s)\n",  $service, $connectionsAllowed{$service};
+if ($sockdata > 0) {
+   if ($sockdata > 1024*1024) {
+      printf "\n%-48s  %10.2f MB\n", "amount of socket data transferred:", $sockdata / 1024 / 1024;
+   } else {
+      printf "\n%-48s  %10.2f KB\n", "amount of socket data transferred:", $sockdata / 1024;
    }
 }
 
-if ($sockdata > 0) {
-   printf "\namount of socket data transferred: %.2f KB\n", $sockdata / 1024;
-}
-
 if ($ssldata > 0) {
-   printf "\namount of SSL data transferred: %.2f KB\n", $ssldata / 1024;
+   if ($ssldata > 1024*1024) {
+      printf "\n%-48s  %10.2f MB\n", "amount of SSL data transferred:", $ssldata / 1024 / 1024;
+   } else {
+      printf "\n%-48s  %10.2f KB\n", "amount of SSL data transferred:", $ssldata / 1024;
+   }
 }
 
 if (keys %versioninfo) {
