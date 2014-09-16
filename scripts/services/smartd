@@ -84,7 +84,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        # ignore
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^# *[0-9]+  Offline *Fatal or unknown error/ )) {
        # ignore
-   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), not capable of SMART self-check/ )) {
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), not capable of SMART (Health Status |self-)check/ )) {
        # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), is in STANDBY mode, skipping checks/ )) {
        # ignore
@@ -113,7 +113,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       || ($ThisLine =~ /smartd (startup|shutdown) succeeded/)
       || ($ThisLine =~ /Unable to register device (.*) \(no Directive -d removable\). Exiting/)
       || ($ThisLine =~ /Device (.*), SATA disks accessed via libata are not currently supported by smartmontools./)
-      || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device Try '.*' to turn on SMART features/)
+      || ($ThisLine =~ /Device: (.*), IE \(SMART\) not enabled, skip device/)
+      || ($ThisLine =~ /^Try '.*' to turn on SMART features/)
       || ($ThisLine =~ /Device: (.*), Bad IEC (SMART) mode page, err=-5, skip device/)
       || ($ThisLine =~ /Drive: DEVICESCAN, implied '-a' Directive on line [\d]+ of file/)
       || ($ThisLine =~ /packet devices \[this device CD\/DVD\] not SMART capable/)
@@ -123,7 +124,9 @@ while (defined(my $ThisLine = <STDIN>)) {
 
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), is SMART capable. Adding to "monitor" list./ )) {
       $Monitoring{$Device} = 1;
-   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), ([^,]+, S\/N:[^,]+, WWN:[^,]+, FW:.*)/ )) {
+   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), ([^,]+, S\/N:[^,]+,.* FW:.*)/ )) {
+      $DeviceInfo{$Device} = $Msg;
+   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), (\[[^,]+, lu id: .*)/ )) {
       $DeviceInfo{$Device} = $Msg;
 #   } elsif ( ($Device,$Msg) = ($ThisLine =~ /^Device: ([^,]+), (.*)$/)) {
 #      $ParamChanges{$Device}{$Msg}++;
@@ -206,7 +209,7 @@ if (keys %NotInDatabase) {
 }
 
 if (keys %CantMonitor) {
-   foreach my $Device (sort keys %ParamChanges) {
+   foreach my $Device (sort keys %CantMonitor) {
       print "\n$Device :\n";
       foreach my $Line (sort keys %{$CantMonitor{$Device}}) {
          print "  $Line - " . $CantMonitor{$Device}{$Line} . " Time(s)\n";
