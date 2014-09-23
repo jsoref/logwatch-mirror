@@ -262,6 +262,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^Disconnecting: server_input_channel_req: unknown channel -?\d+/) or
        ($ThisLine =~ m/^connect from \d+\.\d+\.\d+\.\d+/) or
        ($ThisLine =~ m/^fatal: Timeout before authentication/ ) or
+       ($ThisLine =~ m/^fatal: no hostkey alg/) or
        ($ThisLine =~ m/Connection from .* port /) or
        ($ThisLine =~ m/Postponed (keyboard-interactive|publickey) for [^ ]+ from [^ ]+/) or
        ($ThisLine =~ m/Read from socket failed/) or
