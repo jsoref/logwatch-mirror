@@ -208,7 +208,7 @@ if (keys %NotInDatabase) {
 
 }
 
-if (keys %CantMonitor) {
+if (keys %CantMonitor and $Detail) {
    foreach my $Device (sort keys %CantMonitor) {
       print "\n$Device :\n";
       foreach my $Line (sort keys %{$CantMonitor{$Device}}) {
