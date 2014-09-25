@@ -96,6 +96,12 @@ while (defined(my $ThisLine = <STDIN>)) {
        # ignore
    } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), state (?:read from|written to)/ )) {
        # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), CHECK POWER STATUS spins up disk/ )) {
+       # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), STANDBY mode ignored due to reached limit of skipped checks/ )) {
+       # ignore
+   } elsif ( ($Device) = ($ThisLine =~ /^Device: ([^,]+), is back in ACTIVE or IDLE mode, resuming checks/ )) {
+       # ignore
    } elsif ( $ThisLine =~ /^file \/var\/run\/smartd.pid written containing PID [0-9]+/ ) {
        # ignore
    } elsif ( ($Device,$Msg) = ($ThisLine =~ /^ *$/ )) {
