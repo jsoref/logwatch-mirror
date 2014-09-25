@@ -180,6 +180,7 @@ $Executed_app = 0;
 $PwdChange = 0;
 $RequestKeyFailures = 0;
 %OtherList = ();
+%RootkitHunter = ();
 use Logwatch ':ip';
 
 while (defined($ThisLine = <STDIN>)) {
@@ -527,6 +528,14 @@ while (defined($ThisLine = <STDIN>)) {
         $e='';
      }
      $KerbList{$response}{$type}{$from}{$service}{$client}{$e}++;
+   } elsif ($ThisLine =~ /Rootkit Hunter:/ ) {
+      if ($ThisLine =~ /Please inspect this machine/) {
+         $RootkitHunter{'inspect'}++;
+      } elsif ($ThisLine =~ /check started/) {
+         $RootkitHunter{'runs'}++;
+      } elsif (my ($mins, $secs) = ($ThisLine =~ /Scanning took ([0-9]*) minutes? and ([0-9]*) seconds?/)) {
+         $RootkitHunter{'time'}+= $mins*60 + $secs;
+      }
    } else {
       # Unmatched entries...
       $ThisLine =~ s/\[\d+\]:/:/;
@@ -918,6 +927,15 @@ if (keys %KerbList) {
         }
       }
    }
+}
+
+if (keys %RootkitHunter) {
+   use integer;
+   my ($mins, $secs) = ($RootkitHunter{'time'} / 60, $RootkitHunter{'time'} % 60);
+   print "\nRootkitHunter:\n";
+   print "   Runs: $RootkitHunter{'runs'}\n";
+   print "   Suggested Inspection: $RootkitHunter{'inspect'} Time(s)\n";
+   print "   Total Runtime: $mins minute(s) $secs second(s)\n";
 }
 
 if (keys %OtherList) {
