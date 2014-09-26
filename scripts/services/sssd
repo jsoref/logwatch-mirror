@@ -1,0 +1,82 @@
+########################################################
+## Copyright (c) 2014 Orion Poplawski
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %Errors;
+my %Starts;
+my %Stops;
+my %OtherList;
+
+# Lines are of the form:
+# sssd[service]: 
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+
+   # Strip off and record the service, set to Daemon if none
+   $ThisLine =~ s/sssd\[([^:]+)\]: //;
+   my $Service = defined($1) ? $1 : "Daemon";
+    
+   if ($ThisLine =~ /^Starting up/) {
+      $Starts{$Service}++;
+   } elsif ($ThisLine =~ /^Shutting down/) {
+      $Stops{$Service}++;
+   } elsif ($ThisLine =~ /error/i) {
+      $Errors{$Service}->{$ThisLine}++;
+   } else {
+      $OtherList{"$Service: $ThisLine"}++;
+   }
+}
+
+if (keys %Errors) {
+   print "\nSSSD ERRORS:\n";
+   foreach my $Service (sort {$a cmp $b} keys %Errors) {
+      print "   $Service:\n";
+      foreach my $Error (sort {$a cmp $b} keys %{$Errors{$Service}}) {
+         print "      $Error: " . $Errors{$Service}->{$Error} . " Time(s)\n";
+      }
+   }
+}
+
+if (keys %Starts and $Detail) {
+   print "\nSSSD Services Started:\n";
+   foreach my $Service (sort {$a cmp $b} keys %Starts) {
+      print "   $Service: " . $Starts{$Service} . " Time(s)\n";
+   }
+}
+
+if (keys %Stops and $Detail) {
+   print "\nSSSD Services Stopped:\n";
+   foreach my $Service (sort {$a cmp $b} keys %Stops) {
+      print "   $Service: " . $Stops{$Service} . " Time(s)\n";
+   }
+}
+
+if (keys %OtherList) {
+   print "\n\n**Unmatched Entries**\n";
+   foreach my $line (sort {$a cmp $b} keys %OtherList) {
+      print "   $line: $OtherList{$line} Time(s)\n";
+   }
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
