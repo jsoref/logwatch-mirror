@@ -31,7 +31,8 @@ while (defined($ThisLine = <STDIN>)) {
    if ( ( $ThisLine =~ /CONNECT/ ) or
         ( $ThisLine =~ /[OK|FAIL] RENAME/ ) or
         ( $ThisLine =~ /[OK|FAIL] CHMOD/ ) or
-        ( $ThisLine =~ /authentication failure/ )
+        ( $ThisLine =~ /authentication failure/ ) or
+        ( $ThisLine =~ /^pam_unix\(vsftpd:auth\): check pass; user unknown$/ )
       )
    { # We don't care about these
 
