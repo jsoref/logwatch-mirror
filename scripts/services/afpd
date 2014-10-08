@@ -18,10 +18,20 @@
 ## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
-$Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-$IgnoreUnmatched = $ENV{'afpd_ignore_unmatched'} || 0;
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $IgnoreUnmatched = $ENV{'afpd_ignore_unmatched'} || 0;
+
+my $ThisLine;
+my $Starts;
+my $Stops;
+my $TotalRead;
+my $TotalWritten;
+my %UserLogin;
+my %OtherList;
 
 while (defined($ThisLine = <STDIN>)) {
+   chomp($ThisLine);
    if ( ( $ThisLine =~ /^FTP session closed./ ) or
          ( $ThisLine =~ /^(ANONYMOUS )?FTP login as \'.*\' from [^ ]+ \[.*\] to .*/ ) or
          ( $ThisLine =~ /^FTP no transfer time out, disconnected\./ ) or
@@ -33,11 +43,19 @@ while (defined($ThisLine = <STDIN>)) {
          ( $ThisLine =~ /server_child/ ) or
          ( $ThisLine =~ /session from/ ) or
          ( $ThisLine =~ /ASIP session/ ) or
+         ( $ThisLine =~ /^afp_zzz: (entering|waking up from) extended sleep/ ) or
+         ( $ThisLine =~ /^afp_disconnect: trying primary reconnect/ ) or
+         ( $ThisLine =~ /^afp_disconnect: primary reconnect succeeded/ ) or
+         ( $ThisLine =~ /^Reconnect: transfering session to child/ ) or
+         ( $ThisLine =~ /^Reconnect: killing new session child.* after transfer/ ) or
+         ( $ThisLine =~ /^afp_dsi_transfer_session: successfull primary reconnect/ ) or
+         ( $ThisLine =~ /^AFP Replay Cache match: id: .* \/ cmd: AFP_FLUSHFORK/ ) or
+         ( $ThisLine =~ /^afp_over_dsi: client logged out, terminating DSI session/ ) or
          ( $ThisLine =~ /logout/ )
       ) {
       # We don't care about these
    }
-   elsif ( ($Junk,$Login) = ( $ThisLine =~ /(login|Login by) ([^ ]+)$/) ) {
+   elsif ( my ($Junk,$Login) = ( $ThisLine =~ /(login|Login by) ([^ ]+)$/) ) {
       chomp($Login);
       $UserLogin{$Login}++;
    }
@@ -47,19 +65,19 @@ while (defined($ThisLine = <STDIN>)) {
    elsif ( $ThisLine =~ /shutting down/ ) {
       $Stops++;
    }
-   elsif ( ($Read,$Write) = ( $ThisLine =~ /statistics: (\d+\.\d+) KB read, (\d+\.\d+) KB/) ) {
+   elsif ( my ($Read,$Write) = ( $ThisLine =~ /statistics: (\d+\.\d+) KB read, (\d+\.\d+) KB/) ) {
       $TotalRead+=$Read;
       $TotalWritten+=$Write;
    }
    else {
       # Report any unmatched entries...
-      push @OtherList,$ThisLine;
+      $OtherList{$ThisLine} += 1;
    }
 }
 
 if (keys %UserLogin and $Detail) {
    print "\nUsers Logged In:\n";
-   foreach $Line (keys %UserLogin) {
+   foreach my $Line (keys %UserLogin) {
       print "   $Line : $UserLogin{$Line} Time(s)\n";
    }
 }
@@ -76,9 +94,9 @@ if (($TotalRead or $TotalWritten) and $Detail >= 5) {
    print "\nTransfer Statistics: $TotalRead KB read, $TotalWritten KB written\n";
 }
 
-if (($#OtherList >= 0) and (not $IgnoreUnmatched)) {
+if ((keys %OtherList) and (not $IgnoreUnmatched)) {
    print "\n**Unmatched Entries**\n";
-   print @OtherList;
+   print "  $_: $OtherList{$_} time(s)\n" foreach keys %OtherList;
 }
 
 exit(0);
