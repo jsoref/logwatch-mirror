@@ -84,7 +84,7 @@ while (defined(my $ThisLine = <STDIN>)) {
      $ConFailed{$1}++;
    } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ; COMMAND=(\S+)( ?.*)/) {
       next if (defined($IgnoreCmds{$user}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{$euser}}));
-      next if (defined($IgnoreCmds{'ANY'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'ANY'}{$euser}}));
+      next if (defined($IgnoreCmds{'any'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'any'}{$euser}}));
       push @{$byUser{$user}{$euser}}, [$error . $cmd,$args, $dir, $tty];
       $byUserSum{$user}{$euser}{$cmd} += 1;
    } elsif ( ($user,$euser) = $ThisLine =~ /^\s*(\S+) : no passwd entry for (\S+)\!$/) {
