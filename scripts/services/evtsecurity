@@ -1,20 +1,8 @@
-##########################################################################
-# $Id$
-##########################################################################
-# $Log: evtsecurity,v $
-# Revision 1.3  2008/06/30 23:07:51  kirk
-# fixed copyright holders for files where I know who they should be
-#
-# Revision 1.2  2008/03/24 23:31:26  kirk
-# added copyright/license notice to each script
-#
-# Revision 1.1  2007/04/28 22:50:24  bjorn
-# Added files for Windows Event Log, by Orion Poplawski.  These are for
-# Windows events logged to a server, using Snare Agent or similar.
-##########################################################################
+# Process Windows security events logged to a server, using Snare Agent or
+# similar.
 
 ########################################################
-## Copyright (c) 2008 Orion Poplawski
+## Copyright (c) 2008-2014 Orion Poplawski
 ## Covered under the included MIT/X-Consortium License:
 ##    http://www.opensource.org/licenses/mit-license.php
 ## All modifications and contributions by other persons to
@@ -29,9 +17,21 @@
 ## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
+use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
-while (defined($ThisLine = <STDIN>)) {
+my $SuccessAudits = 0;
+my %SuccessAuditUsers;
+my %FailureAudits;
+my %ClockSkew;
+my %UnknownUser;
+my %UnknownClient;
+my %BadPasswords;
+my %TicketExpired;
+my %ExpiredPassword;
+my %OtherList;
+
+while (defined(my $ThisLine = <STDIN>)) {
    my ($Hostname,$Criticality,$SourceName,$DateTime,$EventID,$SourceName2,$UserName,$SIDType,$EventLogType,$CategoryString,$DataString,$ExpandedString,$Extra);
    #Determine format
    if ($ThisLine =~ /MSWinEventLog\[/) {  # Snare 4
@@ -48,14 +48,63 @@ while (defined($ThisLine = <STDIN>)) {
       next;
    }
    if ($EventLogType eq "Success Audit") {
-      $SucessAudits++;
+      $SuccessAudits++;
       $SuccessAuditUsers{$UserName}++;
    }
    elsif ($EventLogType eq "Failure Audit") {
-      if (($account,$domain,$reason) = ($ExpandedString =~ /^An account failed to log on\..*Account For Which Logon Failed:.*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Failure Reason:\s+(.+)\s+Status:.*Sub Status:/)) {
+      if (my ($account,$domain,$reason) = ($ExpandedString =~ /^An account failed to log on\..*Account For Which Logon Failed:.*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Failure Reason:\s+(.+)\s+Status:.*Sub Status:/)) {
          $FailureAudits{"$Hostname Log On Failure for $domain\\$account: $reason"}++;
-      } elsif (($account,$domain,$process) = ($ExpandedString =~ /^A privileged service was called\..*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Process Name:\s+(.+)\sService/)) {
+      } elsif (my ($account,$domain,$process) = ($ExpandedString =~ /^A privileged service was called\..*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Process Name:\s+(.+)\sService/)) {
          $FailureAudits{"$Hostname Privileged service called for $domain\\$account: $process"}++ if $Detail;
+      } elsif ($EventID == 4768) {
+         # A Kerberos authentication ticket (TGT) was requested
+         my ($Account,$Realm,$Client,$FailureCode) = $ExpandedString =~ /Account Name:\s+(\S*)\s.*Supplied Realm Name:\s+(\S*)\s.*Client Address:\s+(\S+)\s.*Result Code:\s+(\w+)/;
+         if ($FailureCode eq "0x6") {
+            # Client not found in Kerberos database
+            $UnknownClient{"$Account\\$Realm $Client"}++;
+         } else {
+            $FailureAudits{"$Hostname $ExpandedString"}++;
+         }
+      } elsif ($EventID == 4769) {
+         # A Kerberos service ticket was requested
+         my ($Client,$FailureCode) = $ExpandedString =~ /Client Address:\s+(\S+)\s.*Failure Code:\s+(\w+)/;
+#print STDERR "EventID=$EventID Client=$Client FailureCode=$FailureCode ExpandedString=$ExpandedString\n";
+         if ($FailureCode eq "0x20") {
+            # Ticket expired
+            $TicketExpired{$Client}++;
+         } elsif ($FailureCode eq "0x25") {
+            # Clock skew too great
+            $ClockSkew{$Client}++;
+         } else {
+            $FailureAudits{"$Hostname $ExpandedString"}++;
+         }
+      } elsif ($EventID == 4771) {
+         # Kerberos pre-authentication failed
+         my ($Account,$Client,$FailureCode) = $ExpandedString =~ /Account Name:\s+(\S+)\s.*Client Address:\s+(\S+)\s.*Failure Code:\s+(\w+)/;
+         if ($FailureCode eq "0x18") {
+            #Pre-authentication information was invalid - bad password
+            $BadPasswords{"$Account $Client"}++;
+         } elsif ($FailureCode eq "0x25") {
+            # Clock skew too great
+            $ClockSkew{$Client}++;
+         } else {
+            $FailureAudits{"$Hostname $ExpandedString"}++;
+         }
+      } elsif ($EventID == 4776) {
+         # The domain controller attempted to validate the credentials for an account
+         my ($Account,$Client,$FailureCode) = $ExpandedString =~ /Logon Account:\s+(\S+)\s+Source Workstation:\s+(\S+)\s.*Error Code:\s+(\w+)/;
+         if ($FailureCode eq "0xc0000064") {
+            # user name does not exist
+            $UnknownUser{"$Account $Client"}++;
+         } elsif ($FailureCode eq "0xc000006a") {
+            # user name is correct but the password is wrong
+            $BadPasswords{"$Account $Client"}++;
+         } elsif ($FailureCode eq "0xc0000071") {
+            # expired password
+            $ExpiredPassword{"$Account $Client"}++;
+         } else {
+            $FailureAudits{"$Hostname $ExpandedString"}++;
+         }
       } else {
          $FailureAudits{"$Hostname $ExpandedString"}++;
       }
@@ -67,24 +116,65 @@ while (defined($ThisLine = <STDIN>)) {
    }
 }
 
-if ($SucessAudits and ($Detail >=0) ) {
-   print "\nSuccess Audits " . $SucessAudits . " Time(s)\n";
-   foreach $User (keys %SuccessAuditUsers) {
-      print "    $User : $SuccessAuditUsers{$User} Times\n";
+if (keys %ClockSkew) {
+   print "\nClock skew too great\n";
+   foreach my $Client (sort keys %ClockSkew) {
+      print "    $Client : $ClockSkew{$Client} Times\n";
+   }
+}
+
+if (keys %ExpiredPassword) {
+   print "\nPassword Expired\n";
+   foreach my $Account (sort keys %ExpiredPassword) {
+      print "    $Account : $ExpiredPassword{$Account} Times\n";
+   }
+}
+
+if (keys %UnknownUser) {
+   print "\nUnknown Users\n";
+   foreach my $Account (sort keys %UnknownUser) {
+      print "    $Account : $UnknownUser{$Account} Times\n";
+   }
+}
+
+if (keys %UnknownClient) {
+   print "\nUnknown Clients\n";
+   foreach my $Account (sort keys %UnknownClient) {
+      print "    $Account : $UnknownClient{$Account} Times\n";
+   }
+}
+
+if (keys %BadPasswords) {
+   print "\nBad Passwords\n";
+   foreach my $Account (sort keys %BadPasswords) {
+      print "    $Account : $BadPasswords{$Account} Times\n";
+   }
+}
+
+if (keys %TicketExpired) {
+   print "\nTicket Expired\n";
+   foreach my $Client (sort keys %TicketExpired) {
+      print "    $Client : $TicketExpired{$Client} Times\n";
    }
 }
 
 if (keys %FailureAudits) {
    print "\nFailure Audits\n";
-   foreach $Error (sort keys %FailureAudits) {
+   foreach my $Error (sort keys %FailureAudits) {
       print "    $Error : $FailureAudits{$Error} Times\n";
    }
 }
 
-exit(0);
+if ($SuccessAudits and ($Detail >=0) ) {
+   print "\nSuccess Audits " . $SuccessAudits . " Time(s)\n";
+   foreach my $User (keys %SuccessAuditUsers) {
+      print "    $User : $SuccessAuditUsers{$User} Times\n";
+   }
+}
+
 if (keys %OtherList) {
    print "\n**** Unmatched entries ****\n";
-   foreach $Error (keys %OtherList) {
+   foreach my $Error (keys %OtherList) {
       print "    $Error : $OtherList{$Error} Times\n";
    }
 }
