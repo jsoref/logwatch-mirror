@@ -18,6 +18,8 @@
 #########################################################
 
 use strict;
+use URI::URL;
+
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 my $SuccessAudits = 0;
@@ -47,6 +49,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       print STDERR "Cannot parse $ThisLine";
       next;
    }
+   my $url = URI::URL->new("https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=$EventID");
    if ($EventLogType eq "Success Audit") {
       $SuccessAudits++;
       $SuccessAuditUsers{$UserName}++;
@@ -63,7 +66,7 @@ while (defined(my $ThisLine = <STDIN>)) {
             # Client not found in Kerberos database
             $UnknownClient{"$Account\\$Realm $Client"}++;
          } else {
-            $FailureAudits{"$Hostname $ExpandedString"}++;
+            $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
       } elsif ($EventID == 4769) {
          # A Kerberos service ticket was requested
@@ -76,7 +79,7 @@ while (defined(my $ThisLine = <STDIN>)) {
             # Clock skew too great
             $ClockSkew{$Client}++;
          } else {
-            $FailureAudits{"$Hostname $ExpandedString"}++;
+            $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
       } elsif ($EventID == 4771) {
          # Kerberos pre-authentication failed
@@ -88,7 +91,7 @@ while (defined(my $ThisLine = <STDIN>)) {
             # Clock skew too great
             $ClockSkew{$Client}++;
          } else {
-            $FailureAudits{"$Hostname $ExpandedString"}++;
+            $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
       } elsif ($EventID == 4776) {
          # The domain controller attempted to validate the credentials for an account
@@ -103,10 +106,10 @@ while (defined(my $ThisLine = <STDIN>)) {
             # expired password
             $ExpiredPassword{"$Account $Client"}++;
          } else {
-            $FailureAudits{"$Hostname $ExpandedString"}++;
+            $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
       } else {
-         $FailureAudits{"$Hostname $ExpandedString"}++;
+         $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
       }
    }
    else {
