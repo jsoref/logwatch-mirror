@@ -76,6 +76,10 @@ while (defined($ThisLine = <STDIN>)) {
       # ignore
    } elsif ($ThisLine =~ m/^connect_blocking: connected/) {
       # ignore
+   } elsif ($ThisLine =~ m/^connect_blocking: getsockopt ([0-9a-fA-F.:]+: Connection refused) \(\d+\)$/) {
+      $errors{"connect_blocking: $1"}++;
+   } elsif ($ThisLine =~ m/^(?:remote socket|local socket|accept): (Too many open files) \(\d+\)$/) {
+      $errors{"$1: increase the maximum number of open file descriptors"}++;
    } elsif ($ThisLine =~ m/^Log file reopened$/) {
       # ignore
    } elsif ($ThisLine =~ m/^SSL socket closed on SSL_read with \d+ byte\(s\) in buffer$/) {
@@ -88,6 +92,8 @@ while (defined($ThisLine = <STDIN>)) {
       $connections{"remote: $1"}{$2}++;
    } elsif ($ThisLine =~ m/^Error detected on (SSL|socket) \((read|write)\) file descriptor: (.*) \(\d+\)/) {
       $errors{"$1 $2 file descriptor: $3"}++;
+   } elsif ($ThisLine =~ m/^(SSL_write: (?:Broken pipe|Connection reset by peer)) \(\d+\)$/) {
+      $errors{"$1"}++;
    } elsif ($ThisLine =~ m/^transfer: s_poll_wait: TIMEOUTclose exceeded: closing$/) {
       $notices{"TIMEOUTclose exceeded: closing connection"}++;
    } elsif ($ThisLine =~ m/^(SSL_(?:accept|read|shutdown): .*|getpeerbyname: .*)(?: \(\d+\))?$/) {
