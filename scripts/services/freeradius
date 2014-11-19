@@ -35,6 +35,8 @@ my %discards = ();
 my %warnings = ();
 my %givingUps = ();
 my $killedChilds = 0;
+my $requests = 0;
+my $requests_duration = 0;
 
 my $ThisLine;
 while (defined($ThisLine = <STDIN>)) {
@@ -108,9 +110,15 @@ while (defined($ThisLine = <STDIN>)) {
       $killedChilds++;
    }
 
+   # TD: Request 67678577 has been waiting in the processing queue for 378 seconds.  Check that all databases are running properly!
+   elsif ($ThisLine =~ m/^Request \d+ has been waiting in the processing queue for (\d+) seconds/) {
+      $requests++;
+      $requests_duration += $1;
+   }
+
    # TD: WARNING: Unresponsive child for request 4737598, in component accounting module unix
    # TD: WARNING: Child is hung for request 4737598 in component accounting module unix.
-   elsif ( $ThisLine =~ m/^WARNING: (Unresponsive child|Child is hung) for request \d+,? in component (\w+) module ?(\w*)/ ) {
+   elsif ( $ThisLine =~ m/^WARNING: (Unresponsive child|Child is hung) for request \d+,? in component ([<>\w]+) module ?([<>\w]*)/ ) {
       $warnings{"$1 in component:"}{"$2 [module: $3]"}++;
    }
 
@@ -129,6 +137,14 @@ while (defined($ThisLine = <STDIN>)) {
 #################################
 # Output section
 ################################
+
+if ($requests > 0) {
+   printf "Long running requests: Check that all databases are running properly!\n";
+   printf "  %-40s : %5d\n", 'Long running requests', $requests;
+   printf "  %-40s : %5d s\n", 'avg queue time per long running request', $requests_duration / $requests;
+   print "\n";
+}
+
 
 sub compPerIp {
   return $wrong_ip{$b} <=> $wrong_ip{$a};
