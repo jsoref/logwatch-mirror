@@ -193,6 +193,10 @@ while (defined($ThisLine = <STDIN>)) {
     # dovecot: [ID 583609 mail.info] lmtp(12782, cloyce@headgear.org): jBt1EfjCMk3uMQAAm9eMBA: msgid=<4D32DB1F.3080707@c-dot.co.uk>: saved mail to INBOX
       $Deliver{$User}{$Mailbox}++;
 
+# LMTP-based Sieve delivery
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): .*: sieve: msgid=.*: stored mail into mailbox '(.*)'/ ) ) {
+      $Deliver{$User}{$Mailbox}++;
+
 # sieve forward
     } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
       $Forwarded{$User}{$Recip}++;
@@ -204,7 +208,7 @@ while (defined($ThisLine = <STDIN>)) {
     } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
       $VacationDup{$User}{$Recip}++;
 
-    } elsif ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\(.*\): sieve: msgid=.* marked message to be discarded if not explicitly delivered/ ) {
+    } elsif ( $ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\(.*\): .*sieve: msgid=.* marked message to be discarded if not explicitly delivered/ ) {
     # dovecot: lda(joe): sieve: msgid=<m$01$@com>: marked message to be discarded if not explicitly delivered (discard action)
     # IGNORE
     } elsif ( $ThisLine =~ /^$dovecottag lmtp\(.*\): Connect from/ ) {
