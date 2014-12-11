@@ -30,6 +30,7 @@ my %UnknownUser;
 my %UnknownClient;
 my %BadPasswords;
 my %TicketExpired;
+my %AccountLocked;
 my %ExpiredPassword;
 my %OtherList;
 
@@ -108,6 +109,9 @@ while (defined(my $ThisLine = <STDIN>)) {
          } elsif ($FailureCode eq "0xc0000071") {
             # expired password
             $ExpiredPassword{"$Account $Client"}++;
+         } elsif ($FailureCode eq "0xc0000234") {
+            # account locked
+            $AccountLocked{"$UserName $Client"}++;
          } else {
             $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
@@ -126,6 +130,13 @@ if (keys %ClockSkew) {
    print "\nClock skew too great\n";
    foreach my $Client (sort keys %ClockSkew) {
       print "    $Client : $ClockSkew{$Client} Times\n";
+   }
+}
+
+if (keys %AccountLocked) {
+   print "\nAccount Locked\n";
+   foreach my $Account (sort keys %AccountLocked) {
+      print "    $Account : $AccountLocked{$Account} Times\n";
    }
 }
 
