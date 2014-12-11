@@ -65,6 +65,9 @@ while (defined(my $ThisLine = <STDIN>)) {
          if ($FailureCode eq "0x6") {
             # Client not found in Kerberos database
             $UnknownClient{"$Account\\$Realm $Client"}++;
+         } elsif ($FailureCode eq "0x17") {
+            #   Password has expired
+            $ExpiredPassword{"$UserName"}++;
          } else {
             $FailureAudits{"$Hostname $ExpandedString\n$url"}++;
          }
