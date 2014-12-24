@@ -34,27 +34,27 @@
 #use warnings;
 use strict;
 
-my $Detail 	= $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
-my $Version	= "1.4-20130219";
+my $Detail         = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Version        = "1.4-20130219";
 
 # initialize logwatch variables 
-my $ThisLine	= "";
-my %OtherList 	= ();
+my $ThisLine        = "";
+my %OtherList       = ();
 
 # initialize variables which save the stats
-my ($Starts,$Stops,$Reloads)	= ( 0, 0, 0);
-my ($Perms,$FileOpenErrors)	= ( 0, 0);
-my ($Drops, $WriteErrsSum)	= ( 0, 0);
-my ($ExceedConns)	= ( 0);
-my (%PermFiles, %OpenFiles)	= ( (), ());
-my (%WriteErrs, %Connections)	= ( (), ());
-my (%Conns, %ConnsSum) = ();
-my (%Stats_center, %Stats_source, %Stats_dest)	= ( (), (), ());
-my (%Stats_dropped, %Stats_supp, %Stats_global)	= ( (), (), ());
-my (%Stats_program, %Stats_stored, %Stats_net) = ( (), (), ());
+my ($Starts,$Stops,$Reloads)       = ( 0, 0, 0);
+my ($Perms,$FileOpenErrors)        = ( 0, 0);
+my ($Drops, $WriteErrsSum)         = ( 0, 0);
+my ($ExceedConns)                  = ( 0);
+my (%PermFiles, %OpenFiles)        = ( (), ());
+my (%WriteErrs, %Connections)      = ( (), ());
+my (%Conns, %ConnsSum)             = ();
+my (%Stats_center, %Stats_source, %Stats_dest)   = ( (), (), ());
+my (%Stats_dropped, %Stats_supp, %Stats_global)  = ( (), (), ());
+my (%Stats_program, %Stats_stored, %Stats_net)   = ( (), (), ());
 my (%Stats_dropped_program, %Stats_supp_program) = ( (), ());
-my (%Stats_dropped_net, %Stats_supp_net)	= ( (), ());
-my (%Warnings, %IntErrors) = ( (), ());
+my (%Stats_dropped_net, %Stats_supp_net)         = ( (), ());
+my (%Warnings, %IntErrors)                       = ( (), ());
 
 ### Parse the lines ###
 
@@ -150,8 +150,8 @@ while (defined($ThisLine = <STDIN>)) {
 
    # Log statistics from syslog-ng v2.X
    #TD syslog-ng[4883]: Log statistics; dropped='program(/path/to/p)=12', 
-   #	processed='center(queued)=1717', processed='center(received)=916', ...
-   #	suppressed='program(/path/to/p)=0'
+   #        processed='center(queued)=1717', processed='center(received)=916', ...
+   #        suppressed='program(/path/to/p)=0'
    # Log statisctics from syslog-ng v3.X
    #TD syslog-ng[1625]: Log statistics; processed='destination(newsnotice)=0',
    #     processed='center(queued)=0', processed='src.internal(src#0)=7',
@@ -167,7 +167,8 @@ while (defined($ThisLine = <STDIN>)) {
          } elsif ($processed[$i] eq "destination") {
             $Stats_dest{$processed[$i+1]} = 
                $Stats_dest{$processed[$i+1]} + $processed[$i+2];
-	      } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal") {
+         } elsif ($processed[$i] eq "source" || $processed[$i] eq "src.internal" ||
+                  $processed[$i] eq 'src.none' ) {
             $Stats_source{$processed[$i+1]} = 
                $Stats_source{$processed[$i+1]} + $processed[$i+2];
          } elsif ($processed[$i] eq "global") {
@@ -179,10 +180,10 @@ while (defined($ThisLine = <STDIN>)) {
          } elsif ($processed[$i] =~ /(?:dst\.)?(?:udp|tcp)/) {
             $Stats_net{$processed[$i+1]} =
                $Stats_net{$processed[$i+1]} + $processed[$i+2];
-	 } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
+         } else { chomp($ThisLine); $OtherList{$ThisLine}++; }
       }
       my @dropped =
-	      $ThisLine =~ /dropped='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
+              $ThisLine =~ /dropped='([a-z.]*)\((\S*)\)=([0-9]*)'/g;
       for (my $i=0; $i<@dropped; $i=$i+3)
       {
          if ($dropped[$i] eq "program" || $dropped[$i] eq "pipe") {
@@ -306,11 +307,11 @@ if ($Perms) {
     if ($Detail >= 5) {
         print "\nSyslog-ng changed the permission on the file(s):";
         foreach my $file (keys %PermFiles) {
- 	    printf "\n\t%-41s %5i Time(s)", $file, $PermFiles{$file};
-	}
-	print "\n";
+             printf "\n\t%-41s %5i Time(s)", $file, $PermFiles{$file};
+        }
+        print "\n";
     } else {
-	printf "\n$-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
+        printf "\n$-48s %5i Time(s)\n", "Syslog-ng changed permission on file(s):", $Perms;
     }
 }
 
@@ -320,9 +321,9 @@ if ($FileOpenErrors) {
         foreach my $file (keys %OpenFiles) {
             printf "\n\t%-41s %5i Time(s)", $file, $OpenFiles{$file};
         }
-	print "\n";
+        print "\n";
     } else {
-	printf "\n%-48s %5i Time(s)\n", "Syslog-ng could not open file:", $FileOpenErrors;
+        printf "\n%-48s %5i Time(s)\n", "Syslog-ng could not open file:", $FileOpenErrors;
     }
 }
 
@@ -333,7 +334,7 @@ if (keys %Conns) {
             foreach my $IP (keys %{$Conns{$cat}}) {
                 printf "\n\t%-41s %5i Time(s)", $IP, $Conns{$cat}{$IP}; 
             }
- 	    print "\n";
+            print "\n";
         } else {
             printf "\n%-48s %5i Time(s)\n", "$cat:", $ConnsSum{$cat};
         }
@@ -363,7 +364,10 @@ if (keys %Stats_center || keys %Stats_dest || keys %Stats_source ||
 
    if ($Stats_center{received} && %Stats_source) {
       $lost_rcvd = 0 - $Stats_center{received};
-      map { $lost_rcvd = $lost_rcvd + $Stats_source{$_} } keys %Stats_source;
+      map {
+         # skip 'src#X' as this seams to be aggregated into 'src'
+         $lost_rcvd = $lost_rcvd + $Stats_source{$_} unless ($_ =~ /src#\d+/);
+      } keys %Stats_source;
    }
    if ($Stats_center{queued} && %Stats_dest) {
       $lost_dest = $Stats_center{queued};
