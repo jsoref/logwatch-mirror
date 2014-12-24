@@ -1295,6 +1295,8 @@ sub parselogs {
       # set env variables LOGWATCH_mumble_LIST
       push @EnvList, 'LOGWATCH_LOGFILE_LIST';
       push @EnvList, 'LOGWATCH_ARCHIVE_LIST';
+      $ENV{'LOGWATCH_LOGFILE_LIST'} = '';
+      $ENV{'LOGWATCH_ARCHIVE_LIST'} = '';
       foreach my $LogGroup (@FileList) {
          foreach my $log (@{$LogFileData{$LogGroup}{'logfiles'}}) {
             $ENV{'LOGWATCH_LOGFILE_LIST'} .= $log . " ";
