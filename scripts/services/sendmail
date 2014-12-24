@@ -214,12 +214,14 @@
 #    etc, to logwatch-devel@lists.sourceforge.net
 ########################################################
 
-#use diagnostics;
-#use strict;
+use diagnostics;
+use strict;
 
 use Logwatch ':sort';
 use Errno;
 
+# PrettyHost decomposes host names and IP addresses and
+# formats them to align vertically
 sub PrettyHost {
    # $_[0] is the line to format
    my $Line = $_[0];
@@ -230,7 +232,7 @@ sub PrettyHost {
        ($main::sendmail_prettyhost == 0)) {
       return($Line);
    }
-   my ($Name, $Addr, $Other) = ($Line =~ /^\s*(.*?)\s*(\[[\d.:]*\])\s*(.*?)\s*$/);
+   my ($Name, $Addr, $Other) = ($Line =~ /^\s*(.*?)\s*(\[[\d\.:]*\])\s*(.*?)\s*$/);
    if (index($Line, "\[") < 0) {
       $Name = $Line;
    }
@@ -243,11 +245,35 @@ sub PrettyHost {
    # From LineLength, we will use 18 chars for one space
    # and a full IPv4 address
 
-   while ((length($Name) > $LineLength-18) and (($Name =~ tr/\./\./) > 1) ) {
-      $Name =~ s/[^\.]*\.(.*)/$1/;
+   if (length($Line) > $LineLength) {
+      while ((length($Name) > $LineLength-21) and (($Name =~ tr/\./\./) > 1) ) {
+         $Name =~ s/[^\.]*\.(.*)/$1/;
+      }
+      $Name = "..." . $Name;
    }
    sprintf ("%*s %-17s", 18-$LineLength, $Name, $Addr);
 }
+
+# PrettyTimes simply formats the lines with counts "Time(s)" to
+# align with the results of the PrettyHost routine
+
+sub PrettyTimes {
+   # $_[0] is the event to format (string)
+   my $Line = $_[0];
+   # $_[1] is the number of times it occurs (integer)
+   my $Amount = $_[1];
+   #
+   if ((not defined $main::sendmail_prettyprint) or
+       ($main::sendmail_prettyprint == 0)) {
+      printf "\n%s: %d Time%s", $Line, $Amount, ($Amount == 1) ? "" : "s";
+   } else {
+      my $line_length = 72-length($Line);
+      printf "\n%s %*d Time%s", $Line, ($line_length > 0)? $line_length : 0,
+         $Amount, ($Amount == 1) ? "" : "s";
+   }
+   return 0;
+}
+
 
 
 my $LogwatchDetail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
@@ -257,7 +283,13 @@ my $sendmail_milterheaderstocount = $ENV{'sendmail_milterheaderstocount'} || "";
 my @MilterHeadersToCount = split(/\|/, $sendmail_milterheaderstocount);
 my $MatchFilter = $ENV{'sendmail_matchfilter'} || "";
 my $ReportFilter = $ENV{'sendmail_reportfilter'} || "";
-our $sendmail_prettyhost = $ENV{'sendmail_prettyhost'} || 0;
+
+# Extract formatting directives.  If Sendmail_PrettyHost is set,
+# assume that Sendmail_PrettyPrint is also desired
+our $sendmail_prettyhost = $ENV{'sendmail_prettyhost'};
+if (not defined $sendmail_prettyhost) {$sendmail_prettyhost = 1};
+our $sendmail_prettyprint = $ENV{'sendmail_prettyprint'};
+if ((not defined $sendmail_prettyprint) || $sendmail_prettyhost) {$sendmail_prettyprint = 1};
 
 my $Detail = $ENV{'sendmail_detail'};
 
@@ -277,7 +309,7 @@ my $AddrRcpts =          my $BytesTransferred =   my $CantCreateOutput =
 my $DaemonThrottle =     my $LoadAvgQueueSkip =   my $LoadAvgReject =
 my $MsgsNoRcpt =
 my $MsgsSent =           my $NoMilterFilters =    my $NoMoreSpace =
-my $NumTimeoutSend =     my $NumTimeoutSendWarnings =my $OutdatedAliasdb =
+my $OutdatedAliasdb =
 my $OverSize =           my $OverSizeBytes =      my $RelayLocalhost =
 my $RemoteProtocolError =my $SendmailStarts =
 my $SendmailStopped =    my $TLSAcceptFailed =    my $TLSConnectFailed =
@@ -312,7 +344,7 @@ $Temp1,                  $ThisLine,               $ThisOne,
 $TimeoutSend,            $TimeoutSendWarning,     $TLSFile,
 $TLSReason,              $TotalBytes,             $TotalNum,
 $ToUser,                 $User,                   $Usr,
-$Warning,		 $Directory, 		  $Cause
+$Warning,                $Directory,              $Cause
 );
 
 
@@ -321,7 +353,7 @@ my @SizeDist;
 
 my (
 %Abuse,                  %AddressError,           %AttackAttempt,
-%AuthWarns,              %BadAuth,
+%AUTHfailure,            %AuthWarns,              %BadAuth,
 %BadRcptThrottle,        %BlackHoled,
 %BlackHoles,             %CheckMailReject,        %CheckRcptReject,
 %CollectError,           %CommandUnrecognized,    %DisabledMailbox,
@@ -332,13 +364,13 @@ my (
 %LoadAvg,                %LostInputChannel,
 %LostQueueFile,          %LowSpace,               %MailBomber,
 %MailBomberConn,         %Mailers,                %MailRejected,
-%MilterDeferrals,
+%MilterDeferrals,        %MilterErrors,
 %MilterHeaderCount,      %Msgs,                   %NotLocal,
 %OtherList,              %PREGreeting,            %PREGreetingQueue,
 %Quarantined,
 %RelayDenied,            %RelayReject,            %ReturnReceipts,
-%RuleSets,
-%SaslError,              %SenderIDresults,        %SortedUsers,
+%RuleSets,               %SaslError,              %SenderIDResults,
+%SentTimeouts,           %SortedUsers,
 %SPFResults,             %Starttls,               %StarttlsCert,
 %StarttlsCipher,         %StatDeferred,           %StatFileError,
 %StatRejected,           %StatRejectedLog,
@@ -347,12 +379,6 @@ my (
 %TooManyHops,            %UnknownUsers,           %UnknownUsersCheckRcpt,
 %WUnsafe
 );
-
-
-
-# Initialize the STARTTLS verification results
-$Starttls{'server'} = [0, 0, 0, 0, 0];
-$Starttls{'client'} = [0, 0, 0, 0, 0];
 
 # Initialize $SizeDist array
 for my $i (0..9) {
@@ -460,6 +486,13 @@ next unless $ThisLine;
       # Need RCPT most likely because of incorrect RCPT command, in which case ignore it
       ( ( $ThisLine =~ /^--- 503 5(\.[0-9]){2} Need RCPT \(recipient\)$/ ) and
           ( $Msgs{$QueueID}{"BadRCPT"} > 0)) or
+      ( $ThisLine =~ /^--- 530 5\.7\.0 Authentication required$/ ) or
+      # AUTH failure detected later with %AUTHfailure
+      ( $ThisLine =~ /^--- 535 5\.7\.0 authentication failed$/ ) or
+      # Mailbox disabled detected later by ruleset=check_rcpt
+      ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} .* Mailbox disabled for this recipient$/ ) or
+      # bogus HELO detected later by rulteset=check_rcpt
+      ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} .* bogus HELO name used/ ) or
       # Commands rejected are from greet_pause or milter
       ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} Command rejected$/ ) or
       # User unknown detected later by ruleset=check_rcpt
@@ -519,9 +552,13 @@ next unless $ThisLine;
       ( $ThisLine =~ /^STARTTLS=client, start=ok$/ ) or
 
       # the following is described in tls.c as a bug in OpenSSL, and
-      # recommends that the error message be ignored (last checked on 8.13.3)
+      # recommends that the error message be ignored (last checked on 8.14.9)
       # file=tls.c, LogLevel>15, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=(server|client), SSL_shutdown not done$/ ) or
+      # and something similar occurs for the one sending the shutdown after the
+      # connection is already closed by the other side
+      # file=tls.c, LogLevel>11, LOG_WARNING
+      ( $ThisLine =~ /^STARTTLS=(server|client), SSL_shutdown failed/ ) or
       # the following is a log message introduced in 8.13.6
       # file=sfsasl.c, LogLevel>14, LOG_INFO
       # tls_retry errors are either transient, or additional log info is issued and parsed
@@ -645,8 +682,8 @@ next unless $ThisLine;
    # file=deliver.c, LogLevel>-1, LOG_INFO
    } elsif ( ($ToUser, $MailerString, $DeliverStat) = ($ThisLine =~ /^to=(.*?), (.*)stat=(.*)/ ) ) {
       if ( $DeliverStat =~ /^Sent/ ) {
-     	   ( ($MailerType) = ( $MailerString =~ /mailer=(.*?),/));
-     	   ( ($RelayName) = ( $MailerString =~ /relay=(.*?),/));
+           ( ($MailerType) = ( $MailerString =~ /mailer=(.*?),/));
+           ( ($RelayName) = ( $MailerString =~ /relay=(.*?),/));
          $MailerType =~ s/^\s*$/\(unspecified\)/;
          # remove the entries from MSP (Mail Submission Program) relay to
          #    localhost
@@ -699,8 +736,13 @@ next unless $ThisLine;
       } elsif ($Reason =~ /^Unable to deliver mail$/) {
           $StatRejected{"Unable to deliver mail"}{"system notify"}++;
       # Return Receipts from successful delivery
-      } elsif ($Reason = ~/Return receipt$/) {
-	  $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
+      } elsif ($Reason =~ /^Return receipt$/) {
+         $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
+      # Timeouts
+      } elsif ($Reason =~ /^(Warning: could not send message for past .*)/ ) {
+          $SentTimeouts{$Reason}++;
+      } elsif ($Reason =~ /^(Cannot send message for .*)/ ) {
+          $SentTimeouts{$Reason}++;
       }
 
    # These are transient errors
@@ -713,15 +755,6 @@ next unless $ThisLine;
    # file=deliver.c, LogLevel>4, LOG_INFO (versions 8.11 and earlier)
    } elsif ( ($NewQueueID, $Owner) = ( $ThisLine =~ /^clone ($QueueIDFormat), owner=(.*)/o ) ) {
       $Msgs{$NewQueueID}{"FromUser"} = $Owner;
-   # file=envelope.c
-   } elsif ( $ThisLine =~ /(return to sender|sender notify|postmaster notify|DSN): Warning: could not send message for past (.*)/ ) {
-      $TimeoutSendWarning = $2;
-      $NumTimeoutSendWarnings++;
-   } elsif ( $ThisLine =~ /(return to sender|sender notify|postmaster notify|DSN): Cannot send message for (.*)/ ) {
-      $TimeoutSend = $2;
-      $NumTimeoutSend++;
-   } elsif ($ThisLine=~ /(return to sender|sender notify|postmaster notify|DSN): Return receipt/) {
-      $ReturnReceipts{$Msgs{$QueueID}{"FromUser"}}++;
    # file=main.c, LogLevel>-1, LOG_INFO
    } elsif ( $ThisLine =~ /^starting daemon/) {
       $SendmailStarts++;
@@ -935,6 +968,9 @@ next unless $ThisLine;
    # file=stats.c, LogLevel>12, LOG_INFO
    } elsif ( ($StatFile, $StatError) = ($ThisLine=~ /^poststats: (.*?): (.*)/) ) {
       $StatFileError{$StatFile}{$StatError}++;
+   # file=srvrsmtp.c, LogLevel>9, LOG_WARNING
+   } elsif ( ($Auth, $Reason, $RelayHost) = ($ThisLine =~ /^AUTH failure \((.*)?\): ([^\)]*)\(.* relay=(.*)/) ) {
+      $AUTHfailure{$RelayHost}{$Reason}++;
    # file=tls.c, LogLevel>7, LOG_INFO
    } elsif ($ThisLine=~ /STARTTLS=.* field=cn_issuer, status=failed to extract CN/ ) {
       $NoCommonName++;
@@ -959,18 +995,10 @@ next unless $ThisLine;
    # file=tls.c, LogLevel>8, LOG_INFO
    } elsif ( ($StarttlsMode, $StarttlsVerify, $StarttlsCipherType, $StarttlsNumBits) =
       ($ThisLine =~ /^STARTTLS=(server|client), relay=.*, version=.*, verify=(\w*), cipher=(.*), bits=(\w*\/\w*)/) ) {
-      # ignore "NO", "NOT", "FAIL", "NONE", since no authentication granted
-      if (($StarttlsVerify =~ /^NO/i) or ($StarttlsVerify =~ /FAIL/))  {
-      } elsif ($StarttlsVerify =~ /OK/i) {
-         $Starttls{$StarttlsMode}[0]++;
-      } elsif ($StarttlsVerify =~ /TEMP/i) {
-         $Starttls{$StarttlsMode}[1]++;
-      } elsif ($StarttlsVerify =~ /PROTOCOL/i) {
-         $Starttls{$StarttlsMode}[2]++;
-      } elsif ($StarttlsVerify =~ /SOFTWARE/i) {
-         $Starttls{$StarttlsMode}[3]++;
+      if      ($StarttlsVerify =~ /^OK$|^TEMP$|^PROTOCOL$|^SOFTWARE$|^NO$|^NOT$|^FAIL$|^NONE$/) {
+         $Starttls{$StarttlsMode}{$StarttlsVerify}++;
       } else {
-         $Starttls{$StarttlsMode}[4]++;
+         $Starttls{$StarttlsMode}{'Other'}++;
       }
       $StarttlsCipher{"Cipher: " . $StarttlsCipherType . " Bits: " . $StarttlsNumBits}++;
    # file=queue.c, LogLevel>-1, LOG_ALERT
@@ -1038,12 +1066,12 @@ next unless $ThisLine;
    } elsif ($ThisLine =~ /ruleset=check_relay, arg1=([^,]*),.* reject=550 5\.7\.1 Access denied/) {
       # We block some particularly annoying spam domains with the
       # following in /etc/mail/access...
-      # From:worduphosting.com  ERROR:550 5.7.1 Access denied
+      # From:example.com ERROR:550 5.7.1 Access denied
       # Remember the error message is user defined in /etc/mail/access
       # So if anyone can make a better check please do -mgt
 
 # Note (-bl): the same output is achieved by using the label REJECT in /etc/mail/access file:
-#       From:worduphosting.com   REJECT
+#       From:example.com   REJECT
       $KnownSpammer{$1}++;
    # add support for DISCARD in /etc/mail/access
    } elsif ($ThisLine =~ /ruleset=check_(?:mail|rcpt), arg1=([^,]*), relay=.*\[.+\]( \(may be forged\))?, discard/) {
@@ -1089,7 +1117,7 @@ next unless $ThisLine;
 
    } elsif ($ThisLine =~ /reject=550 5\.7\.1 <[^ ]*@([^ ]*)>\.\.\. Relaying Denied/) {
       # We block some particularly annoying spam domains with the following in /etc/mail/access...
-      # From:worduphosting.com	ERROR:550 5.7.1 Relaying Denied (Spammer)
+      # From:example.com  ERROR:550 5.7.1 Relaying Denied (Spammer)
 
 # Note (-bl): this is the same as an earlier check_rcpt, except that the word Denied is capitalized here.
 #       So to avoid confusion I suggest that we use the REJECT label in the access file.
@@ -1138,8 +1166,11 @@ next unless $ThisLine;
          # the same
          $ThisLine =~ s/\\([23]\d{2})/chr(oct($1-200))/eg;
       }
-      # store last unmatched entry, in case it is needed later.
-      $LastCmd{$QueueID} = $ThisLine;
+      # store last unmatched entry, in case it is needed later.  But note that some
+      # statements have no QueueID.
+      if (defined $QueueID) {
+         $LastCmd{$QueueID} = $ThisLine;
+      }
       $OtherList{$ThisLine}++;
    }
 }
@@ -1174,7 +1205,7 @@ if (keys %SysErr) {
    # don't sort, as error order may help
    foreach $User (keys %SysErr) {
       foreach $Reason (keys %{$SysErr{$User}}) {
-         print "\n    $Reason: $SysErr{$User}{$Reason} Time(s)";
+         PrettyTimes("    $Reason", $SysErr{$User}{$Reason});
          $TotalSevereError[$SevereErrorIndex] += $SysErr{$User}{$Reason};
       }
    }
@@ -1248,20 +1279,21 @@ if (keys %StatFileError) {
 
 if ($NoMilterFilters > 0) {
    eval "$PrintCond";
-   print "\n\nNo active milter filters\n";
+   print "\n\nNo active milter filters";
 }
 
 if ($OutdatedAliasdb > 0) {
    eval "$PrintCond";
-   print "\n\nAliases database out of date $OutdatedAliasdb Time(s)";
+   print "\n";
+   PrettyTimes("Aliases database out of date", $OutdatedAliasdb);
 }
 
 if (keys %WUnsafe) {
    print "\n\nUnsafe permissions:\n";
    foreach $Directory (keys %WUnsafe) {
-      print "   In program " . $Directory . ": \n";
+      print "   In program " . $Directory . ":";
       foreach $Cause (keys %{$WUnsafe{$Directory}}) {
-         print "      " . $Cause . ": " . $WUnsafe{$Directory}{$Cause} . " Time(s)\n";
+         PrettyTimes("      $Cause", $WUnsafe{$Directory}{$Cause});
       }
    }
 }
@@ -1270,18 +1302,18 @@ if (keys %SaslError) {
    eval "$PrintCond";
    print "\n\nSASL database Errors:\n";
    foreach $File (sort {$a cmp $b} keys %SaslError) {
-      print "   In file $File:\n";
+      print "   In file $File:";
       foreach $Error (sort {$a cmp $b} keys %{$SaslError{$File}}) {
-         print "      $Error: $SaslError{$File}{$Error} Time(s)\n";
+         PrettyTimes("      $Error", $SaslError{$File}{$Error});
       }
    }
 }
 
 if (keys %TooManyHops) {
    eval "$PrintCond";
-   print "\n\nToo many hops:\n";
+   print "\n\nToo many hops:";
    foreach $ThisOne (sort keys %TooManyHops) {
-      print "    $ThisOne: $TooManyHops{$ThisOne} Time(s)\n";
+      PrettyTimes("    $ThisOne", $TooManyHops{$ThisOne});
    }
 }
 
@@ -1296,14 +1328,14 @@ if (($SendmailStarts or $BytesTransferred or $MsgsSent or $AddrRcpts) and
    if ($SendmailStarts > 0) {
       print "\n\nSendmail was started $SendmailStarts time(s)";
    }
-   print "\n\nMessages To Recipients:  $MsgsSent";
+   printf("\n\nMessages To Recipients:%11d", $MsgsSent);
    # Each explicitely addressed recipient in an email is counted as an
    # "Addressed Recipient"
-   print "\nAddressed Recipients:    $AddrRcpts";
-   print "\nBytes Transferred:       $BytesTransferred";
+   printf("\nAddressed Recipients:%13d", $AddrRcpts);
+   printf("\nBytes Transferred:%16d", $BytesTransferred);
    # Messages with no valid recipients (for example, fails
    # some other check) are not delivered
-   print "\nMessages No Valid Rcpts: $MsgsNoRcpt";
+   printf("\nMessages No Valid Rcpts:%10d", $MsgsNoRcpt);
 }
 
 
@@ -1339,7 +1371,7 @@ if (($Detail >= 5) and (keys %LargeMsgs)) {
    eval "$PrintCond";
    print "\n\nLarge Messages (From \-\> To):";
    foreach $ThisOne (sort keys %LargeMsgs) {
-      print "\n    $ThisOne: ${LargeMsgs{$ThisOne}} Time(s)";
+      PrettyTimes("    $ThisOne", ${LargeMsgs{$ThisOne}});
    }
 }
 
@@ -1380,10 +1412,9 @@ if (($Detail >= 10) && (keys %ToList)) {
    #Set sendmail_tolistthreshold = Null to suppress this report -mgt
    if ($ToListThreshold !~ m/NULL/i) {
       print "\n\nTop $ToListThreshold Email Recipients\n";
-      print "----------------------------------\n";
       foreach my $ToAddr (sort {$ToList{$b}<=>$ToList{$a}} keys %ToList) {
          if ($ToListCount >= $ToListThreshold) { last; };
-         print "$ToAddr : $ToList{$ToAddr} emails\n";
+         PrettyTimes("    " . $ToAddr, $ToList{$ToAddr});
          $ToListCount++;
       }
    }
@@ -1398,8 +1429,10 @@ if (($Detail>=10) and (keys %MailBomber)) {
 
    foreach $ThisOne (sort {$MailBomber{$b}<=>$MailBomber{$a}} keys %MailBomber) {
       if ($MailBomber{$ThisOne} >= $MailbombThreshold and $MailBombCount < $MailbombListThreshold) {
-         print "\n\nTop relays (recipients/connections - min $MailbombThreshold  rcpts, max $MailbombListThreshold  lines):" if ! $MailBombCount;
-         print "\n    $MailBomber{$ThisOne}/$MailBomberConn{$ThisOne}: $ThisOne";
+         print "\n\nTop relays (recipients / connections - min $MailbombThreshold rcpts, max $MailbombListThreshold lines):"
+            if ! $MailBombCount;
+         printf("\n    %s%5d / %4d", PrettyHost($ThisOne, 63), $MailBomber{$ThisOne},
+            $MailBomberConn{$ThisOne});
       }
       $MailBombCount++;
    }
@@ -1411,7 +1444,7 @@ if (($Detail >= 5) and (keys %LoadAvg)) {
    print "Connections Rejected due to high load average $LoadAvgReject Time(s)";
    my $MaxLoadAvg = 0;
    foreach $Load (sort keys %LoadAvg) {
-      print "\n    Load Avg $Load: $LoadAvg{$Load} Time(s)";
+      PrettyTimes("    Load Avg $Load", $LoadAvg{$Load});
       if ($Load > $MaxLoadAvg) {
          $MaxLoadAvg = $Load;
       }
@@ -1421,45 +1454,67 @@ if (($Detail >= 5) and (keys %LoadAvg)) {
 
 if (($Detail >= 5) and ($LoadAvgQueueSkip > 0)) {
    eval "$PrintCond";
-   print "\n\nAborted/skipped mail queue run - load average too high: $LoadAvgQueueSkip Time(s)";
+   print "\n";
+   PrettyTimes("Aborted/skipped mail queue run - load average too high", $LoadAvgQueueSkip);
 }
 
 if ($Detail >= 10) {
    foreach $StarttlsMode ('server', 'client') {
-      if (($Starttls{$StarttlsMode}[0] + $Starttls{$StarttlsMode}[1] +
-         $Starttls{$StarttlsMode}[2] + $Starttls{$StarttlsMode}[3] +
-         $Starttls{$StarttlsMode}[4]) > 0) {
+      if (keys %{$Starttls{$StarttlsMode}}) {
          eval "$PrintCond";
 
-         print "\n\nFor STARTTLS in $StarttlsMode mode";
-         if ($Starttls{$StarttlsMode}[0] > 0) {
-            print ",\n\t$Starttls{$StarttlsMode}[0] requests were authenticated";
+         print "\n\nFor STARTTLS in $StarttlsMode mode,";
+         if (defined $Starttls{$StarttlsMode}{'OK'}) {
+            PrettyTimes("    Requests were authenticated",
+               $Starttls{$StarttlsMode}{'OK'});
             }
-         if ($Starttls{$StarttlsMode}[1] > 0) {
-            print ",\n\t$Starttls{$StarttlsMode}[1] requests had temporary errors";
+         if (defined $Starttls{$StarttlsMode}{'TEMP'}) {
+            PrettyTimes("    Requests had temporary errors",
+               $Starttls{$StarttlsMode}{'TEMP'});
             }
-         if ($Starttls{$StarttlsMode}[2] > 0) {
-            print ",\n\t$Starttls{$StarttlsMode}[2] requests had SMTP errors";
+         if (defined $Starttls{$StarttlsMode}{'PROTOCOL'}) {
+            PrettyTimes("    Requests had SMTP protocol errors",
+               $Starttls{$StarttlsMode}{'PROTOCOL'});
             }
-         if ($Starttls{$StarttlsMode}[3] > 0) {
-            print ",\n\t$Starttls{$StarttlsMode}[3] requests failed handshake";
+         if (defined $Starttls{$StarttlsMode}{'SOFTWARE'}) {
+            PrettyTimes("    Requests failed STARTTLS handshake",
+               $Starttls{$StarttlsMode}{'SOFTWARE'});
             }
-         if ($Starttls{$StarttlsMode}[4] > 0) {
-            print ",\n\t$Starttls{$StarttlsMode}[4] requests had unknown errors";
+         if (defined $Starttls{$StarttlsMode}{'NO'}) {
+            PrettyTimes("    No cert was presented",
+               $Starttls{$StarttlsMode}{'NO'});
+            }
+         if (defined $Starttls{$StarttlsMode}{'NOT'}) {
+            PrettyTimes("    No cert was requested",
+               $Starttls{$StarttlsMode}{'NOT'});
+            }
+         if (defined $Starttls{$StarttlsMode}{'FAIL'}) {
+            PrettyTimes("    Cert was presented, but not verified",
+               $Starttls{$StarttlsMode}{'FAIL'});
+            }
+         if (defined $Starttls{$StarttlsMode}{'NONE'}) {
+            PrettyTimes("    STARTTLS was not performed",
+               $Starttls{$StarttlsMode}{'NONE'});
+            }
+         if (defined $Starttls{$StarttlsMode}{'Other'}) {
+            PrettyTimes("    Requests had unknown errors",
+               $Starttls{$StarttlsMode}{'Other'});
             }
          }
    }
-   if (keys %StarttlsCipher) {
+   if (defined keys %StarttlsCipher) {
       eval "$PrintCond";
       print "\n\nSTARTTLS used the following encryption mechanisms";
       foreach $StarttlsCipherEntry (sort keys %StarttlsCipher) {
-        print "\n   $StarttlsCipherEntry: $StarttlsCipher{$StarttlsCipherEntry} Time(s)";
+         PrettyTimes("    " . $StarttlsCipherEntry, 
+            $StarttlsCipher{$StarttlsCipherEntry});
       }
    }
    if ($NoCommonName) {
       eval "$PrintCond";
       # The following is a frequent occurrence, but not an error
-      print "\n\nFor STARTTLS, no CommonName given $NoCommonName time(s).";
+      print "\n";
+      PrettyTimes("For STARTTLS, no CommonName given", $NoCommonName);
       }
 }
 
@@ -1467,7 +1522,7 @@ if (($Detail >= 5) and (keys %ETRNs)) {
    eval "$PrintCond";
    print "\n\nETRNs Received:";
    foreach $ThisOne (sort keys %ETRNs) {
-      print "\n    $ThisOne: $ETRNs{$ThisOne} Time(s)";
+      PrettyTimes("    $ThisOne", $ETRNs{$ThisOne});
    }
 }
 
@@ -1475,7 +1530,7 @@ if(($Detail >= 10) and (keys %ReturnReceipts > 0)) {
    eval "$PrintCond";
    print "\n\nSuccessful Return Receipts:";
    foreach $ThisOne (sort keys %ReturnReceipts) {
-      print "\n    $ThisOne: $ReturnReceipts{$ThisOne} Time(s)";
+      PrettyTimes("    $ThisOne", $ReturnReceipts{$ThisOne});
    }
 }
 
@@ -1483,7 +1538,7 @@ if (($Detail >= 5) and (keys %MilterHeaderCount)) {
    eval "$PrintCond";
    print "\n\nHeaders modified by Milter:";
    foreach $Header (sort keys %MilterHeaderCount) {
-      print "\n    $Header : $MilterHeaderCount{$Header}";
+      PrettyTimes( "    $Header", $MilterHeaderCount{$Header});
    }
 }
 
@@ -1491,7 +1546,7 @@ if (($Detail >= 3) and (keys %MilterDeferrals)) {
    eval "$PrintCond";
    print "\n\nMilter transient failures:";
    foreach $Reason (sort keys %MilterDeferrals) {
-      print "\n    $Reason: $MilterDeferrals{$Reason} Time(s)";
+      PrettyTimes( "    $Reason", $MilterDeferrals{$Reason});
    }
 }
 
@@ -1499,7 +1554,7 @@ if (($Detail >= 10) and (keys %DNSMap)) {
    print "\n\nDNS Map lookups:";
    foreach $Domain (sort keys %DNSMap) {
       foreach $IP (sort keys %{$DNSMap{$Domain}}) {
-         print "\n   $Domain => $IP : $DNSMap{$Domain}{$IP} Time(s)";
+         PrettyTimes( "   $Domain => $IP", $DNSMap{$Domain}{$IP});
       }
    }
 }
@@ -1507,14 +1562,14 @@ if (($Detail >= 10) and (keys %DNSMap)) {
 if (($Detail >= 10) and (keys %SenderIDResults)) {
    print "\n\nSender-ID Results:";
    foreach my $SenderIDStatus (sort keys %SenderIDResults) {
-      printf ("\n   %25s:%6s Time(s)", $SenderIDStatus, $SenderIDResults{$SenderIDStatus});
+      PrettyTimes("   $SenderIDStatus", $SenderIDResults{$SenderIDStatus});
    }
 }
 
 if (($Detail >= 10) and (keys %SPFResults)) {
    print "\n\nSPF Results:";
    foreach my $SPFStatus (sort keys %SPFResults) {
-      printf ("\n   %25s:%6s Time(s)", $SPFStatus, $SPFResults{$SPFStatus});
+      PrettyTimes("   $SPFStatus", $SPFResults{$SPFStatus});
    }
 }
 $TotalHeaderPrinted += $HeaderPrinted;
@@ -1557,9 +1612,24 @@ if (keys %BadAuth) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nBad AUTH mechanism requests" if ($Detail >= 3);
    foreach $Auth (sort keys %BadAuth) {
-      print "\n    $Auth: $BadAuth{$Auth} Time(s)" if ($Detail >= 5);
+      PrettyTimes("    " . $Auth, $BadAuth{$Auth}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $BadAuth{$Auth};
    }
+   print "\n\tTotal:  $TotalError[$ErrorIndex]" if( $Detail >=3 );
+}
+$TotalError[++$ErrorIndex] = 0;
+
+if (keys %AUTHfailure) {
+   eval "$PrintCond" if ($Detail >= 3);
+   print "\n\nFailed AUTH requests" if ($Detail >= 3);
+   foreach $Host (sort keys %AUTHfailure) {
+      print "\n    From " . PrettyHost($Host, 58) if ($Detail >=5);
+      foreach $Auth (sort keys %{$AUTHfailure{$Host}}) {
+         PrettyTimes("        $Auth", $AUTHfailure{$Host}{$Auth}) if ($Detail >= 5);
+         $TotalError[$ErrorIndex] += $AUTHfailure{$Host}{$Auth};
+      }
+   }
+   print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
 }
 $TotalError[++$ErrorIndex] = 0;
 
@@ -1576,11 +1646,11 @@ if (keys %AttackAttempt) {
    foreach $Host (sort {$a cmp $b} keys %AttackAttempt) {
       print "\n   Attempt from $Host with:";
       foreach $Attack (sort {$a cmp $b} keys %{$AttackAttempt{$Host}}) {
-         print "\n      $Attack: $AttackAttempt{$Host}{$Attack} Time(s)";
+         PrettyTimes("      $Attack", $AttackAttempt{$Host}{$Attack});
          $TotalError[$ErrorIndex] += $AttackAttempt{$Host}{$Attack};
       }
    }
-   print "\n\tTotal:  $TotalError[$ErrorIndex] Time(s)";
+   print "\n\tTotal:  $TotalError[$ErrorIndex]";
 }
 $TotalError[++$ErrorIndex] = 0;
 
@@ -1592,7 +1662,7 @@ if (keys %KnownSpammer) {
    print "\n\nMail attempts from known spammers: [Occurrences >= $KnownSpammerThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $KnownSpammerCount keys %KnownSpammer) {
       if ($KnownSpammer{$ThisOne} >= $KnownSpammerThreshold) {
-         printf("\n    %s %3i Time(s)", PrettyHost($ThisOne, 63), $KnownSpammer{$ThisOne}) if ($Detail >= 5);
+         PrettyTimes("    " . PrettyHost($ThisOne, 63), $KnownSpammer{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $KnownSpammer{$ThisOne};
    }
@@ -1617,7 +1687,8 @@ if (keys %RelayDenied) {
       if ($RelayDeniedCount >= $RelayDeniedThreshold)  {
          printf("\n    From %s", PrettyHost($Relay, 58)) if ($Detail >=5);
          foreach $Dest (keys %{$RelayDenied{$Relay}}) {
-            print "\n        To $Dest: $RelayDenied{$Relay}{$Dest} Time(s)" if ($Detail >= 5);
+            PrettyTimes("        to " . $Dest,
+               $RelayDenied{$Relay}{$Dest}) if ($Detail >= 5);
          }
       }
    }
@@ -1633,7 +1704,7 @@ if (keys %CheckMailReject) {
    print "\n\nRejected incoming mail: [Occurrences >= $CheckMailRejectThreshold]" if ($Detail >= 3);
    foreach $ThisOne (keys %CheckMailReject) {
       if ($CheckMailReject{$ThisOne} >= $CheckMailRejectThreshold)  {
-         print "\n    $ThisOne: $CheckMailReject{$ThisOne} Time(s)" if ($Detail >= 5);
+         PrettyTimes("    $ThisOne", $CheckMailReject{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $CheckMailReject{$ThisOne};
    }
@@ -1649,7 +1720,7 @@ if (keys %PREGreeting) {
 
    print "\n\nGreet Pause Rejections: [Occurrences >= $PREGreetingThreshold]" if ($Detail >= 3);
    foreach my $ip (sort $PREGreetingCount keys %PREGreeting) {
-      printf("\n    From %s %3i Time(s)", PrettyHost($ip, 58), $PREGreeting{$ip}) if ($Detail >= 5)
+      PrettyTimes("    " . PrettyHost($ip, 63), $PREGreeting{$ip}) if ($Detail >= 5)
        && ($PREGreeting{$ip} >= $PREGreetingThreshold);
       $TotalError[$ErrorIndex] += $PREGreeting{$ip};
    }
@@ -1666,7 +1737,7 @@ if (keys %LostInputChannel) {
    print "\n\nLost input channel: [Occurrences >= $LostInputChannelThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $LostInputChannelCount keys %LostInputChannel) {
       if ($LostInputChannel{$ThisOne} >= $LostInputChannelThreshold)  {
-         printf("\n    %s %3i Time(s)", PrettyHost($ThisOne, 63), $LostInputChannel{$ThisOne}) if ($Detail >= 5);
+         PrettyTimes("    " . PrettyHost($ThisOne, 63), $LostInputChannel{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $LostInputChannel{$ThisOne};
    }
@@ -1683,7 +1754,7 @@ if (keys %DummyConnection) {
    print "\n\nClient quit before communicating: [Occurrences >= $DummyConnectionThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $DummyConnectionCount keys %DummyConnection) {
       if ($DummyConnection{$ThisOne} >= $DummyConnectionThreshold)  {
-         printf("\n    %s %3i Time(s)", PrettyHost($ThisOne, 63), $DummyConnection{$ThisOne}) if ($Detail >= 5);
+         PrettyTimes("    " . PrettyHost($ThisOne, 63), $DummyConnection{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $DummyConnection{$ThisOne};
    }
@@ -1703,12 +1774,13 @@ if (keys %DomainErrors) {
       my $sublist;
       my $subcounter = 0;
       foreach $User (sort $subcount keys %{$DomainErrors{$ThisOne}}) {
-         $sublist .= "\n        $User : $DomainErrors{$ThisOne}{$User} Time(s)" if ($Detail >= 10);
          $subcounter += $DomainErrors{$ThisOne}{$User};
       }
       if ( $subcounter >= $DomainErrorsThreshold) {
-         printf("\n    From %s %3i Time(s)", PrettyHost($ThisOne, 58), $subcounter) if ($Detail >= 5);
-         print $sublist;
+         PrettyTimes("    From " . PrettyHost($ThisOne, 58), $subcounter) if ($Detail >=5);
+         foreach $User (sort $subcount keys %{$DomainErrors{$ThisOne}}) {
+            PrettyTimes("        $User", $DomainErrors{$ThisOne}{$User}) if ($Detail >= 10);
+         }
       }
       $TotalError[$ErrorIndex] += $subcounter;
    }
@@ -1720,7 +1792,7 @@ if (keys %AuthWarns) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nAuthentication warnings:" if ($Detail >= 3);
    foreach $ThisOne (sort keys %AuthWarns) {
-      print "\n    $ThisOne: $AuthWarns{$ThisOne} Time(s)" if ($Detail >= 5);;
+      PrettyTimes("    $ThisOne", $AuthWarns{$ThisOne}) if ($Detail >= 5);;
       $TotalError[$ErrorIndex] += $AuthWarns{$ThisOne};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -1735,7 +1807,8 @@ if (keys %Timeouts) {
    print "\n\nTimeouts:  [Occurrences >= $TimeoutThreshold]" if ($Detail >= 3);
    my $TimeoutCount = CountOrder(%Timeouts);
    foreach $ThisOne (sort $TimeoutCount keys %Timeouts) {
-      print "\n    $ThisOne: $Timeouts{$ThisOne} Time(s)" if (($Detail >= 5) && ( $Timeouts{$ThisOne} >= $TimeoutThreshold));
+      PrettyTimes("    $ThisOne", $Timeouts{$ThisOne}) if (($Detail >= 5) &&
+         ($Timeouts{$ThisOne} >= $TimeoutThreshold));
       $TotalError[$ErrorIndex] += $Timeouts{$ThisOne};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -1753,7 +1826,7 @@ if (keys %Abuse) {
       foreach $Luser (sort keys %{$Abuse{$Host}}) {
          print "\n        $Luser:" if ($Detail >= 5);
          foreach $RejCmd (sort keys %{$Abuse{$Host}{$Luser}}) {
-            print "  $RejCmd: $Abuse{$Host}{$Luser}{$RejCmd} Time(s)" if ($Detail >= 5);
+            PrettyTimes("  $RejCmd", $Abuse{$Host}{$Luser}{$RejCmd}) if ($Detail >= 5);
             $TotalAbuse += $Abuse{$Host}{$Luser}{$RejCmd};
          }
       }
@@ -1780,7 +1853,7 @@ if (keys %StarttlsCert) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nSTARTTLS failed to verify certificates:" if ($Detail >= 3);
    foreach $ThisOne (sort keys %StarttlsCert) {
-      printf "\n    %s: %i Time(s)" , $ThisOne , $StarttlsCert{$ThisOne} if ($Detail >= 5);
+      PrettyTimes("    " . $ThisOne, $StarttlsCert{$ThisOne}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $StarttlsCert{$ThisOne};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -1809,14 +1882,13 @@ if (keys %CollectError) {
       my $colerror = 0;
       foreach $Source (keys %{$CollectError{$Reason}}) {
          if ($CollectError{$Reason}{$Source} >= $CollectErrorThreshold) {
-            print "\n      $Source : $CollectError{$Reason}{$Source} Time(s)" if ($Detail >= 5);
+            PrettyTimes("      $Source", $CollectError{$Reason}{$Source}) if ($Detail >= 5);
          }
          $colerror = $colerror + $CollectError{$Reason}{$Source};
       }
-      if ($Detail >= 5)    { print "\n    Total: $colerror"; }
-      elsif ($Detail >= 3) { print "\n    $Reason: $colerror"; }
       $TotalError[$ErrorIndex] += $colerror;
    }
+   print "\n\tTotal: $TotalError[$ErrorIndex]" if ($Detail >= 3);
 }
 $TotalError[++$ErrorIndex] = 0;
 
@@ -1827,7 +1899,8 @@ if (keys %BadRcptThrottle) {
 
    print "\n\nClient submitted too many bad recipients: [Occurrences >= $BadRcptThrottleThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $BadRcptCount keys %BadRcptThrottle) {
-      print "\n    $ThisOne: $BadRcptThrottle{$ThisOne} Time(s)" if ($Detail >= 5)
+      PrettyTimes("    " . PrettyHost($ThisOne,61),
+         $BadRcptThrottle{$ThisOne}) if ($Detail >= 5)
          && ( $BadRcptThrottle{$ThisOne} >= $BadRcptThrottleThreshold );
       $TotalError[$ErrorIndex] += $BadRcptThrottle{$ThisOne};
    }
@@ -1846,7 +1919,7 @@ if (keys %LargeHdrs) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nToo large headers from:" if ($Detail >= 3);
    foreach $Host ( sort {$LargeHdrs{$b}<=>$LargeHdrs{$a}} keys %LargeHdrs ) {
-      printf "\n    %-17s   %-3i Time(s)",$Host, $LargeHdrs{$Host} if ($Detail >= 5);
+      PrettyTimes("    $Host", $LargeHdrs{$Host}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $LargeHdrs{$Host};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -1859,7 +1932,7 @@ if (keys %AddressError) {
    foreach $Reason (sort {$a cmp $b} keys %AddressError) {
       print "\n   $Reason:" if ($Detail >= 5);
       foreach $Address (sort {$a cmp $b} keys %{$AddressError{$Reason}}) {
-         print "\n      $Address: $AddressError{$Reason}{$Address} Time(s)" if ($Detail >= 5);
+         PrettyTimes("      $Address", $AddressError{$Reason}{$Address}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $AddressError{$Reason}{$Address};
       }
    }
@@ -1875,7 +1948,7 @@ if (keys %Quarantined) {
    print "\n\nMessages quarantined by milter: [Occurrences >= $QuarantinedThreshold]" if ($Detail >= 3);
    foreach $ThisOne (sort $QuarantinedCount keys %Quarantined) {
       if ($Quarantined{$ThisOne} >= $QuarantinedThreshold)  {
-         printf("\n    %s: %3i Time(s)", $ThisOne, $Quarantined{$ThisOne}) if ($Detail >= 5);
+         PrettyTimes("    $ThisOne", $Quarantined{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $Quarantined{$ThisOne};
    }
@@ -1883,21 +1956,15 @@ if (keys %Quarantined) {
 }
 $TotalError[++$ErrorIndex] = 0;
 
-
-
 # Recipient errors
-
-if ($NumTimeoutSendWarnings > 0) {
+if (keys %SentTimeouts) {
    eval "$PrintCond" if ($Detail >= 3);
-   print "\n\n" . $NumTimeoutSendWarnings . " warnings of delayed delivery after " . $TimeoutSendWarning if ($Detail >= 3);
-   $TotalError[$ErrorIndex] += $NumTimeoutSendWarnings;
-}
-$TotalError[++$ErrorIndex] = 0;
-
-if ($NumTimeoutSend > 0) {
-   eval "$PrintCond" if ($Detail >= 3);
-   print "\n\n" . $NumTimeoutSend . " messages undelivered after " . $TimeoutSend if ($Detail >= 3);
-   $TotalError[$ErrorIndex] += $NumTimeoutSend;
+   print "\n\nMessages delayed by recipients:" if ($Detail >= 3);
+   foreach $ThisOne (keys %SentTimeouts) {
+     PrettyTimes("    $ThisOne", $SentTimeouts{$ThisOne}) if ($Detail >=5); 
+     $TotalError[$ErrorIndex] += $SentTimeouts{$ThisOne};
+   }
+   print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
 }
 $TotalError[++$ErrorIndex] = 0;
 
@@ -1927,10 +1994,11 @@ if (keys %UnknownUsers) {
             $UnknownUsersCount += $SortedUsers{$Usr}{$RelayHost};
          }
          if ($UnknownUsersCount >= $UnknownUsersThreshold) {
-            print "\n    $Usr : $UnknownUsersCount Time(s)";
+            PrettyTimes("    " . $Usr, $UnknownUsersCount);
             if ($Detail >= 15) {
                foreach $RelayHost (sort $subcount keys %{ $SortedUsers{$Usr} }) {
-                  printf ("\n        from %s %3i Time(s)", PrettyHost($RelayHost, 54), $SortedUsers{$Usr}{$RelayHost});
+                  PrettyTimes("        from " . PrettyHost($RelayHost, 54),
+                     $SortedUsers{$Usr}{$RelayHost});
                }
             }
          }
@@ -1957,7 +2025,7 @@ if (keys %UnknownUsersCheckRcpt) {
       print "\n\nUnknown users:" if ($Detail >= 3);
    }
    if ($Detail >= 5) {
-       my $count = TotalCountOrder( %SortedUsers );
+      my $count = TotalCountOrder( %SortedUsers );
 
       foreach $Usr (sort $count keys %SortedUsers) {
          my $subcount = CountOrder( %{$SortedUsers{$Usr}} );
@@ -1966,10 +2034,11 @@ if (keys %UnknownUsersCheckRcpt) {
             $UnknownUsersCount += $SortedUsers{$Usr}{$RelayHost};
          }
          if ($UnknownUsersCount >= $UnknownUsersThreshold) {
-            print "\n    $Usr : $UnknownUsersCount Time(s)";
+            PrettyTimes("    " . $Usr, $UnknownUsersCount);
             if ($Detail >= 15) {
                foreach $RelayHost (sort $subcount keys %{ $SortedUsers{$Usr} }) {
-                  printf ("\n        from %s %3i Time(s)", PrettyHost($RelayHost, 54), $SortedUsers{$Usr}{$RelayHost});
+                  PrettyTimes("        from " . PrettyHost($RelayHost, 54),
+                     $SortedUsers{$Usr}{$RelayHost});
                }
             }
          }
@@ -1992,7 +2061,8 @@ if (keys %DisabledMailbox) {
    foreach $Usr (sort keys %SortedUsers) {
       print "\n    $Usr" if ($Detail >= 5);
       foreach $RelayHost (sort keys %{ $SortedUsers{$Usr} }) {
-         printf("\n      from %s %3i Time(s)", PrettyHost($RelayHost, 54), $SortedUsers{$Usr}{$RelayHost}) if ($Detail >= 5);
+         PrettyTimes("      from " . PrettyHost($RelayHost, 54),
+            $SortedUsers{$Usr}{$RelayHost}) if ($Detail >= 5);
       }
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -2007,7 +2077,7 @@ if (keys %CheckRcptReject) {
    print "\n\nRejected mail: [Occurrences >= $CheckRcptRejectThreshold]" if ($Detail >= 3);
    foreach $ThisOne (keys %CheckRcptReject) {
       if ($CheckRcptReject{$ThisOne} >= $CheckRcptRejectThreshold)  {
-         print "\n    $ThisOne: $CheckRcptReject{$ThisOne} Time(s)" if ($Detail >= 5);
+         PrettyTimes("    $ThisOne", $CheckRcptReject{$ThisOne}) if ($Detail >= 5);
       }
       $TotalError[$ErrorIndex] += $CheckRcptReject{$ThisOne};
    }
@@ -2021,7 +2091,7 @@ if (keys %StatRejected) {
    foreach $Reason (sort keys %StatRejected) {
       print "\n    $Reason:" if ($Detail >= 5);
       foreach $ToUser (keys %{$StatRejected{$Reason}}) {
-          print "\n        To: $ToUser: $StatRejected{$Reason}{$ToUser} Time(s)" if ($Detail >= 5);
+          PrettyTimes("        " . $ToUser, $StatRejected{$Reason}{$ToUser}) if ($Detail >= 5);
           $TotalError[$ErrorIndex] += $StatRejected{$Reason}{$ToUser};
       }
    }
@@ -2033,9 +2103,9 @@ if (keys %StatDeferred) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nMail Deferred:" if ($Detail >= 3);
    foreach $Reason (sort keys %StatDeferred) {
-      print "\n    $Reason:" if ($Detail >= 5);
+      print "\n    $Reason" if ($Detail >= 5);
       foreach $ToUser (keys %{$StatDeferred{$Reason}}) {
-          print "\n        To: $ToUser: $StatDeferred{$Reason}{$ToUser} Time(s)" if ($Detail >= 5);
+          PrettyTimes("        To: $ToUser", $StatDeferred{$Reason}{$ToUser}) if ($Detail >= 5);
           $TotalError[$ErrorIndex] += $StatDeferred{$Reason}{$ToUser};
       }
    }
@@ -2049,7 +2119,7 @@ if (keys %ForwardErrors) {
    print "\n\nForwarding errors:" if ($Detail >= 3);
    my $FECount = CountOrder(%ForwardErrors);
    foreach $ThisOne (sort $FECount keys %ForwardErrors) {
-      print "\n    $ThisOne: $ForwardErrors{$ThisOne} Time(s)" if ($Detail >= 5);
+      PrettyTimes("    $ThisOne", $ForwardErrors{$ThisOne}) if ($Detail >= 5);
           $TotalError[$ErrorIndex] += $ForwardErrors{$ThisOne};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -2062,7 +2132,7 @@ if (keys %BlackHoled) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nBlackHole Totals:" if ($Detail >= 3);
    foreach $ThisOne (sort keys %BlackHoles) {
-      print "\n    $ThisOne: $BlackHoles{$ThisOne} Time(s)" if ($Detail >= 5);
+      PrettyTimes("    $ThisOne", $BlackHoles{$ThisOne}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $BlackHoles{$ThisOne};
    }
    if ($Detail >= 10) {
@@ -2070,7 +2140,7 @@ if (keys %BlackHoled) {
       my $BlackHoleThreshold = $ENV{'sendmail_blackholethreshold'} || "1";
       foreach $ThisOne (sort keys %BlackHoled) {
          if ($BlackHoled{$ThisOne} >= $BlackHoleThreshold) {
-            print "\n    $ThisOne: $BlackHoled{$ThisOne} Times(s)";
+            PrettyTimes("    $ThisOne", $BlackHoled{$ThisOne});
          }
       }
    }
@@ -2096,7 +2166,7 @@ if (keys %MailRejected) {
    eval "$PrintCond" if ($Detail >= 3);
    print "\n\nMail was rejected because of the following entries in the access database:" if ($Detail >= 3);
    foreach $ThisOne (sort keys %MailRejected) {
-      printf "\n    %s: %i Time(s)" , $ThisOne , $MailRejected{$ThisOne} if ($Detail >= 5);
+      PrettyTimes("    $ThisOne", $MailRejected{$ThisOne}) if ($Detail >= 5);
       $TotalError[$ErrorIndex] += $MailRejected{$ThisOne};
    }
    print "\n\tTotal:  $TotalError[$ErrorIndex]" if ($Detail >= 3);
@@ -2138,7 +2208,7 @@ $TotalError[++$ErrorIndex] = 0;
 if (keys %RuleSets) {
    print "\n\nRuleset violations:";
    foreach $Reason (sort keys %RuleSets) {
-      print "\n    $Reason: $RuleSets{$Reason} Time(s)";
+      PrettyTimes("    $Reason", $RuleSets{$Reason});
       $TotalError[$ErrorIndex] += $RuleSets{$Reason};
    }
 }
@@ -2156,19 +2226,19 @@ foreach $ErrorCount (@TotalError) {
       $TotalCount += $ErrorCount;
    }
 }
-if ($TotalCount > 0) {
-   eval "$PrintCond" if ($Detail >= 3);
-   print "\n\nTotal SMTP Session, Message, and Recipient Errors handled by Sendmail:  $TotalCount"
-      if ($Detail >= 3);
+if ( ($TotalCount > 0) && ($Detail >= 3)) {
+   eval "$PrintCond";
+   print "\n\nSummary of SMTP Session, Message, and Recipient Errors handled by Sendmail:";
+   print "\n\tTotal:  $TotalCount";
 }
 
 if (keys %MilterErrors) {
    eval "$PrintCond";
    print "\n\nMilter Errors:\n";
-   foreach $Milter (sort {$a cmp $b} keys %MilterErrors) {
+   foreach my $Milter (sort {$a cmp $b} keys %MilterErrors) {
       print "   $Milter:\n";
       foreach $Error (sort {$a cmp $b} keys %{$MilterErrors{$Milter}}) {
-         print "      $Error: $MilterErrors{$Milter}{$Error} Time(s)\n";
+         PrettyTimes("      $Error", $MilterErrors{$Milter}{$Error});
       }
    }
 }
@@ -2177,7 +2247,7 @@ if (keys %OtherList) {
    $HeaderPrinted = 1;
    print "\n\n**Unmatched Entries**";
    foreach my $line (sort {$OtherList{$b}<=>$OtherList{$a} } keys %OtherList) {
-      print "\n   $line: $OtherList{$line} Time(s)";
+      PrettyTimes("   $line", $OtherList{$line});
    }
 }
 
