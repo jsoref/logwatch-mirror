@@ -1292,6 +1292,22 @@ sub parselogs {
             }
          }
       }
+      # set env variables LOGWATCH_mumble_LIST
+      push @EnvList, 'LOGWATCH_LOGFILE_LIST';
+      push @EnvList, 'LOGWATCH_ARCHIVE_LIST';
+      foreach my $LogGroup (@FileList) {
+         foreach my $log (@{$LogFileData{$LogGroup}{'logfiles'}}) {
+            $ENV{'LOGWATCH_LOGFILE_LIST'} .= $log . " ";
+         }
+         foreach my $archive (@{$LogFileData{$LogGroup}{'archives'}}) {
+            $ENV{'LOGWATCH_ARCHIVE_LIST'} .= $archive . " ";
+         }
+      }
+      if ($Config{'debug'}>4) {
+         print "\nexport LOGWATCH_LOGFILE_LIST='$ENV{LOGWATCH_LOGFILE_LIST}'";
+         print "\nexport LOGWATCH_ARCHIVE_LIST='$ENV{LOGWATCH_ARCHIVE_LIST}'";
+      }
+
       # ECP - insert the host stripping now
       my $HostStrip = " ";
       if ($Config{'hostformat'} ne "none") { #8.0

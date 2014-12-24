@@ -16,6 +16,7 @@ HOWTO-Customize-LogWatch
     B. Service Filter Configuration
     C. Service Filer Executable
     D. Shared Script Commands
+    E. Environment Information
   7. For More Information
 
 
@@ -546,6 +547,22 @@ arguments unless otherwise mentioned):
             service names, e.g.:
             * RemoveService = "myservice,myotherservice"
 
+E. Environment Information
+--------------------------
+
+The following Informations can be accessed from environment variables inside
+service scripts, e.g.
+   print "service logfile list: $ENV{'LOGWATCH_LOGFILE_LIST'}"
+
+         - LOGWATCH_LOGFILE_LIST
+             space separated list of logfiles which are configured for that
+             service.
+
+         - LOGWATCH_ARCHIVE_LIST
+             space separated list of archive files which are configured for
+             that service.
+
+         - TODO list other env variables.
 
 7. For More Information
 =======================
