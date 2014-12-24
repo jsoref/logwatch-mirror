@@ -876,7 +876,7 @@ next unless $ThisLine;
    } elsif ( ($Temp) = ($ThisLine=~ /\-\-\- 500 5\.5\.1 Command unrecognized: \"(.*)\"/) ) {
       # first we try to delete it from the list of Unmatched Entries
       $Temp1 = "<-- " . $Temp;
-      if ($OtherList{$Temp1} > 0) {
+      if (defined $OtherList{$Temp1}) {
          if ($OtherList{$Temp1} == 1) {
             delete ($OtherList{$Temp1});
          } else {
@@ -1162,9 +1162,17 @@ next unless $ThisLine;
       chomp($ThisLine);
       # Report any unmatched entries...
       if ($ThisLine =~ /^<-- /) {
-         # sendmail converts non-ascii chars (remove high bit), so we do
-         # the same
-         $ThisLine =~ s/\\([23]\d{2})/chr(oct($1-200))/eg;
+         # sendmail converts some characters, so we do the same
+         $ThisLine =~ s/\\([23]\d{2})/
+            # clear the most significant bit if set
+            my $tempchar = oct($1 - 200);
+            # if the new value is a printable ASCII character, print it
+            if (($tempchar >= 32) && ($tempchar != 127)) {
+               chr($tempchar);
+            } else {
+            # if not printable ASCII, leave as octal code
+               sprintf("\\%o", $tempchar);
+            }/eg;
       }
       # store last unmatched entry, in case it is needed later.  But note that some
       # statements have no QueueID.
