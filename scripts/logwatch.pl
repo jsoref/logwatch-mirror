@@ -913,6 +913,37 @@ if ($Config{'hostformat'} ne "none") {
    parselogs();
 }
 
+
+foreach $LogFile (@LogFileList) {
+   next if ($LogFile eq 'none');
+
+   my $LogFileName = $TempDir . $LogFile;
+   next unless -f "$LogFileName";
+   my $MatchedFileText = $LogFileName . "-matched";
+   my $UnmatchedFileText = $LogFileName . "-unmatched";
+   my $Command = "";
+   if (-s $MatchedFileText) {
+      $Command = "grep -Fvf $MatchedFileText $LogFileName > $UnmatchedFileText";
+   } else {
+      $Command = "ln $LogFileName $UnmatchedFileText";
+   }
+   if ($Config{'debug'}>4) {
+      print "\nChecking for unmatched entries in LogFile: " . $LogFile . "\n" . $Command . "\n";
+   }
+   if ($LogFile !~ /^[-_\w\d]+$/) {
+      print STDERR "Unexpected filename: [[$LogFile]]. Not used\n"
+   } else {
+      #System call does the log processing
+      system("$Command");
+         #or die "system '$Command' failed: $?"
+   }
+   if (-s $UnmatchedFileText) {
+      print "Unmatched entries in $LogFile:\n";
+      #system("$Config{'pathtocat'} $UnmatchedFileText");
+      system("awk '{print \$5}' $UnmatchedFileText| sed -e 's/\[[0-9]*\]//' -e s/:// |sort -u");
+   }
+}
+
 #Close Filehandle is needed -mgt
 close(OUTFILE) unless ($Config{'output'} eq "stdout");
 #############################################################################
@@ -1263,8 +1294,15 @@ sub parselogs {
       my $FileText = "";
       foreach $ThisFile (@FileList) {
          if (-s $TempDir . $ThisFile) {
-            $FileText .= ( $TempDir . $ThisFile . " ");
+            $FileText .= ($TempDir . $ThisFile . " ");
          }
+      }
+      # Trim final space
+      $FileText =~ s/ *$//;
+      # If we only process a single log file, we can use tee to generate the matched file
+      my $MatchedFile = "";
+      if ($FileText and $FileText !~ / /) {
+         $MatchedFile = $FileText . "-matched";
       }
 
       # remove the ENV entries set by previous service
@@ -1273,16 +1311,27 @@ sub parselogs {
       }
       @EnvList = ();
 
-      my $FilterText = " ";
+      my $FilterText = "";
+      my $ServiceFilter = "";
       foreach (sort keys %{$ServiceData{$Service}}) {
          my $cmd = $_;
          if ($cmd =~ s/^\d+-\*//) {
+            my $CmdPath = "";
             if (-f "$ConfigDir/scripts/shared/$cmd") {
-               $FilterText .= ("$PerlVersion $ConfigDir/scripts/shared/$cmd '$ServiceData{$Service}{$_}' |" );
+               $CmdPath="$ConfigDir/scripts/shared/$cmd";
             } elsif (-f "$BaseDir/scripts/shared/$cmd") {
-               $FilterText .= ("$PerlVersion $BaseDir/scripts/shared/$cmd '$ServiceData{$Service}{$_}' |" );
+               $CmdPath="$BaseDir/scripts/shared/$cmd";
             } else {
                die "Cannot find shared script $cmd\n";
+            }
+            $FilterText .= "$PerlVersion $CmdPath '$ServiceData{$Service}{$_}' |";
+            if ($cmd =~ /service/) {
+               # If we only process a single log file, we can use tee to generate the matched file
+               if ($FileText and $FileText !~ / /) {
+                  $FilterText .= "tee -a $MatchedFile ${MatchedFile}-$Service |";
+               } else {
+                  $ServiceFilter = "| $PerlVersion $CmdPath '$ServiceData{$Service}{$_}'";
+               }
             }
          } elsif ($cmd =~ s/^\$//) {
             $ENV{$cmd} = $ServiceData{$Service}{$_};
@@ -1292,6 +1341,14 @@ sub parselogs {
             }
          }
       }
+      # If we didn't find a service filter, use tee
+      if ($ServiceFilter eq "" and $FilterText !~ /tee -a/ and $MatchedFile) {
+         $FilterText .= "tee -a $MatchedFile ${MatchedFile}-$Service |";
+      }
+      if ($Config{'debug'}>9) {
+         print "ServiceFilter=$ServiceFilter\n";
+      }
+
       # set env variables LOGWATCH_mumble_LIST
       push @EnvList, 'LOGWATCH_LOGFILE_LIST';
       push @EnvList, 'LOGWATCH_ARCHIVE_LIST';
@@ -1404,6 +1461,17 @@ sub parselogs {
                 &output( $index_par,  "\n ---------------------- $ServiceData{$Service}{'title'} End ------------------------- \n\n", "line");
             }
             &output( $index_par, "\n", "stop");
+         }
+         # If we are parsing more than one log file, we need to process matches for each
+         if ($FileText =~ / /) {
+            foreach my $MatchLogFile (split(/ /,$FileText)) {
+               $MatchedFile = $MatchLogFile . "-matched";
+               if ($Config{'debug'}>4) {
+                  print "\nProcessing matched $Config{'pathtocat'} $MatchLogFile $ServiceFilter >> $MatchedFile\n";
+               }
+               system("$Config{'pathtocat'} $MatchLogFile $ServiceFilter >> $MatchedFile");
+               system("$Config{'pathtocat'} $MatchLogFile $ServiceFilter >> ${MatchedFile}-${Service}");
+            }
          }
       }
    }
