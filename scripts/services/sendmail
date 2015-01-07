@@ -682,12 +682,15 @@ next unless $ThisLine;
    # file=deliver.c, LogLevel>-1, LOG_INFO
    } elsif ( ($ToUser, $MailerString, $DeliverStat) = ($ThisLine =~ /^to=(.*?), (.*)stat=(.*)/ ) ) {
       if ( $DeliverStat =~ /^Sent/ ) {
-           ( ($MailerType) = ( $MailerString =~ /mailer=(.*?),/));
-           ( ($RelayName) = ( $MailerString =~ /relay=(.*?),/));
+         ( ($MailerType) = ( $MailerString =~ /mailer=(.*?),/));
+         ( ($RelayName) = ( $MailerString =~ /relay=(.*?),/));
+         if (not defined $MailerType) {
+            $MailerType = "(unspecified)";
+         }
          $MailerType =~ s/^\s*$/\(unspecified\)/;
          # remove the entries from MSP (Mail Submission Program) relay to
          #    localhost
-         if (($MailerType =~ /^relay$/) and
+         if (($MailerType =~ /^relay$/) && (defined $RelayName) &&
                   ($RelayName =~ /\[127\.0\.0\.1\]/)) {
             $RelayLocalhost++;
          } else {
@@ -701,12 +704,14 @@ next unless $ThisLine;
          $CleanTo =~ s/\>//g;
          $CleanTo =~ s/\"[\w\s]+\"\s?//g;
          $CleanTo =~ tr/A-Z/a-z/;
-         if (($CleanTo =~ m/\w+\@.+\,\w+/) && ($RelayName !~ m/\[127\.0\.0\.1\]/)) {
+         if (($CleanTo =~ m/\w+\@.+\,\w+/) && (defined $RelayName) &&
+               ($RelayName !~ m/\[127\.0\.0\.1\]/)) {
             my @CleanList = split(/,/, $CleanTo);
             for my $ListAddr (@CleanList) {
                $ToList{$ListAddr}++;
             }
-         } elsif  (($CleanTo =~ m/\w+\@[\w\.]+/) && ($RelayName !~ m/\[127\.0\.0\.1\]/)) {
+         } elsif  (($CleanTo =~ m/\w+\@[\w\.]+/) && (defined $RelayName) &&
+               ($RelayName !~ m/\[127\.0\.0\.1\]/)) {
             $ToList{$CleanTo}++;
          } elsif ($CleanTo =~ m/\w+/) {  # Match a simple name
             $ToList{$CleanTo}++;
@@ -823,18 +828,18 @@ next unless $ThisLine;
       $Temp = "From " . $1 . " by " . $2;
       $BlackHoled{$Temp}++;
       $BlackHoles{$2}++;
-   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /^ruleset=(?:check_relay|check_rcpt), arg1=[^,]*,(?: arg2=[^,]*,)? relay=([^,]*), reject=55\d\s*[\d.]*\s*.*http:\/\/([^\/]*)\//) ) {
+   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /^ruleset=(?:check_relay|check_rcpt), arg1=[^,]*,(?: arg2=[^,]*,)? relay=([^,]*), reject=55\d\s*[\d.]*\s*.*http:\/\/([^\/\s]*)/) ) {
       $Temp = "From " . $Relay . " by " . $BlSite;
       $BlackHoled{$Temp}++;
       $BlackHoles{$BlSite}++;
-   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /^ruleset=(?:check_relay|check_rcpt), arg1=([^,]*),(?: arg2=[^,]*,)? reject=55\d\s*[\d.]*\s*.*http:\/\/([^\/]*)\//) ) {
+   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /^ruleset=(?:check_relay|check_rcpt), arg1=([^,]*),(?: arg2=[^,]*,)? reject=55\d\s*[\d.]*\s*.*http:\/\/([^\/\s]*)/) ) {
       #Example 553 error with NO RELAY -mgt
       #ruleset=check_relay, arg1=s010600402b39ee29.vf.shawcable.net, arg2=127.0.0.2, reject=553 5.3.0
       #Spam blocked see: http://spamcop.net/bl.shtml?70.68.8.182: 1 Time(s)
       $Temp = "From " . $Relay . " by " . $BlSite;
       $BlackHoled{$Temp}++;
       $BlackHoles{$BlSite}++;
-   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /reject=553\s*[\d.]*\s*<[^ ]*>\.\.\. +Mail from ([\d\.]+) rejected\;see http:\/\/([^\/]*)\//) ) {
+   } elsif ( ($Relay,$BlSite) = ($ThisLine =~ /reject=553\s*[\d.]*\s*<[^ ]*>\.\.\. +Mail from ([\d\.]+) rejected\;see http:\/\/([^\/\s]*)/) ) {
       #This is the another blackhole tag -mgt
       $Temp = "From " . $Relay . " by " . $BlSite;
       $BlackHoled{$Temp}++;
@@ -893,7 +898,7 @@ next unless $ThisLine;
       }
    # similarly, delete last unmatched entry when too many bad commands
    } elsif ( $ThisLine =~ /^--- 421 4\.\d\.\d .* Too many bad commands; closing connection$/) {
-      if ($OtherList{$LastCmd{$QueueID}}) {
+      if (defined $OtherList{$LastCmd{$QueueID}}) {
          delete ($OtherList{$LastCmd{$QueueID}});
       }
 
@@ -903,7 +908,7 @@ next unless $ThisLine;
    # file=srvrsmtp.c, LogLevel>5, LOG_INFO
    } elsif ( ( $Host ) = ($ThisLine =~ /(.*) (\(may be forged\) )?did not issue MAIL\/EXPN\/VRFY\/ETRN during connection to /) ) {
       # we test if they previously sent junk, because the connection is expected to fail
-      if ($CommandUnrecognized{$QueueID}) {
+      if (defined $CommandUnrecognized{$QueueID}) {
          $CommandUnrecognized{$QueueID} = $CommandUnrecognized{$QueueID} . "    ... and then exited without communicating\n";
       } else {
       $DummyConnection{$Host}++;
