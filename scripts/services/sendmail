@@ -500,7 +500,7 @@ next unless $ThisLine;
       # Relaying denied detected later by ruleset=check_rcpt
       ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} .*\.\.\. Relaying denied/ ) or
       # Access denied detected later by ruleset=check_relay
-      ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} Access denied/ ) or
+      ( $ThisLine =~ /^--- 550 5(\.[0-9]){2} .*\.\.\. Access denied/ ) or
       # Domain errors detected later by ruleset=check_mail
       ( $ThisLine =~ /^--- 553 5(\.[0-9]){2} .*\.\.\. Domain of sender address .* does not exist$/ ) or
       ( $ThisLine =~ /^--- 553 5(\.[0-9]){2} .*\.\.\. Domain name required for sender address/ ) or
