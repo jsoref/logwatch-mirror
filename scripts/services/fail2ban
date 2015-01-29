@@ -51,6 +51,8 @@ my $NotValidIP = 0;		# reported invalid IPs number
 my @OtherList = ();
 
 my %ServicesBans = ();
+my %ServicesFound = ();
+my %ServicesIgnored = ();
 
 if ( $Debug >= 5 ) {
 	print STDERR "\n\nDEBUG: Inside Fail2Ban Filter \n\n";
@@ -108,9 +110,11 @@ while (defined(my $ThisLine = <STDIN>)) {
 	    $ReInitializations++;
     } elsif ($ThisLine =~ /..,... WARNING:  is not a valid IP address/) {
 	# just ignore - this will be fixed within fail2ban and is harmless warning
-    }
-    else
-    {
+    } elsif ( my ($Service,$Host) = ($ThisLine =~ /INFO\s+\[(.*)\] Found (.*)/)) {
+	$ServicesFound{$Service}{$Host}++;
+    } elsif ( my ($Service,$Host) = ($ThisLine =~ /INFO\s+\[(.*)\] Ignore (.*)/)) {
+	$ServicesIgnored{$Service}{$Host}++;
+    } else {
 	# Report any unmatched entries...
 	push @OtherList, "$ThisLine\n";
     }
@@ -149,6 +153,27 @@ if (keys %ServicesBans) {
     }
 }
 
+if (keys %ServicesFound and $Detail>5) {
+    printf("\nFail2Ban hosts found:\n");
+    foreach my $service (sort {$a cmp $b} keys %ServicesFound) {
+        print("    $service:\n");
+	foreach my $ip (sort {$a cmp $b} keys %{$ServicesFound{$service}}) {
+	    printf("       %-15s (%3d Times)\n", "$ip",
+	       $ServicesFound{$service}{$ip});
+        }
+    }
+}
+
+if (keys %ServicesIgnored and $Detail>5) {
+    printf("\nFail2Ban hosts ignored:\n");
+    foreach my $service (sort {$a cmp $b} keys %ServicesIgnored) {
+        print("    $service:\n");
+	foreach my $ip (sort {$a cmp $b} keys %{$ServicesIgnored{$service}}) {
+	    printf("       %-15s (%3d Times)\n", "$ip",
+	       $ServicesIgnored{$service}{$ip});
+        }
+    }
+}
 
 if ($Detail>0) {
     if ($#IptablesErrors > 0) {
