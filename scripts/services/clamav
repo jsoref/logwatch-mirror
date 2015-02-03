@@ -1,15 +1,12 @@
 ##################################################################
 #
-# clamav script ver. 0.85.1 for Logwatch.
-#
 # Written by S. Schimkat <www.schimkat.dk>.
-#
-# Find latest version here: www.schimkat.dk/clamav
 #
 ##################################################################
 
 ########################################################
 ## Copyright (c) 2008 S. Schimkat
+## Copyright (c) 2015 Orion Poplawski
 ## Covered under the included MIT/X-Consortium License:
 ##    http://www.opensource.org/licenses/mit-license.php
 ## All modifications and contributions by other persons to
@@ -24,10 +21,24 @@
 ## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
-$Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || $ENV{'clamav_detail_level'} || 0;
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || $ENV{'clamav_detail_level'} || 0;
 my $IgnoreUnmatched = $ENV{'clamav_ignoreunmatched'} || 0;
+my $DaemonStart;
+my $DaemonStartTime;
+my $DaemonStop;
+my $DatabaseReloads;
+my $DatabaseViruses;
+my @OtherList;
+my %BoundToIP;
+my %BoundToPort;
+my %Limits;
+my %lstatFail;
+my %SelfCheck;
+my %SocketFile;
+my %VirusList;
 
-while (defined($ThisLine = <STDIN>)) {
+while (defined(my $ThisLine = <STDIN>)) {
    #If LogTime = yes in clamd.conf then strip it
    $ThisLine =~ s/^... ... .. ..:..:.. .... \-\> //;
 
@@ -60,11 +71,11 @@ while (defined($ThisLine = <STDIN>)) {
        ( $ThisLine =~ /Bytecode: Security mode set to /) or
        ( $ThisLine =~ /^No stats for Database check/ )) {
        # We do not care about these.
-   } elsif (($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {
+   } elsif (my ($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {
       $SelfCheck{$Check}++;
-   } elsif (($Virus) = ($ThisLine =~ /^.+?: (.*?) FOUND/i )) {
+   } elsif (my ($Virus) = ($ThisLine =~ /^.+?: (.*?) FOUND/i )) {
       $VirusList{$Virus}++;
-   } elsif (($Viruses) = ($ThisLine =~ /^Database correctly reloaded \((\d+) (signatures|viruses)\)/i )) {
+   } elsif (my ($Viruses) = ($ThisLine =~ /^Database correctly reloaded \((\d+) (signatures|viruses)\)/i )) {
       $DatabaseReloads++;
       $DatabaseViruses = $Viruses;
    } elsif (($ThisLine =~ /Stopped at/)) {
@@ -78,16 +89,8 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif (($ThisLine =~ /TCP: Bound to address ([^ ]*) on port (\d+)/)) {
       $BoundToIP{$1}++;
       $BoundToPort{$1}=$2;
-   } elsif (($ThisLine =~ /Limits: Global size limit set to (\d+) bytes/)) {
-      $GSizeLimit{$1}++;
-   } elsif (($ThisLine =~ /Limits: File size limit set to (\d+) bytes/)) {
-      $FSizeLimit{$1}++;
-   } elsif (($ThisLine =~ /Limits: Recursion level limit set to (\d+)/ )) {
-      $RecursionLimit{$1}++;
-   } elsif (($ThisLine =~ /Limits: Files limit set to (\d+)/ )) {
-      $FilesLimit{$1}++;
-   } elsif (($ThisLine =~ /Limits: Core-dump limit is (\d+)/ )) {
-      $CoreLimit{$1}++;
+   } elsif (my ($Limit,$Value) = ($ThisLine =~ /Limits: (.*) limit (?:set to|is) (.*)\./)) {
+      $Limits{$Limit} = $Value;
    } elsif (($ThisLine =~ /lstat\(\) failed on: (\S+)/ )) {
       $lstatFail{$1}++;
    } else {
@@ -109,14 +112,14 @@ if (($DaemonStart) and ($Detail >= 5)) {
 
 if (keys %VirusList) {
    print "\nViruses detected:\n";
-   foreach $Virus (sort {$a cmp $b} keys %VirusList) {
+   foreach my $Virus (sort {$a cmp $b} keys %VirusList) {
       printf "   %-50s %5i Time(s)\n", $Virus .":", $VirusList{$Virus};
    }
 }
 
 if ((keys %SelfCheck) and ($Detail >=5)) {
    print "\nDaemon check list:\n";
-   foreach $Check (sort {$a cmp $b} keys %SelfCheck) {
+   foreach my $Check (sort {$a cmp $b} keys %SelfCheck) {
       printf "   %-50s %5i Time(s)\n", $Check .":", $SelfCheck{$Check};
    }
 }
@@ -128,59 +131,33 @@ if ($DatabaseReloads) {
 if ($Detail > 8) {
    if (keys %SocketFile) {
       print "\nBound to Unix socket:\n";
-      foreach $Socket (keys %SocketFile) {
+      foreach my $Socket (keys %SocketFile) {
          print "\t$Socket\t$SocketFile{$Socket} Time(s)\n";
       }
    }
    if (keys %BoundToIP) {
-      print "Bound to IP:Port:\n";
-      foreach $IP (keys %BoundToIP) {
+      print "\nBound to IP:Port:\n";
+      foreach my $IP (keys %BoundToIP) {
          print "\t$IP:$BoundToPort{$IP}\t\t\t$BoundToIP{$IP} Time(s)\n";
       }
    }
-   
-   if (keys %GSizeLimit) {
-      print "Global size limit:\t";
-      foreach $limit (keys %GSizeLimit) {
-         $limit = int $limit/1024/1024;
-         print "$limit MB\t";
+  
+   if (keys %Limits) {
+      print "\nLimits:\n";
+      foreach my $Limit (sort { $a cmp $b} keys %Limits) {
+         printf "\t%-20s ","$Limit:",;
+         if (my ($Bytes) = ($Limits{$Limit} =~ /(\d+) bytes/)) {
+            printf "%d MiB\n",$Bytes/1024/1024;
+         } else {
+            print "$Limits{$Limit}\n";
+         }
       }
-      print "\n";
-   }
-   if (keys %FSizeLimit) {
-      print "File size limit:\t";
-      foreach $limit (keys %FSizeLimit) {
-         $limit = int $limit/1024/1024;
-         print "$limit MB\t";
-      }
-      print "\n";
-   }
-   if (keys %RecursionLimit) {
-      print "Recursion level limit:\t";
-      foreach $limit (keys %RecursionLimit) {
-         print "$limit\t";
-      }
-      print "\n";
-   }
-   if (keys %FilesLimit) {
-      print "Files limit:\t\t";
-      foreach $limit (keys %FilesLimit) {
-         print "$limit\t";
-      }
-      print "\n";
-   }
-   if (keys %CoreLimit) {
-      print "Core size limit:\t";
-      foreach $limit (keys %CoreLimit) {
-         print "$limit\t";
-      }
-      print "\n";
    }
 }
    
 if (keys %lstatFail) {
    print "\nlstat() failed on:\n";
-   foreach $file (keys %lstatFail) {
+   foreach my $file (keys %lstatFail) {
       printf "   %-50s %5i Time(s)\n", $file .":", $lstatFail{$file};
    }
 }
