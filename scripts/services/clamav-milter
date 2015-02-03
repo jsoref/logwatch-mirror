@@ -53,7 +53,7 @@ while (defined($ThisLine = <STDIN>)) {
       $MaxChildrenLimit{$ChildLimit}++;
    } elsif (($ThisLine =~ /^Stopping/)) {
       $DaemonStop++;
-   } elsif (($ThisLine =~ /^Starting/)) {
+   } elsif (($ThisLine =~ /^(Starting|\+\+\+ Started)/)) {
       $DaemonStart++;
    } elsif (($Viruses) = ($ThisLine =~ /^Database correctly reloaded \((\d+) (signatures|viruses)\)/i )) {
       $DatabaseReloads++;
