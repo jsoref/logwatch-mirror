@@ -150,7 +150,7 @@ while (defined($ThisLine = <STDIN>)) {
          # We don't care about these
      } elsif ( $ThisLine =~ /Killed with signal /) {
          $End++;
-     } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up( \(.*\))?$/) {
+     } elsif ( $ThisLine =~ /Dovecot (v\d[^ ]* |)starting up/) {
          $Restarts++;
          $End = 0;
      } elsif ( ( ($User, $Host) = ( $ThisLine =~ /^pop3-login: Login: (.*?) \[(.*)\]/ ) ) or
