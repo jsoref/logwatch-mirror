@@ -144,7 +144,8 @@ while (defined($ThisLine = <STDIN>)) {
           ($ThisLine =~ /IMAP.*: Connection closed bytes/) or
           ($ThisLine =~ /IMAP.* failed with mbox file/) or
 	  ($ThisLine =~ /discarded duplicate forward to/) or 
-	  ($ThisLine =~ /discarding vacation response/) 
+	  ($ThisLine =~ /discarding vacation response/) or
+	  ($ThisLine =~ /discarded vacation reply to/) 
 	  )
          { 
          # We don't care about these
@@ -202,10 +203,10 @@ while (defined($ThisLine = <STDIN>)) {
       $Forwarded{$User}{$Recip}++;
 
 # sieve vacation
-    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* sent vacation response to \<(.*)\>/)) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\((?:\d+, )?(.*)\):(?: .*:)? sieve: msgid=.* sent vacation response to \<(.*)\>/)) {
       $VacationResponse{$User}{$Recip}++;
 
-    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\((?:\d+, )?(.*)\):(?: .*:)? sieve: msgid=.* discarded duplicate vacation response to \<(.*)\>/ )) {
       $VacationDup{$User}{$Recip}++;
 
     } elsif ( $ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\(.*\): .*sieve: msgid=.* marked message to be discarded if not explicitly delivered/ ) {
