@@ -114,6 +114,7 @@
 $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 
 $Startups = 0;
+$Shutdowns = 0;
 $Reloads = 0;
 $MailErrors = 0;
 $BFMFile = 0;
@@ -165,6 +166,8 @@ while (defined($ThisLine = <STDIN>)) {
          $Runs->{$User}->{'personal crontab deleted'}++;
       } elsif ($ThisLine =~ /^STARTUP \(.*\)\s*$/ ) {
          $Startups++;
+      } elsif ($ThisLine =~ /^INFO \(Shutting down\)/ ) {
+         $Shutdowns++;
       } elsif ( $ThisLine =~ /^RELOAD \(.+\)\s*$/ ) {
          $Runs->{$User}->{'personal crontab reloaded'}++;
       } elsif ( $ThisLine =~ /^MAIL \(mailed \d+ bytes of output but got status [^ ]+/) {
@@ -321,7 +324,11 @@ if ($Detail >= 10) {
    }
 
    if ($Startups > 0) {
-      print "\nCRON Restarted $Startups Time(s)\n";
+      print "\nCRON Started $Startups Time(s)\n";
+   }
+
+   if ($Shutdowns > 0) {
+      print "\nCRON Shutdown $Shutdowns Time(s)\n";
    }
 
    if ($Reloads > 0) {
