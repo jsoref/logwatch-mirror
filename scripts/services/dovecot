@@ -130,7 +130,7 @@ sub hostName {
 }
 
 # Handle "dovecot: <svc>" and "dovecot: [ID yyyyy mail.info] <svc"
-my $dovecottag = qr/dovecot:(?:\s*\[[^]]+\])?/;
+my $dovecottag = qr/dovecot(?:\[\d+\])?:(?:\s*\[[^]]+\])?/;
 
 while (defined($ThisLine = <STDIN>)) {
      # remove timestamp.  We can't use *RemoveHeaders because we need the
