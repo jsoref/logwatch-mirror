@@ -127,6 +127,7 @@ while ($ThisLine = <STDIN>) {
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): pid=[0-9]* uid=0 auid=[0-9]* ses=[0-9]*$/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): pid=[0-9]* uid=0 auid=[0-9]* ses=[0-9]* subj=.*res=success/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): pid=[0-9]* uid=0 old auid=[0-9]* new auid=[0-9]+ old ses=[0-9]* new ses=[0-9]+ res=1$/) or
+        ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): pid=[0-9]* uid=0 subj=.* old-auid=[0-9]* auid=[0-9]+ old-ses=[0-9]* ses=[0-9]+ res=1$/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\):  cwd=".*"/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): user/) or
         ( $ThisLine =~ /type=[0-9]+ audit\([0-9.]*:[0-9]*\): proctitle=/) or
