@@ -71,7 +71,9 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /Response from unexpected source/) or
       ($ThisLine =~ /No root nameservers for class IN/) or
       ($ThisLine =~ /recvfrom: No route to host/) or
-      ($ThisLine =~ /transfer of/) or
+      # Be sure to catch: transfer of 'zone' from IP#53: failed to connect: timed out
+      # not exact just triggers a full transfer
+      ($ThisLine =~ /transfer of .*: (AXFR(|-style IXFR) (started|ended)|connected using|Transfer completed|failed while receiving responses: not exact)/) or
       ($ThisLine =~ /using \d+ CPU/) or
       ($ThisLine =~ /loading configuration/) or
       ($ThisLine =~ /command channel listening/) or
@@ -155,6 +157,7 @@ while (defined($ThisLine = <STDIN>)) {
       ($ThisLine =~ /using built-in DLV key/) or
       ($ThisLine =~ /reading built-in trusted keys from file/) or
       ($ThisLine =~ /all zones loaded/) or
+      ($ThisLine =~ /client .* signer .* approved/) or
       # ignore this line because the following line describes the error
       ($ThisLine =~ /unexpected error/)
    ) {
@@ -180,6 +183,8 @@ while (defined($ThisLine = <STDIN>)) {
       $DeniedZoneTransfers{$Host}{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+) zone transfer deferred due to quota/ ) ) {
       $DeferredZoneTransfers{$Zone}++;
+   } elsif ( ($Zone, $Host) = ( $ThisLine =~ /transfer of '(.+)' from ([^\#]+)#[^\:]+: failed/ ) ) {
+      $FailedZoneTransfers{$Host}{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /cache zone \"(.*)\" loaded/ ) ) {
       $ZoneLoaded{"cache $Zone"}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /cache zone \"(.*)\" .* loaded/ ) ) {
@@ -194,9 +199,9 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneLoaded{"secondary $Zone"}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /slave zone \"(.+)\" .* loaded/ ) ) {
       $ZoneLoaded{"secondary $Zone"}++;
-   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\/IN\: expired/ ) ) {
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): expired/ ) ) {
       $ZoneExpired{$Zone}++;
-   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\: loaded serial/ ) ) {
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): loaded serial/ ) ) {
       $ZoneLoaded{$Zone}++;
    } elsif ( (undef,$Addr,$Server) = ( $ThisLine =~ /(C|c)onnection refused\)? resolving '(.+)': (.+)/ ) ) {
       $ConnectionRefused{$Addr}{$Server}++;
@@ -209,10 +214,10 @@ while (defined($ThisLine = <STDIN>)) {
       $ZoneReceivedNotify{$Zone}++;
    } elsif ( ($Zone) = ( $ThisLine =~ /zone (.*): notify from .* up to date/ ) ) {
       $ZoneReceivedNotify{$Zone}++;
-   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+)\/IN: refused notify from non-master/ ) ) {
+   } elsif ( ($Zone) = ( $ThisLine =~ /zone (.+): refused notify from non-master/ ) ) {
       $ZoneRefusedNotify{$Zone}++;
 #   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\d\.a-fA-F:]+) bad zone transfer request: '(.+)': (.+)$/ ) ) {
-   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: bad zone transfer request: '(.+)\/IN': (.+)/ ) ) {
+   } elsif ( ($Rhost,$Ldom,$Reason) = ( $ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: bad zone transfer request: '(.+)': (.+)/ ) ) {
       $BadZone{$Reason}{"$Rhost ($Ldom)"}++;
    } elsif ( ($Host) = ( $ThisLine =~ /([^ ]+) has CNAME and other data \(invalid\)/ ) ) {
       push @CNAMEAndOther, $Host;
@@ -234,7 +239,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: (?:view \w+: )?query \(cache\) denied/ ) ) {
       $FullClient = LookupIP ($Client);
       $DeniedQuery{$FullClient}++;
-   } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: query '.*\/IN' denied/ ) ) {
+   } elsif ( ($Client) = ( $ThisLine =~ /client (.*)#\d+: query '.*' denied/ ) ) {
       $FullClient = LookupIP ($Client);
       $DeniedQueryNoCache{$FullClient}++;
    } elsif ( ($Rhost, $ViewName, $Ldom) = ($ThisLine =~ /client ([\.0-9a-fA-F:]+)#\d+: (?:view \w+: )?update '(.*)' denied/)) {
@@ -248,9 +253,9 @@ while (defined($ThisLine = <STDIN>)) {
       $JournalFail{$Zone}++;
    } elsif ( ($Channel,$Reason) = ($ThisLine =~ /couldn't add command channel (.+#\d+): (.*)$/)) {
       $ChannelAddFail{$Channel}{$Reason}++;
-   } elsif ( ($Zone,$Host,$Reason) = ($ThisLine =~ /zone ([^ ]*)\/IN: refresh: failure trying master ([^ ]*)#\d+: (.*)/) ) {
+   } elsif ( ($Zone,$Host,$Reason) = ($ThisLine =~ /zone ([^ ]*): refresh: failure trying master ([^ ]*)#\d+: (.*)/) ) {
       $MasterFailure{"$Zone from $Host"}{$Reason}++;
-   } elsif ( ($Zone,$Reason,$Host) = ($ThisLine =~ /zone ([^ ]*)\/IN: refresh: unexpected rcode \((.*)\) from master ([^ ]*)#\d+/) ) {
+   } elsif ( ($Zone,$Reason,$Host) = ($ThisLine =~ /zone ([^ ]*): refresh: unexpected rcode \((.*)\) from master ([^ ]*)#\d+/) ) {
       $MasterFailure{"$Zone from $Host"}{$Reason}++;
    } elsif ( ($Zone) = ($ThisLine =~ /zone ([^\/]+)\/.+: refresh: non-authoritative answer from master/)) {
       $NonAuthoritative{$Zone}++;
@@ -322,8 +327,108 @@ while (defined($ThisLine = <STDIN>)) {
 
 #######################################
 
+if ( keys %ZoneExpired ) {
+   print "\nZones expired:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %ZoneExpired) {
+      print "   $ThisOne: $ZoneExpired{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( keys %FailedZoneTransfers ) {
+   print "\nFailed Zone Transfers:\n";
+   foreach my $Host (keys %FailedZoneTransfers) {
+      print "   $Host:\n";
+      foreach my $Zone (keys %{$FailedZoneTransfers{$Host}}) {
+         print "      $Zone: $FailedZoneTransfers{$Host}{$Zone} Time(s)\n";
+      }
+   }
+}
+
+if ( keys %DeniedZoneTransfers ) {
+   print "\nDenied Zone Transfers:\n";
+   foreach my $Host (keys %DeniedZoneTransfers) {
+      print "   $Host:\n";
+      foreach my $Zone (keys %{$DeniedZoneTransfers{$Host}}) {
+         print "      $Zone: $DeniedZoneTransfers{$Host}{$Zone} Time(s)\n";
+      }
+   }
+}
+
+if ( keys %UpdateDenied ) {
+   print "\nZone update refused:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %UpdateDenied) {
+      print "   $ThisOne: $UpdateDenied{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( keys %UpdateForwardingDenied ) {
+   print "\nZone update forwarding refused:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %UpdateForwardingDenied) {
+      print "   $ThisOne: $UpdateForwardingDenied{$ThisOne} Time(s)\n";
+   }
+}
+
+if ( keys %InsecUpdate ) {
+   print "\nInsecure zones (dynamic update allowed by IP address):\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %InsecUpdate) {
+      print "   " . $ThisOne . ": " . $InsecUpdate{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ( keys %JournalFail ) {
+   print "\nJournall rollforward failed:\n";
+   foreach $ThisOne (sort {$a cmp $b} keys %JournalFail) {
+      print "   " . $ThisOne . ": " . $JournalFail{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (keys %ConfProb) {
+   print "\nErrors in configuration files\n";
+   foreach $File (sort keys %ConfProb) {
+      if ($File =~ /.+/) {
+        print "   file " . $File . "\n";
+        foreach (keys %{$ConfProb{$File}}) {
+           ($Line,$Problem) = split ",";
+           print "      " . $File . ":" . "$Line" . ": " . $Problem . ": " . $ConfProb{$File}{"$Line,$Problem"} . " Time(s)\n";
+        }
+      }
+      else {
+        foreach (keys %{$ConfProb{$File}}) {
+           ($Line,$Problem) = split ",";
+            print "   " . $Problem . ": " . $ConfProb{$File}{"$Line,$Problem"} . " Time(s)\n";
+        }
+      }
+   }
+}
+
+if (keys %NError) {
+   print "\nErrors:\n";
+   foreach $ThisOne (keys %NError) {
+      print "   " . $ThisOne . ": " . $NError{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if (keys %ErrOpenFiles) {
+   print "\nThe following seams to be caused by the patches for CVE-2008-1447.";
+   print "\nPlease update your bind.\n";
+   foreach $ThisOne (keys %ErrOpenFiles) {
+      print "   " . $ThisOne . ": " . $ErrOpenFiles{$ThisOne} . " Time(s)\n";
+   }
+}
+
+if ((keys %CCMessages) or (keys %CCMessages2)){
+   print "\nMessages from control channel\n";
+   foreach (keys %CCMessages) {
+      ($From,$Log) = split ",";
+      print "   " . $From . ": " . $Log . ": " . $CCMessages{"$From,$Log"} . " Time(s)\n";
+   }
+   foreach $ThisOne (keys %CCMessages2) {
+      print "   " . $ThisOne . ": " . $CCMessages2{$ThisOne} . " Time(s)\n";
+   }
+}
+
 if ( ( $Detail >= 5 ) and ($StartNamed) ) {
-   print "Named started: $StartNamed Time(s)\n";
+   print "\nNamed started: $StartNamed Time(s)\n";
 }
 
 if ( ( $Detail >= 5 ) and ($ReloadNamed) ) {
@@ -375,16 +480,6 @@ if ( ($Detail >= 5) and (keys %MasterFailure) ) {
       print "   $Zone:\n";
       foreach $Reason (sort {$a cmp $b} keys %{$MasterFailure{$Zone}}) {
          print "      $Reason: $MasterFailure{$Zone}{$Reason} Time(s)\n";
-      }
-   }
-}
-
-if ( ( $Detail >= 5 ) and (keys %DeniedZoneTransfers) ) {
-   print "\nDenied Zone Transfers:\n";
-   foreach my $Host (keys %DeniedZoneTransfers) {
-      print "   $Host:\n";
-      foreach my $Zone (keys %{$DeniedZoneTransfers{$Host}}) {
-         print "      $Zone: $DeniedZoneTransfers{$Host}{$Zone} Time(s)\n";
       }
    }
 }
@@ -532,66 +627,12 @@ if ( ( $Detail >= 10 ) and (keys %HUR) ) {
    }
 }
 
-if ( keys %ZoneExpired ) {
-   print "\nZones expired:\n";
-   foreach $ThisOne (sort {$a cmp $b} keys %ZoneExpired) {
-      print "   $ThisOne: $ZoneExpired{$ThisOne} Time(s)\n";
-   }
-}
-
 if ( ( $Detail >= 5 ) and (keys %ZoneUpdates) ) {
    print "\nZone Updates:\n";
    foreach $ThisOne (sort {$a cmp $b} keys %ZoneUpdates) {
       print "   $ThisOne:\n";
       foreach $Message (sort {$a cmp $b} keys %{$ZoneUpdates{$ThisOne}}) {
          print "      $Message: $ZoneUpdates{$ThisOne}{$Message} Time(s)\n";
-      }
-   }
-}
-
-if ( keys %UpdateDenied ) {
-   print "\nZone update refused:\n";
-   foreach $ThisOne (sort {$a cmp $b} keys %UpdateDenied) {
-      print "   $ThisOne: $UpdateDenied{$ThisOne} Time(s)\n";
-   }
-}
-
-if ( keys %UpdateForwardingDenied ) {
-   print "\nZone update forwarding refused:\n";
-   foreach $ThisOne (sort {$a cmp $b} keys %UpdateForwardingDenied) {
-      print "   $ThisOne: $UpdateForwardingDenied{$ThisOne} Time(s)\n";
-   }
-}
-
-if ( keys %InsecUpdate ) {
-   print "\nInsecure zones (dynamic update allowed by IP address):\n";
-   foreach $ThisOne (sort {$a cmp $b} keys %InsecUpdate) {
-      print "   " . $ThisOne . ": " . $InsecUpdate{$ThisOne} . " Time(s)\n";
-   }
-}
-
-if ( keys %JournalFail ) {
-   print "\nJournall rollforward failed:\n";
-   foreach $ThisOne (sort {$a cmp $b} keys %JournalFail) {
-      print "   " . $ThisOne . ": " . $JournalFail{$ThisOne} . " Time(s)\n";
-   }
-}
-
-if (keys %ConfProb) {
-   print "\n Errors in configuration files\n";
-   foreach $File (sort keys %ConfProb) {
-      if ($File =~ /.+/) {
-        print "   file " . $File . "\n";
-        foreach (keys %{$ConfProb{$File}}) {
-           ($Line,$Problem) = split ",";
-           print "      " . $File . ":" . "$Line" . ": " . $Problem . ": " . $ConfProb{$File}{"$Line,$Problem"} . " Time(s)\n";
-        }
-      }
-      else {
-        foreach (keys %{$ConfProb{$File}}) {
-           ($Line,$Problem) = split ",";
-            print "   " . $Problem . ": " . $ConfProb{$File}{"$Line,$Problem"} . " Time(s)\n";
-        }
       }
    }
 }
@@ -623,33 +664,7 @@ if (($Detail >= 10) and (keys %StartLog)) {
    }
 }
 
-if (keys %NError) {
-   print "\n Errors:\n";
-   foreach $ThisOne (keys %NError) {
-      print "   " . $ThisOne . ": " . $NError{$ThisOne} . " Time(s)\n";
-   }
-}
-
-if (keys %ErrOpenFiles) {
-   print "\n The following seams to be caused by the patches for CVE-2008-1447.";
-   print "\n Please update your bind.\n";
-   foreach $ThisOne (keys %ErrOpenFiles) {
-      print "   " . $ThisOne . ": " . $ErrOpenFiles{$ThisOne} . " Time(s)\n";
-   }
-}
-
-if ((keys %CCMessages) or (keys %CCMessages2)){
-   print "\n Messages from control channel\n";
-   foreach (keys %CCMessages) {
-      ($From,$Log) = split ",";
-      print "   " . $From . ": " . $Log . ": " . $CCMessages{"$From,$Log"} . " Time(s)\n";
-   }
-   foreach $ThisOne (keys %CCMessages2) {
-      print "   " . $ThisOne . ": " . $CCMessages2{$ThisOne} . " Time(s)\n";
-   }
-}
-
-if ((keys %CCCommands) or (keys %UnknownCCCommands)) {
+if (($Detail and (keys %CCCommands)) or (keys %UnknownCCCommands)) {
    print "\nReceived control channel commands\n";
    foreach $ThisOne (keys %CCCommands) {
       print "   " . $ThisOne . ": " . $CCCommands{$ThisOne} . " Time(s)\n";
