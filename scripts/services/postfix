@@ -1847,7 +1847,7 @@ sub postfix_policy_spf($) {
         # KeyboardInterrupt 
         $line =~ /^Read line: "/ or
         $line =~ /^Found the end of entry$/ or
-        $line =~ /^Config: {/ or
+        $line =~ /^Config: \{/ or
         $line =~ /^spfcheck: pyspf result/ or
         $line =~ /^Starting$/ or
         $line =~ /^Normal exit$/ or
