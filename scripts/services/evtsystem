@@ -80,9 +80,21 @@ while (defined($ThisLine = <STDIN>)) {
       next if $ExpandedString eq "The Program Compatibility Assistant service successfully performed phase two initialization.";
    }
 
+   if ($System eq "Microsoft-Windows-DfsSvc") {
+      #Ignore these
+      next if $ExpandedString =~ /^DFS has finished building all namespaces\.$/;
+      next if $ExpandedString =~ /^DFS server has finished initializing\.$/;
+   }
+
    if ($System eq "Microsoft-Windows-FilterManager") {
       #Ignore these
       next if $ExpandedString =~ /^File System Filter .* has successfully loaded and registered with Filter Manager\.$/;
+   }
+
+   if ($System eq "Microsoft-Windows-Iphlpsvc") {
+      #High Detail
+      next if $ExpandedString =~ /^Isatap interface .* with address .* has been brought up\.$/ and $Detail < 10;
+      next if $ExpandedString =~ /^Isatap interface .* is no longer active\.$/ and $Detail < 10;
    }
 
    if ($System eq "Microsoft-Windows-Kernel-General") {
@@ -100,6 +112,7 @@ while (defined($ThisLine = <STDIN>)) {
 
       #Ignore these
       next if $ExpandedString =~ /^ACPI thermal zone .* has been enumerated/;
+      next if $ExpandedString =~ /^Processor \d+ in group \d+ exposes the following power management capabilities/;
    }
 
    if ($System eq "Microsoft-Windows-Kernel-Processor-Power") {
@@ -113,6 +126,11 @@ while (defined($ThisLine = <STDIN>)) {
       next if $ExpandedString =~ /^The Group Policy settings for the (computer|user) were processed successfully\. New settings from \d+ Group Policy objects were detected and applied\.$/ and $Detail == 0;
    }
 
+   if ($System eq "Microsoft-Windows-Ntfs") {
+      #Ignore these
+      next if $ExpandedString =~ /^Volume .* is healthy\.  No action is needed\.$/;
+   }
+
    if ($System eq "Microsoft-Windows-Power-Troubleshooter") {
       #High Detail
       next if $ExpandedString =~ /^The system has resumed from sleep/ and $Detail < 10;
@@ -122,6 +140,11 @@ while (defined($ThisLine = <STDIN>)) {
       #High Detail
       next if $ExpandedString =~ /^The time provider NtpClient is currently receiving valid time data from/ and $Detail < 10;
       next if $ExpandedString =~ /^The time service is now synchronizing the system time with the time source/ and $Detail < 10;
+   }
+
+   if ($System eq "Microsoft-Windows-WAS") {
+      #High Detail
+      next if $ExpandedString =~ /^A worker process with process id of .* serving application pool .* has requested a recycle because the worker process reached its allowed processing time limit/ and $Detail < 10;
    }
 
    if ($System eq "Microsoft-Windows-WindowsUpdateClient" or
@@ -147,6 +170,11 @@ while (defined($ThisLine = <STDIN>)) {
    if ($System eq "Microsoft-Windows-Winlogon") {
       #High Detail
       next if $ExpandedString =~ /User \w+ Notification for Customer Experience Improvement Program/ and $Detail < 10;
+   }
+
+   if ($System eq "Microsoft-Windows-WinRM") {
+      #High Detail
+      next if $ExpandedString =~ /^The WinRM service is listening for WS-Management requests/ and $Detail < 10;
    }
 
    if ($System eq "Service Control Manager") {
@@ -181,11 +209,14 @@ while (defined($ThisLine = <STDIN>)) {
 
    next if $ExpandedString =~ /client service is started$/ and $Detail < 10;
    next if $ExpandedString =~ /started successfully\.$/ and $Detail < 10;
-   next if $ExpandedString =~ /has successfully (started|stopped)\./ and $Detail < 10;
-   next if $ExpandedString =~ /^Service .* (started|stopped)\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /has successfully (?:started|stopped)\./ and $Detail < 10;
+   next if $ExpandedString =~ /service .* (?:started|stopped)/i and $Detail < 10;
+   next if $ExpandedString =~ /Module has (?:started|stopped)/ and $Detail < 10;
    next if $ExpandedString =~ /Driver initialized successfully\.$/ and $Detail < 10;
    next if $ExpandedString =~ /Network controller configured for .* link\.$/ and $Detail < 10;
    next if $ExpandedString =~ /^The driver package installation has succeeded\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /^The .* service entered the .* state/ and $Detail < 10;
+   next if $ExpandedString =~ /^The process .* has initiated the (?:power off|restart|shutdown) of computer .* on behalf of user .* for the following reason/ and $Detail < 5;
    next if $ExpandedString =~ /^UVD Information$/;
    next if $ExpandedString =~ /Link has been established:/;
 
