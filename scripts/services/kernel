@@ -100,6 +100,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $FPAssists{$1}++;
    } elsif ($ThisLine =~ /Out of memory: Killed process \d+ \((.*)\)/) {
       $OOM{$1}++;
+   } elsif ($ThisLine =~ /(\S+) invoked oom-killer/) {
+      $OOM{$1}++;
    } elsif ($ThisLine =~ /(EDAC (MC|PCI)\d:.*)/) {
       # Standard boot messages
       next if $ThisLine =~ /Giving out device to /;
