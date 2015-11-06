@@ -24,6 +24,9 @@ my %BackupStarted;
 my $BackupCompleted;
 my %BackupFile;
 my %Export;
+my %NSSCiphers;
+my %SSLInit;
+my %Info;
 my %OtherList;
 my $PreviousLine = '';
 
@@ -31,15 +34,19 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    
    if ($ThisLine =~ /^Listening for new connections again$/
-       or $ThisLine =~ /Listening on .* port/
+       or $ThisLine =~ /Listening on .* (for LDAPI requests|port)/
        or $ThisLine =~ /^Waiting for \d+ database threads to stop/
        or $ThisLine =~ /^slapd shutting down - /
+       or $ThisLine =~ /^SSL alert: Configured NSS Ciphers$/
+       or $ThisLine =~ /^ldbm_back_.* - conn=/
+       or $ThisLine =~ /^ldbm_usn_init - backend: /
       ) {
       #Ignore
    } elsif ($ThisLine =~ /error/i
        or $ThisLine =~ /^Detected Disorderly Shutdown/) {
       $Errors{$ThisLine}++;
-   } elsif ($ThisLine =~ /^Not listening for new connections/) {
+   } elsif ($ThisLine =~ /warning/i
+       or $ThisLine =~ /^Not listening for new connections/) {
       $Warnings{$ThisLine}++;
    } elsif ($ThisLine =~ /^(.*) starting up$/) {
       $Startup{$1}++;
@@ -51,11 +58,20 @@ while (defined(my $ThisLine = <STDIN>)) {
       $BackupCompleted++;
    } elsif ($ThisLine =~ /^Backing up file \d+ \((.*)\)$/) {
       $BackupFile{$1}++;
+   } elsif ($ThisLine =~ /^Copying (.*) to /) {
+      $BackupFile{$1}++;
    } elsif ($ThisLine =~ /^export (\w+: Processed \d+ entries \(\d+%\)\.)$/) {
       $Export{$1}++;
+   } elsif ($ThisLine =~ /^SSL alert:\s+(\S+): (\w+)/) {
+      $NSSCiphers{$1} = $2;
+   } elsif ($ThisLine =~ /^SSL Initialization - (.*)/) {
+      $SSLInit{$1}++;
+   } elsif ($ThisLine =~ /^(Total entry cache size:.*)/
+            or $ThisLine =~ /^(userRoot: entry cache size:.*)/) {
+      $Info{$1}++;
    } elsif ($ThisLine =~ /^All database threads now stopped$/) {
-      #This line follows the previous normally in backups
-      $OtherList{$ThisLine}++ unless $PreviousLine =~ /^(export \w+: Processed \d+ entries|Waiting for \d+ database threads to stop|Backing up file)/;
+      #This line follows the previous normally in backups or shutdown
+      $OtherList{$ThisLine}++ unless $PreviousLine =~ /^(export \w+: Processed \d+ entries|Waiting for \d+ database threads to stop|Backing up file|Copying .* to )/;
    } else {
       $OtherList{$ThisLine}++;
    }
@@ -107,6 +123,27 @@ if (keys %Export and $Detail) {
    print "\nExports:\n";
    foreach my $Line (keys %Export) {
       print "  $Line $Export{$Line} Time(s)\n";
+   }
+}
+
+if (keys %Info and $Detail >= 7) {
+   print "\nInformational Messages::\n";
+   foreach my $Line (keys %Info) {
+      print "  $Line $Info{$Line} Time(s)\n";
+   }
+}
+
+if (keys %SSLInit and $Detail >= 7) {
+   print "\nSSL Initialization:\n";
+   foreach my $Message (sort {$a cmp $b} keys %SSLInit) {
+      print "    $Message\n";
+   }
+}
+
+if (keys %NSSCiphers and $Detail >= 7) {
+   print "\nNSS Cipers:\n";
+   foreach my $Cipher (sort {$a cmp $b} keys %NSSCiphers) {
+      print "    $Cipher: $NSSCiphers{$Cipher}\n";
    }
 }
 
