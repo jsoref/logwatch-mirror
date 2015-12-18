@@ -82,7 +82,8 @@ while (defined(my $ThisLine = <STDIN>)) {
          ($ThisLine =~ /WARNING Determined IP using DNS Lookup: [^ ]+ = \['[^']+'\]/) or
          ($ThisLine =~ /INFO\s+(Stopping all jails|Exiting Fail2ban)/) or
          ($ThisLine =~ /INFO\s+Initiated '.*' backend/) or
-         ($ThisLine =~ /INFO\s+(Added logfile = .*|Set maxRetry = \d+|Set findtime = \d+|Set banTime = \d+)/)
+         ($ThisLine =~ /INFO\s+(Added logfile = .*|Set maxRetry = \d+|Set findtime = \d+|Set banTime = \d+)/) or
+         ($ThisLine =~ /Unable to find a corresponding IP address for .*: \[Errno -2\] Name or service not known/)
        )
     {
         if ( $Debug >= 6 ) {
