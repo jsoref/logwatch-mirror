@@ -1364,7 +1364,6 @@ sub print_summary_report (\@) {
             }
             else {
                $fmt .= "$numfmt ";
-               $extra = '';
             }
 
             if ($divisor and $$divisor) {
