@@ -278,7 +278,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    ### Sessions ###
    elsif ( ($ThisLine =~ /^\[[ \d]+\] Session ended/) ||
-           ($ThisLine =~ /^\Context: \[[ \d]+\]SRV\[(?:citadel-(?:TCP|UDS)|CitNetworker|rssclient|POP1aggr|POP3|POP3S|DICT_TCP|IMAP|IMAPS|LMTP|SMTP_Send|SMTP-MSA)\] Session ended/) ||
+           ($ThisLine =~ /^Context: \[[ \d]+\]SRV\[(?:citadel-(?:TCP|UDS)|CitNetworker|rssclient|POP1aggr|POP3|POP3S|DICT_TCP|IMAP|IMAPS|LMTP|SMTP_Send|SMTP-MSA)\] Session ended/) ||
            ($ThisLine =~ /^C(?:itadel c)?lient disconnected: ending session\.$/) ||
            ($ThisLine =~ /^New client socket \d+$/) ||
            ($ThisLine =~ /^Terminated \d+ idle sessions$/) ||
