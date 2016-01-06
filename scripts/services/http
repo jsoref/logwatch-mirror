@@ -310,10 +310,10 @@ while ($end_loop) {
    } elsif ($logformat =~ /\G%O/gc) {
       $parse_field[$parse_index][$parse_subindex++] = "bytes_out";
       $parse_string[$parse_index] .= "(-|\\d*)";
-   } elsif ($logformat =~ /\G%{Referer}i/gci) {
+   } elsif ($logformat =~ /\G%\{Referer}i/gci) {
       $parse_string[$parse_index] .= "(.*)";
       $parse_field[$parse_index][$parse_subindex++] = "referrer";
-   } elsif ($logformat =~ /\G%{User-Agent}i/gci) {
+   } elsif ($logformat =~ /\G%\{User-Agent}i/gci) {
       $parse_string[$parse_index] .= "(.*)";
       $parse_field[$parse_index][$parse_subindex++] = "agent";
    } elsif ($logformat =~ /\G%({.*?})?./gc) {

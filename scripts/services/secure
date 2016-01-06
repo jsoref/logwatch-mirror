@@ -506,7 +506,7 @@ while (defined($ThisLine = <STDIN>)) {
       $DeniedAccess{"$User,$Reason"}++;
    } elsif ($ThisLine =~ /^request-key: Cannot find command to construct key/) {
       $RequestKeyFailures++;
-   } elsif (my ($type,$from,$response,$client,$service,$e) = ($ThisLine =~ /krb5kdc\[[0-9]*\]: (AS_REQ|TGS_REQ) \([0-9]+ etypes {[ 0-9]+}\) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+): (ISSUE|UNKNOWN_SERVER): authtime [0-9]+, (?:etypes {rep=[0-9]+ tkt=[0-9]+ ses=[0-9]+},)? ([^ ]+) for ([^ ,]+)(?:, )?(.*)$/)) {
+   } elsif (my ($type,$from,$response,$client,$service,$e) = ($ThisLine =~ /krb5kdc\[[0-9]*\]: (AS_REQ|TGS_REQ) \([0-9]+ etypes \{[ 0-9]+}\) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+): (ISSUE|UNKNOWN_SERVER): authtime [0-9]+, (?:etypes \{rep=[0-9]+ tkt=[0-9]+ ses=[0-9]+},)? ([^ ]+) for ([^ ,]+)(?:, )?(.*)$/)) {
      if($service=~/^krbtgt\/([^@]+)@\1/) {
         $service='Login';
      }
@@ -515,7 +515,7 @@ while (defined($ThisLine = <STDIN>)) {
         $e='';
      }
      $KerbList{$response}{$type}{$from}{$service}{$client}{$e}++;
-  } elsif (my ($type,$from,$response,$client,$service,$e) = ($ThisLine =~ /krb5kdc\[[0-9]*\]: (AS_REQ|TGS_REQ) \([0-9]+ etypes {[ 0-9]+}\) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+): (NEEDED_PREAUTH|PREAUTH_FAILED|CLIENT_NOT_FOUND): ([^ ]+) for ([^ ,]+)(?:, )?(.*)$/)) {
+  } elsif (my ($type,$from,$response,$client,$service,$e) = ($ThisLine =~ /krb5kdc\[[0-9]*\]: (AS_REQ|TGS_REQ) \([0-9]+ etypes \{[ 0-9]+}\) ([0-9]+\.[0-9]+\.[0-9]+\.[0-9]+): (NEEDED_PREAUTH|PREAUTH_FAILED|CLIENT_NOT_FOUND): ([^ ]+) for ([^ ,]+)(?:, )?(.*)$/)) {
      if($service=~/^krbtgt\/([^@]+)@\1/) {
         $service='Login';
      }
