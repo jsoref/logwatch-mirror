@@ -45,7 +45,7 @@ use Logwatch ':dates';
 
 my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
 
-$SearchDate = TimeFilter('%Y-%m-%d %H:%M:%S');
+$SearchDate = TimeFilter($ARGV[0] || '%Y-%m-%d %H:%M:%S ');
 
 if ( $Debug > 5 ) {
    print STDERR "DEBUG: Inside ApplyEuroDate...\n";
@@ -53,7 +53,7 @@ if ( $Debug > 5 ) {
 }
 
 while (defined($ThisLine = <STDIN>)) {
-   if ($ThisLine =~ m/^$SearchDate(,...)? /o) {
+   if ($ThisLine =~ m/^$SearchDate(,...)?/o) {
       print $ThisLine;
    }
 }
