@@ -88,7 +88,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       } elsif ($EventID == 4771) {
          # Kerberos pre-authentication failed
          my ($Account,$Client,$FailureCode) = $ExpandedString =~ /Account Name:\s+(\S+)\s.*Client Address:\s+(\S+)\s.*Failure Code:\s+(\w+)/;
-         if ($FailureCode eq "0x18") {
+         if ($FailureCode eq "0x12") {
+            #Clients credentials have been revoked      Account disabled, expired, locked out, logon hours.
+            $AccountLocked{"$Account $Client"}++;
+         } elsif ($FailureCode eq "0x18") {
             #Pre-authentication information was invalid - bad password
             $BadPasswords{"$Account $Client"}++;
          } elsif ($FailureCode eq "0x25") {
