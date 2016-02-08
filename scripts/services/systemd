@@ -1,0 +1,176 @@
+########################################################
+## Copyright (c) 2016 Orion Poplawski
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## All modifications and contributions by other persons to
+## this script are assumed to have been donated to the
+## Logwatch project and thus assume the above copyright
+## and licensing terms.  If you want to make contributions
+## under your own copyright or a different license this
+## must be explicitly stated in the contribution an the
+## Logwatch project reserves the right to not accept such
+## contributions.  If you have made significant
+## contributions to this script and want to claim
+## copyright please contact logwatch-devel@lists.sourceforge.net.
+#########################################################
+
+use strict;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %Activated;
+my %Failed;
+my %Reloaded;
+my %Slice;
+my %Started;
+my %Target;
+my $TimeChanged = 0;
+my $LastTarget;
+my %UserSession;
+my %OtherList;
+
+# Failue will generate multiple messages like:
+# Feb  5 16:37:50 hostname systemd: ansible-pull.service: main process exited, code=exited, status=2/INVALIDARGUMENT
+# Feb  5 16:37:50 hostname systemd: Failed to start Run ansible-pull on boot.
+# Feb  5 16:37:50 hostname systemd: Unit ansible-pull.service entered failed state.
+# Feb  5 16:37:50 hostname systemd: ansible-pull.service failed.
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   if ($ThisLine =~ /^(Activating|Deactivating|Mounting|Unmounting|Starting|Stopping) / or
+       # These events will be caught with the Unit X entered failed state message
+       $ThisLine =~ /^Failed to start / or
+       $ThisLine =~ / failed\.$/ or
+       $ThisLine =~ /: (control|main) process exited, code=exited,? status=/ or
+       # Informational
+       $ThisLine =~ /^Closed udev / or
+       $ThisLine =~ /^Detected architecture / or
+       $ThisLine =~ /^Got automount request for \/proc\// or
+       $ThisLine =~ /^Inserted module / or
+       $ThisLine =~ /^Listening on / or
+       $ThisLine =~ /^Mounted / or
+       $ThisLine =~ /^Relabelled / or
+       $ThisLine =~ /^Reloading\.$/ or         # Happens on each boot at switch root
+       $ThisLine =~ /^Running in initial RAM disk\.$/ or
+       $ThisLine =~ /^Set hostname to / or
+       $ThisLine =~ /^Startup finished in / or
+       $ThisLine =~ /^Stopped / or
+       $ThisLine =~ /^Switching root\.$/ or
+       $ThisLine =~ /^Successfully loaded SELinux policy in / or
+       $ThisLine =~ /^systemd (\d+) running in system mode/ or
+       # https://bugzilla.redhat.com/show_bug.cgi?id=1293941
+       $ThisLine =~ /^Configuration file \/usr\/lib\/systemd\/system\/auditd\.service is marked world-inaccessible/ or
+       # https://bugzilla.redhat.com/show_bug.cgi?id=1301182
+       $ThisLine =~ /^Configuration file \/usr\/lib\/systemd\/system\/wpa_supplicant\.service is marked executable/ or
+       $ThisLine =~ /^Received SIGRTMIN\+2[01] from PID \d+ \(plymouthd\)\.$/ or
+       $ThisLine =~ /^Found device / or
+       $ThisLine =~ /^Removed slice /) {
+      # Ignore these
+   } elsif (my ($service) = ($ThisLine =~ /^Unit (.*) entered failed state\.$/)) {
+      $Failed{$service}++;
+   } elsif (my ($target) = ($ThisLine =~ /^Reached target (.*)\.$/)) {
+      $Target{$target}++;
+      $LastTarget = $target;
+   } elsif (my ($service) = ($ThisLine =~ /^Activated (.*)\.$/)) {
+      $Activated{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^Started (.*)\.$/)) {
+      $Started{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^Reloaded (.*)\.$/)) {
+      $Reloaded{$service}++;
+   } elsif ($ThisLine =~ /^Time has been changed$/) {
+      $TimeChanged++;
+   } elsif (my ($session, $user) = ($ThisLine =~ /^Started Session (\d+) of user (.*)\.$/)) {
+      $UserSession{$user}->{$session}++;
+   } elsif (my ($slice) = ($ThisLine =~ /^Created slice (.*)\.$/)) {
+      $Slice{$slice}++;
+   } else {
+      $OtherList{$ThisLine}++;
+   }
+}
+
+if (keys %Failed) {
+   print "ERROR: Failed to start:\n";
+   foreach my $item (sort {$a cmp $b} keys %Failed) {
+      print "        $item $Failed{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Target && $Detail > 3) {
+   print "Reached target $LastTarget: $Target{$LastTarget} Time(s)";
+   if ($Detail > 10) {
+      print ", and:\n";
+      foreach my $target (sort {$a cmp $b} keys %Target) {
+         print "    $target: $Target{$target} Time(s)\n";
+      }
+   } else {
+      print "\n";
+   }
+   print "\n";
+}
+
+if (keys %Started && $Detail > 3) {
+   print "Started:\n";
+   foreach my $started (sort {$a cmp $b} keys %Started) {
+      print "    $started: $Started{$started} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Activated && $Detail > 3) {
+   print "Activated:\n";
+   foreach my $item (sort {$a cmp $b} keys %Activated) {
+      print "    $item: $Activated{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Reloaded && $Detail > 5) {
+   print "Reloaded:\n";
+   foreach my $item (sort {$a cmp $b} keys %Reloaded) {
+      print "    $item: $Reloaded{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if ($TimeChanged && $Detail > 5) {
+   print "Time Changed $TimeChanged Time(s)\n\n";
+}
+
+if (keys %UserSession && $Detail > 3) {
+   print "User Sessions:\n";
+   foreach my $user (sort {$a cmp $b} keys %UserSession) {
+      print "    $user: ";
+      if ($Detail >= 10) {
+         foreach my $session (sort {$a cmp $b} keys %{$UserSession{$user}}) {
+            print " $session";
+         }
+         print "\n";
+      } else {
+         print scalar(keys %{$UserSession{$user}}) . ": Time(s)\n";
+      }
+      print "\n";
+   }
+}
+
+if (keys %Slice && $Detail > 5) {
+   print "Slices created:\n";
+   foreach my $slice (sort {$a cmp $b} keys %Slice) {
+      print "    $slice $Slice{$slice} Time(s)\n";
+   }
+    print "\n";
+}
+
+if (keys %OtherList) {
+   print "\n\n**Unmatched Entries**\n";
+   foreach my $line (sort {$a cmp $b} keys %OtherList) {
+      print "   $line: $OtherList{$line} Time(s)\n";
+   }
+}
+
+exit(0);
+
+# vi: shiftwidth=3 tabstop=3 syntax=perl et
+# Local Variables:
+# mode: perl
+# perl-indent-level: 3
+# indent-tabs-mode: nil
+# End:
