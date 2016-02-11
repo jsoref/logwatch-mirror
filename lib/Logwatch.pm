@@ -356,7 +356,7 @@ sub RangeHelpDM {
        print STDERR "of the valid --range parameters.\n";
    } else {
        print STDERR "\nThis system does not have Date::Manip module loaded, and therefore\n";
-       print STDERR "the only valid --range parameters are 'yesterday', 'today', or 'all'.\n";
+       print STDERR "the only valid --range parameters are \"yesterday\", \"today\", or \"all\".\n";
        print STDERR "The Date::Manip module can be installed by using either of:\n";
        print STDERR "   apt-get install libdate-manip-perl (recommended on Debian)'\n";
        print STDERR "   cpan -i 'Date::Manip'\n";
@@ -370,9 +370,9 @@ sub RangeHelpDM {
 The format of the range option is:
     --range \"date_range [period]\"
 
-Parameter date_range (and optional period) must be enclosed in quotes if it is
-more than one word.  The default for date_range is \"yesterday\". Valid
-instances of date_range have one of the following formats:
+Parameter date_range (and optional period) must be enclosed in double quotes
+if it is more than one word.  The default for date_range is \"yesterday\".
+Valid instances of date_range have one of the following formats:
 
    yesterday
    today
@@ -397,14 +397,14 @@ Examples:
 
    --range today
    --range yesterday
-   --range '4 hours ago for that hour'
-   --range '-3 days'
-   --range 'since 2 hours ago for those hours'
-   --range 'between -10 days and -2 days'
-   --range 'Apr 15, 2005'
-   --range 'first Monday in May'
-   --range 'between 4/23/2005 and 4/30/2005'
-   --range '2005/05/03 10:24:17 for that second'
+   --range \"4 hours ago for that hour\"
+   --range \"-3 days\"
+   --range \"since 2 hours ago for those hours\"
+   --range \"between -10 days and -2 days\"
+   --range \"Apr 15, 2005\"
+   --range \"first Monday in May\"
+   --range \"between 4/23/2005 and 4/30/2005\"
+   --range \"2005/05/03 10:24:17 for that second\"
 
 (The last entry might be used by someone debugging a log or filter.)
 
