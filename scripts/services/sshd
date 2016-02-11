@@ -293,15 +293,19 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
        ($ThisLine =~ /^Keyboard-interactive \(PAM\) userauth failed/ ) or
        ($ThisLine =~ /^debug1: /) or
+       ($ThisLine =~ /Set \/proc\/self\/oom_(score_)?adj (from -?\d )?to -?\d/ ) or
+       ($ThisLine =~ /Starting session: (forced-command|subsystem|shell|command)/ ) or
+       ($ThisLine =~ /Found matching \w+ key:/ ) or
+       ($ThisLine =~ /User child is on pid \d/ ) or
        ($ThisLine =~ /Nasty PTR record .* is set up for [\da-fA-F.:]+, ignoring/)
    ) {
       # Ignore these
-   } elsif ( my ($Method,$User,$Host,$Port) = ($ThisLine =~ /^Accepted (\S+) for (\S+) from ([\d\.:a-f]+) port (\d+)/) ) {
+   } elsif ( my ($Method,$User,$Host,$Port,$Key) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+) port (\d+) ssh[12](?:: (\w+))?/) ) {
       if ($Debug >= 5) {
-         print STDERR "DEBUG: Found -$User logged in from $Host using $Method\n";
+         print STDERR "DEBUG: Found -$User logged in from $Host using $Method ($Key)\n";
       }
       if ($Detail >= 20) {
-         $Users{$User}{$Host}{$Method}++;
+         $Users{$User}{$Host}{$Method . ($Key ? " ($Key)" : "")}++;
       } else {
          if ( $Host !~ /$IgnoreHost/ ) {
             $Users{$User}{$Host}{"(all)"}++;
