@@ -39,10 +39,11 @@ while (defined(my $ThisLine = <STDIN>)) {
        # These events will be caught with the Unit X entered failed state message
        $ThisLine =~ /^Failed to start / or
        $ThisLine =~ / failed\.$/ or
-       $ThisLine =~ /: (control|main) process exited, code=exited,? status=/ or
+       $ThisLine =~ /: (control|main) process exited, code=(exited|killed),? status=/ or
        # Informational
        $ThisLine =~ /^Closed udev / or
        $ThisLine =~ /^Detected architecture / or
+       $ThisLine =~ /^Found device / or
        $ThisLine =~ /^Got automount request for \/proc\// or
        $ThisLine =~ /^Inserted module / or
        $ThisLine =~ /^Listening on / or
@@ -63,7 +64,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        # https://bugzilla.redhat.com/show_bug.cgi?id=1306452 
        $ThisLine =~ /^tmp\.mount: Directory \/tmp to mount over is not empty, mounting anyway\.$/ or
        $ThisLine =~ /^Received SIGRTMIN\+2[01] from PID \d+ \(plymouthd\)\.$/ or
-       $ThisLine =~ /^Found device / or
+       # https://bugzilla.redhat.com/show_bug.cgi?id=1072368
+       $ThisLine =~ /^Received SIGRTMIN\+24 from PID \d+ \(kill\)\.$/ or
        $ThisLine =~ /^Removed slice /) {
       # Ignore these
    } elsif (my ($service) = ($ThisLine =~ /^Unit (.*) entered failed state\.$/)) {
@@ -89,7 +91,7 @@ while (defined(my $ThisLine = <STDIN>)) {
 }
 
 if (keys %Failed) {
-   print "ERROR: Failed to start:\n";
+   print "ERROR: Failed state:\n";
    foreach my $item (sort {$a cmp $b} keys %Failed) {
       print "        $item $Failed{$item} Time(s)\n";
    }
