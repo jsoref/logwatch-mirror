@@ -57,6 +57,10 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Switching root\.$/ or
        $ThisLine =~ /^Successfully loaded SELinux policy in / or
        $ThisLine =~ /^systemd (\d+) running in system mode/ or
+       # Units can depend on files that do not exist
+       $ThisLine =~ /^Cannot add dependency job for unit .*, ignoring: Unit .* failed to load: No such file or directory\.$/ or
+       # Inactive units are sometimes reloaded
+       $ThisLine =~ /^Unit .* cannot be reloaded because it is inactive\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1293941
        $ThisLine =~ /^Configuration file \/usr\/lib\/systemd\/system\/auditd\.service is marked world-inaccessible/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1301182
