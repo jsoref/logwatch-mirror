@@ -18,6 +18,7 @@ use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my %Activated;
 my %Failed;
+my $Reexecuted = 0;
 my %Reloaded;
 my %Slice;
 my %Started;
@@ -41,8 +42,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ / failed\.$/ or
        $ThisLine =~ /: (control|main) process exited, code=(exited|killed),? status=/ or
        # Informational
+       $ThisLine =~ /^Closed .* socket\.$/ or
        $ThisLine =~ /^Closed udev / or
-       $ThisLine =~ /^Detected architecture / or
+       $ThisLine =~ /^Detected (architecture|virtualization) / or
        $ThisLine =~ /^Found device / or
        $ThisLine =~ /^Got automount request for \/proc\// or
        $ThisLine =~ /^Inserted module / or
@@ -59,6 +61,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^systemd (\d+) running in system mode/ or
        # Units can depend on files that do not exist
        $ThisLine =~ /^Cannot add dependency job for unit .*, ignoring: Unit .* failed to load: No such file or directory\.$/ or
+       # https://bugs.freedesktop.org/show_bug.cgi?id=90386
+       $ThisLine =~ /^Device .* appeared twice with different sysfs paths .* and / or
        # Inactive units are sometimes reloaded
        $ThisLine =~ /^Unit .* cannot be reloaded because it is inactive\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1293941
@@ -77,16 +81,18 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (my ($target) = ($ThisLine =~ /^Reached target (.*)\.$/)) {
       $Target{$target}++;
       $LastTarget = $target;
+   } elsif (my ($session, $user) = ($ThisLine =~ /^Started Session (\d+) of user (.*)\.$/)) {
+      $UserSession{$user}->{$session}++;
    } elsif (my ($service) = ($ThisLine =~ /^Activated (.*)\.$/)) {
       $Activated{$service}++;
    } elsif (my ($service) = ($ThisLine =~ /^Started (.*)\.$/)) {
       $Started{$service}++;
    } elsif (my ($service) = ($ThisLine =~ /^Reloaded (.*)\.$/)) {
       $Reloaded{$service}++;
+   } elsif ($ThisLine eq "Reexecuting.") {
+      $Reexecuted++;
    } elsif ($ThisLine =~ /^Time has been changed$/) {
       $TimeChanged++;
-   } elsif (my ($session, $user) = ($ThisLine =~ /^Started Session (\d+) of user (.*)\.$/)) {
-      $UserSession{$user}->{$session}++;
    } elsif (my ($slice) = ($ThisLine =~ /^Created slice (.*)\.$/)) {
       $Slice{$slice}++;
    } else {
@@ -100,6 +106,10 @@ if (keys %Failed) {
       print "        $item $Failed{$item} Time(s)\n";
    }
    print "\n";
+}
+
+if ($Reexecuted && $Detail) {
+   print "Reexecuted systemd: $Reexecuted Time(s)\n\n";
 }
 
 if (keys %Target && $Detail > 3) {
