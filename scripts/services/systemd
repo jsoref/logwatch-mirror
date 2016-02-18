@@ -59,6 +59,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Switching root\.$/ or
        $ThisLine =~ /^Successfully loaded SELinux policy in / or
        $ThisLine =~ /^systemd (\d+) running in system mode/ or
+       $ThisLine =~ /^Unit .* is bound to inactive unit .*\. Stopping, too\./ or
+       $ThisLine =~ /^Unit .* is not needed anymore\. Stopping\./ or
        # Units can depend on files that do not exist
        $ThisLine =~ /^Cannot add dependency job for unit .*, ignoring: Unit .* failed to load: No such file or directory\.$/ or
        # https://bugs.freedesktop.org/show_bug.cgi?id=90386
