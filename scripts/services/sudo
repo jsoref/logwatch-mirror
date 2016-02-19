@@ -80,12 +80,14 @@ while (defined(my $ThisLine = <STDIN>)) {
      # handled in pam_unix
    } elsif ($ThisLine =~ /pam_unix\(sudo:auth\): auth could not identify password for/) {
      # handled in pam_unix
+   } elsif ($ThisLine =~ /pam_sss\(sudo:auth\): authentication success/) {
+     # Ignore
    } elsif ($ThisLine =~ /(.+): conversation failed/) {
      $ConFailed{$1}++;
    } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ; COMMAND=(\S+)( ?.*)/) {
       next if (defined($IgnoreCmds{$user}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{$euser}}));
       next if (defined($IgnoreCmds{'any'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'any'}{$euser}}));
-      push @{$byUser{$user}{$euser}}, [$error . $cmd,$args, $dir, $tty];
+      push @{$byUser{$user}{$euser}}, [$error . $cmd, $args, $dir, $tty];
       $byUserSum{$user}{$euser}{$cmd} += 1;
    } elsif ( ($user,$euser) = $ThisLine =~ /^\s*(\S+) : no passwd entry for (\S+)\!$/) {
       push @{$byUser{$user}{$euser . " (No such user)"}}, ["No password entry"];
@@ -107,7 +109,7 @@ foreach my $user (sort keys %byUser) {
       } # foreach $gcmd
       foreach my $row (@{$byUser{$user}{$euser}}) {
          if ($Detail >= 10 || $CmdsThresh > $byUserSum{$user}{$euser}{$$row[0]}) {
-            my ($gcmd,$args, $dir, $tty) = @$row;
+            my ($gcmd, $args, $dir, $tty) = @$row;
             my $cmd = "$gcmd$args";
             # make long commands easier to read
             $cmd =~ s/(?=.{74,})(.{1,74}) /${1} \\\n    /g if (length($cmd) > 75);
