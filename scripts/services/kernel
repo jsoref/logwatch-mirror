@@ -55,6 +55,7 @@ use Logwatch ':ip';
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Ignore_faults = $ENV{'ignore_faults'};
 my $Ignore_rpcsec_expired = $ENV{'ignore_rpcsec_expired'} || 0;
+my $Ignore_messages = $ENV{'kernel_ignore_messages'} || 0;
 my %SYNflood = ();
 my %RAIDErrors = ();
 my %DRBDErrors = ();
@@ -81,6 +82,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       # following now in iptables service
       or ($ThisLine =~ /^Packet log: .*PROTO=/)
       or ($ThisLine =~ /IN=.*OUT=.*SRC=.*DST=.*PROTO=/)
+      # user specified ignore messages, lower cased
+      or ($ThisLine =~ /$Ignore_messages/i)
       ) { # ignore the above strings
    } elsif ( my ($from,$on) = ( $ThisLine =~ /^Warning: possible SYN flood from ([^ ]+) on ([^ ]+):.+ Sending cookies/ ) ) {
       my $Fullfrom = LookupIP($from);
