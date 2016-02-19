@@ -58,6 +58,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Stopped / or
        $ThisLine =~ /^Switching root\.$/ or
        $ThisLine =~ /^Successfully loaded SELinux policy in / or
+       $ThisLine =~ /: Supervising process .* which is not our child\. We'll most likely not notice when it exits\.$/ or
        $ThisLine =~ /^systemd (\d+) running in system mode/ or
        $ThisLine =~ /^Unit .* is bound to inactive unit .*\. Stopping, too\./ or
        $ThisLine =~ /^Unit .* is not needed anymore\. Stopping\./ or
