@@ -121,53 +121,7 @@ sub DiskUsage ()
 
 sub DiskSpace ()
 {
-	if ($OSname eq "Linux") {
-		$df_options = "-h -x tmpfs -x udf -x iso9660";
-		if ($local_disks_only) { $df_options .= " -l"; }
-	} elsif ($OSname eq "Darwin") {
-		$df_options = "-h";
-		if ($local_disks_only) { $df_options .= " -l"; }
-	} elsif ($OSname eq "SunOS") {
-		if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
-			$df_options = "-h";
-		} 
-		if ($local_disks_only) { $df_options .= " -l"; }
-	} elsif ($OSname eq "HP-UX") {
-		$df_options = "";
-		if ($local_disks_only) { $df_options .= " -l"; }
-	} elsif ($OSname eq "AIX") {
-		$df_options = "";
-		if ($local_disks_only) { $df_options .= " -P"; }
-	} elsif ($OSname eq "GNU/kFreeBSD") {
-		$df_options = "-h -x tmpfs -x udf -x iso9660 -x devfs -x linprocfs -x sysfs -x fdescfs";
-		if ($local_disks_only) { $df_options .= " -l"; }
-	} else {
-		$df_options = "";
-		if ($local_disks_only) { $df_options .= " -l"; }
-	}
-
-	if ( $ENV{'df_options'} ) {
-		$df_options = $ENV{'df_options'};
-	};
-
-	if ($OSname eq "Linux") {
-		$disk_cmd = "df $df_options";
-	} elsif ($OSname eq "Darwin") {
-		$disk_cmd = "df $df_options";
-	} elsif ($OSname eq "SunOS") {
-		$disk_cmd = "/usr/xpg4/bin/df $df_options";
-	} elsif ($OSname eq "HP-UX") {
-		$disk_cmd = "bdf $df_options";
-	} else {
-		$disk_cmd = "df $df_options";
-	}
-
-	if ( $ENV{'disk_cmd'} ) {
-		$disk_cmd = $ENV{'disk_cmd'};
-	};
-
 	system($disk_cmd);
-
 	print "\n";
 }
 
@@ -187,6 +141,51 @@ sub DiskFull {
 
 #####################
 #Main
+
+if ($OSname eq "Linux") {
+	$df_options = "-h -x tmpfs -x udf -x iso9660";
+	if ($local_disks_only) { $df_options .= " -l"; }
+} elsif ($OSname eq "Darwin") {
+	$df_options = "-h";
+	if ($local_disks_only) { $df_options .= " -l"; }
+} elsif ($OSname eq "SunOS") {
+	if ( ($release eq "5.10") || ($release eq "5.9") || ($release eq "5.11") ) {
+		$df_options = "-h";
+	} 
+	if ($local_disks_only) { $df_options .= " -l"; }
+} elsif ($OSname eq "HP-UX") {
+	$df_options = "";
+	if ($local_disks_only) { $df_options .= " -l"; }
+} elsif ($OSname eq "AIX") {
+	$df_options = "";
+	if ($local_disks_only) { $df_options .= " -P"; }
+} elsif ($OSname eq "GNU/kFreeBSD") {
+	$df_options = "-h -x tmpfs -x udf -x iso9660 -x devfs -x linprocfs -x sysfs -x fdescfs";
+	if ($local_disks_only) { $df_options .= " -l"; }
+} else {
+	$df_options = "";
+	if ($local_disks_only) { $df_options .= " -l"; }
+}
+
+if ( $ENV{'df_options'} ) {
+	$df_options = $ENV{'df_options'};
+};
+
+if ($OSname eq "Linux") {
+	$disk_cmd = "df $df_options";
+} elsif ($OSname eq "Darwin") {
+	$disk_cmd = "df $df_options";
+} elsif ($OSname eq "SunOS") {
+	$disk_cmd = "/usr/xpg4/bin/df $df_options";
+} elsif ($OSname eq "HP-UX") {
+	$disk_cmd = "bdf $df_options";
+} else {
+	$disk_cmd = "df $df_options";
+}
+
+if ( $ENV{'disk_cmd'} ) {
+	$disk_cmd = $ENV{'disk_cmd'};
+};
 
 #Only show disk space "df" by default -mgt
 DiskSpace() if (($ENV{PRINTING} eq 'y') or $Detail);
