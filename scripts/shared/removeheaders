@@ -23,7 +23,7 @@ while (defined($ThisLine = <STDIN>)) {
     # remove standard syslog-style header or configurable pattern
     $ThisLine =~ s/$RemovePattern//;
     #First line is Solaris ID tag style -mgt
-    $ThisLine =~ s/^... .. ..:..:.. [^ ]* [^\[:]*(\[\d*\])?: \[ID \d+( \w+\.\w+)?] //;
+    $ThisLine =~ s/^\[ID \d+( \w+\.\w+)?] //;
     # the following is for those logs that use the service name, but do not
     # append the ':' right after (for example, syslogd restart).  Presumably
     # OnlyService is called before RemoveHeaders, so this should only be done
