@@ -240,6 +240,10 @@ while (defined($ThisLine = <STDIN>)) {
       $Lookup++;
       push @LookupH, $ThisLine;
    }
+   elsif ( $ThisLine =~ /DKIM: .* \[verification succeeded\]/ ) {
+      # Ignore successful DKIM verification reports
+      # http://www.exim.org/exim-html-current/doc/html/spec_html/ch-support_for_dkim_domainkeys_identified_mail.html
+   }
    elsif ( $ThisLine =~ /^\d+\-\d+\-\d+\s\d+\:\d+\:\d+\s(\+\d+\s)?\w+\-\w+\-\w+\s/ ) { # inne wiadomosci przesylane przez EXIMA
     # Collect Message ID specific notes...
     ($mdate,$mtime,$mid,$mrest) = ($ThisLine =~ /^(\d+\-\d+\-\d+)\s(\d+\:\d+\:\d+)\s(?:\+\d+\s)?(\w+\-\w+\-\w+)(.+)/);
