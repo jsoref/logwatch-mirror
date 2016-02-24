@@ -30,6 +30,7 @@ my $show_mail_dir_sizes = $ENV{'show_mail_dir_sizes'} || 0;
 my $mail_dir = $ENV{'mail_dir'} || 0;
 my $show_disk_usage = $ENV{'show_disk_usage'} || 0;
 my $diskfull_threshhold = $ENV{'diskfull_threshold'} || 90;
+my $diskfull_exclude_dirs = $ENV{'diskfull_exclude_dirs'} || '$';
 my $local_disks_only = $ENV{'local_disks_only'} || 0;
 
 my $df_options;
@@ -132,9 +133,12 @@ sub DiskFull {
 		my @fields = split(' ', $row);
 		my $use = $fields[4];
 		$use =~ s/%//;
-		if (($use > $diskfull_threshhold) && ($fields[0] !~ /\/dev\/scd/ ) && ($fields[0] !~ /\/dev\/sr/ )
-				&& ($fields[0] !~ /\/dev\/loop./)) {
-			print "$fields[0] => $fields[4] Used. Warning. Disk Filling up.\n";
+		if (($use > $diskfull_threshhold) &&
+                    ($fields[0] !~ /\/dev\/scd/ ) &&
+                    ($fields[0] !~ /\/dev\/sr/ ) &&
+                    ($fields[0] !~ /\/dev\/loop./) &&
+                    ($fields[5] !~ /^$diskfull_exclude_dirs/)) {
+			print "$fields[5] ($fields[0]) => $fields[4] Used. Warning. Disk Filling up.\n";
 		}
 	}
 }
