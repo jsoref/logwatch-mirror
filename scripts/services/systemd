@@ -54,6 +54,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Reloading\.$/ or         # Happens on each boot at switch root
        $ThisLine =~ /^Running in initial RAM disk\.$/ or
        $ThisLine =~ /^Set hostname to / or
+       $ThisLine =~ /^Shutting down\.$/ or
        $ThisLine =~ /^Startup finished in / or
        $ThisLine =~ /^Stopped / or
        $ThisLine =~ /^Switching root\.$/ or
