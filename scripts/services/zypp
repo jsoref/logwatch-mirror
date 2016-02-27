@@ -1,10 +1,5 @@
-#!/usr/bin/perl
-###########################################################################
-# $Id$
-###########################################################################
-
 ########################################################
-## Copyright (c) 2013 Stefan Jakobs <logwatch@localside.net>
+## Copyright (c) 2013-2016 Stefan Jakobs <logwatch@localside.net>
 ## Covered under the included MIT/X-Consortium License:
 ##    http://www.opensource.org/licenses/mit-license.php
 ## All modifications and contributions by other persons to
@@ -25,6 +20,7 @@ my @install;
 my @remove;
 my @rremove;
 my @radd;
+my %commands;
 
 my @unknown;
 
@@ -38,15 +34,28 @@ while(my $line=<STDIN>) {
          push @install, "$pkg $ver";
       }
    } elsif ( my ( $do, $repo, $url) = ( $line =~ /^\S+ \S+\|(?:(rremove|radd) {0,3})\|([^\|\s]+)(?:\|([^\|]+))?/) ) {
-     if ($repo eq "_tmpRPMcache_") {
-        # ignore
-     } elsif ($do eq "radd") {
-        push @radd, "$repo: $url";
-     } elsif ($do eq "rremove") {
-        push @rremove, "$repo";
-     }
+      if ($repo eq "_tmpRPMcache_") {
+         # ignore
+      } elsif ($do eq "radd") {
+         push @radd, "$repo: $url";
+      } elsif ($do eq "rremove") {
+         push @rremove, "$repo";
+      }
+   } elsif ( my ( $do, $who, $cmd) = ( $line =~ /^\S+ \S+\|(?:(command)\|([^\|\s]+)\|([^\|]+)\|)/ )) {
+      $cmd =~ tr/'//d;
+      $commands{$who}{$cmd}++;
    } else {
       push @unknown, $line;
+   }
+}
+
+if (keys %commands) {
+   print "\nCommands:\n";
+   foreach my $who (keys %commands) {
+      print "   $who:\n";
+      foreach my $cmd (keys %{$commands{$who}}) {
+         printf "   %3d: %s\n", $commands{$who}{$cmd}, $cmd;
+      }
    }
 }
 
