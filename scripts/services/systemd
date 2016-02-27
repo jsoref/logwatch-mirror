@@ -79,7 +79,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Received SIGRTMIN\+2[01] from PID \d+ \(plymouthd\)\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1072368
        $ThisLine =~ /^Received SIGRTMIN\+24 from PID \d+ \(kill\)\.$/ or
-       $ThisLine =~ /^Removed slice /) {
+       $ThisLine =~ /^Removed slice / or
+       $ThisLine =~ /^pam_unix\(systemd-user:session\): session (?:opened|closed) for user/
+   ) {
       # Ignore these
    } elsif (my ($service) = ($ThisLine =~ /^Unit (.*) entered failed state\.$/)) {
       $Failed{$service}++;
