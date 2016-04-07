@@ -55,7 +55,7 @@ use Logwatch ':ip';
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $Ignore_faults = $ENV{'ignore_faults'};
 my $Ignore_rpcsec_expired = $ENV{'ignore_rpcsec_expired'} || 0;
-my $Ignore_messages = $ENV{'kernel_ignore_messages'} || 0;
+my $Ignore_messages = $ENV{'kernel_ignore_messages'} || '^$';
 my %SYNflood = ();
 my %RAIDErrors = ();
 my %DRBDErrors = ();
