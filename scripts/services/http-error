@@ -1,10 +1,6 @@
 #!/usr/bin/perl
 #
 ##########################################################################
-# $Id:
-##########################################################################
-# $Log:
-##########################################################################
 ## Copyright (c) 2016 Logwatch
 ## Covered under the included MIT/X-Consortium License:
 ##    http://www.opensource.org/licenses/mit-license.php
@@ -40,16 +36,39 @@ sub CustomizeErrorString {
 }
 
 my %LogMessages = ();
+my $MatchFilter = $ENV{'http_error_matchfilter'} || "";
+my $ReportFilter = $ENV{'http_error_reportfilter'} || "";
 
 while (defined(my $ThisLine = <STDIN>)) {
-   if (my ($LogLevel, $ErrorCode, $Description) = ($ThisLine =~ /:(notice|warn|error)\].*(AH\d{5}): (.*)/) ) {
+   if (my ($LogLevel, $ErrorCode, $Description) =
+      ($ThisLine =~ /:(.*?)\].*(AH\d{5}): (.*)/) ) {
+   # $MatchFilter is a variable that is set by setting the
+   # $HTTP_Error_MatchFilter variable in the conf/services/http-error.conf
+   # file.  It is executed here, before any other matching statements.
+   eval $MatchFilter;
+   if ($@) {
+      print $@;
+      print "While processing MatchFilter:\n$MatchFilter\n";
+   }
+   # $ThisLine might have been reset (undef, or empty string) in $MatchFilter
+   next unless $ThisLine;
+
       if (($Detail == 8) || ($Detail == 9)) {
          $Description = CustomizeErrorString($LogLevel, $ErrorCode, $Description);
       }
-      if (($Detail >= 1) || ($LogLevel =~ "error")) {
+      if (($Detail >= 1) || ($LogLevel =~ "emerg|alert|crit|error")) {
          $LogMessages{$LogLevel}{$ErrorCode}{$Description}++;
       }
    }
+}
+
+# $ReportFilter is a variable that is set by setting the
+# $HTTP_Error_ReportFilter variable in the conf/services/http-error.conf
+# file.  It is executed here, before any other printing statements.
+eval $ReportFilter;
+if ($@) {
+   print $@;
+   print "While processing ReportFilter:\n$ReportFilter\n";
 }
 
 if (keys %LogMessages) {
