@@ -199,7 +199,7 @@ while (defined($ThisLine = <STDIN>)) {
       $Deliver{$User}{$Mailbox}++;
 
 # sieve forward
-    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\((?:\d+, )?(.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
       $Forwarded{$User}{$Recip}++;
 
 # sieve vacation
