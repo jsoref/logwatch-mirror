@@ -17,7 +17,9 @@
 use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $PoolThreshold = $ENV{'pool_threshold'} || 0;
+my $PoolMetadataThreshold = $ENV{'pool_metadata_threshold'} || 0;
 my %PoolUsed;
+my %PoolMetadataUsed;
 my $SnapshotThreshold = $ENV{'snapshot_threshold'} || 0;
 my %SnapshotUsed;
 my %MonitoringOn;
@@ -28,6 +30,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
    if ($ThisLine =~ /^Thin (\S+) is now (\d+)% full/) {
       $PoolUsed{$1} = $2 if $2 >= $PoolThreshold;
+   } elsif ($ThisLine =~ /^Thin metadata (\S+) is now (\d+)% full/) {
+      $PoolMetadataUsed{$1} = $2 if $2 >= $PoolMetadataThreshold;
    } elsif ($ThisLine =~ /^Monitoring thin (\S+)\./) {
       $MonitoringOn{$1}++;
    } elsif ($ThisLine =~ /^No longer monitoring thin (\S+)\./) {
@@ -43,6 +47,14 @@ if (keys %PoolUsed) {
    print "Thin Pool Usage:\n";
    foreach my $Pool (sort {$a cmp $b} keys %PoolUsed) {
       print "    $Pool: $PoolUsed{$Pool}% full\n";
+   }
+   print "\n";
+}
+
+if (keys %PoolMetadataUsed) {
+   print "Thin Pool Metadata Usage:\n";
+   foreach my $Pool (sort {$a cmp $b} keys %PoolMetadataUsed) {
+      print "    $Pool: $PoolMetadataUsed{$Pool}% full\n";
    }
    print "\n";
 }
