@@ -604,6 +604,9 @@ sub init_run_mode($) {
    # Show summary section by default
    $Opts{'summary'} = 1;
 
+   # Do not show mail queue section by default
+   $Opts{'mailqueue'} = 0;
+
    if ($Opts{'standalone'}) {
       process_debug_opts($ENV{'LOGREPORTERS_DEBUG'}) if exists ($ENV{'LOGREPORTERS_DEBUG'});
    }
@@ -698,7 +701,9 @@ sub init_getopts_table_common(@) {
    });
    add_option ('max_report_width=i');
    add_option ('summary!');
+   add_option ('mailqueue!');
    add_option ('show_summary=i',             sub { $Opts{'summary'} = $_[1]; 1; });
+   add_option ('show_mailqueue=i',           sub { $Opts{'mailqueue'} = $_[1]; 1; });
    # untaint ipaddr_width for use w/sprintf() in Perl v5.10
    add_option ('ipaddr_width=i',             sub { $Opts{'ipaddr_width'} = untaint ($_[1]); 1; });
 
@@ -2546,6 +2551,7 @@ Usage: $progname [ ARGUMENTS ] [logfile ...]
                                           (default: 10)
    --nodetail                             set all detail levels to 0
    --[no]summary                          display the summary section
+   --[no]mailqueue                        display the mail queue section
 
    --ipaddr_width WIDTH                   use WIDTH chars for IP addresses in
                                           address/hostname pairs
@@ -3718,6 +3724,19 @@ if ($Opts{'detail'} >= 5) {
 
    print_postgrey_reports();
 
+}
+
+# Print the mailqueue if requested
+my $pathto_postqueue = $ENV{'pathto_postqueue'} || '/usr/sbin/postqueue';
+if ($Opts{'mailqueue'} and -x $pathto_postqueue) {
+   open(QUEUE,"$pathto_postqueue -p |");
+   while (<QUEUE>) {
+      # Do not display empty queue if detail < 5
+      next if /Mail queue is empty/ and $Opts{'detail'} < 5;
+      print;
+   }
+   close(QUEUE);
+   print "\n";
 }
 
 # debug: show which ignore_list items are hit most
