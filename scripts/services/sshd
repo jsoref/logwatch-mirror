@@ -387,7 +387,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $RefusedConnections{$1}++;
    } elsif ( my ($Reason) = ($ThisLine =~ /^Authentication refused: (.*)$/ ) ) {
       $RefusedAuthentication{$Reason}++;
-   } elsif ( my ($Host,$Reason) = ($ThisLine =~ /^Received disconnect from ([^ ]*): (.*)$/)) {
+   } elsif ( my ($Host,$Reason) = ($ThisLine =~ /^Received disconnect from ([^ ]*)(?: port [^ ]*)?: (.*)$/)) {
       # Reason 11 (SSH_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
       if ($Reason != 11) {$DisconnectReceived{$Reason}{$Host}++;}
    } elsif ( my ($Host) = ($ThisLine =~ /^ROOT LOGIN REFUSED FROM ([^ ]*)$/)) {
