@@ -66,6 +66,8 @@ while (defined($ThisLine = <STDIN>)) {
       }
    } elsif ($ThisLine =~ /Finished catalog run in [0-9]+\.[0-9]+ seconds/) {
       $SuccessfulRuns++;
+   } elsif ($ThisLine =~ /Applied catalog in [0-9]+\.[0-9]+ seconds/) {
+      $SuccessfulRuns++;
    } elsif ($ThisLine =~ /skipping run/) {
       $FailedRuns++;
    } elsif ($ThisLine =~ /(Did not receive certificate)/) {
