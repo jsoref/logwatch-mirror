@@ -101,6 +101,7 @@ while (defined($ThisLine = <STDIN>)) {
       #High Detail
       next if $ExpandedString =~ /^The operating system started at system time/ and $Detail < 10;
       next if $ExpandedString =~ /^The operating system is shutting down at system time/ and $Detail < 10;
+      next if $ExpandedString =~ /^The access history in hive .* was cleared updating \d+ keys/ and $Detail < 10;
       #TODO - We should warn is this is big
       next if $ExpandedString =~ /^The system time has changed to .* from/;
    }
@@ -175,6 +176,11 @@ while (defined($ThisLine = <STDIN>)) {
    if ($System eq "Microsoft-Windows-WinRM") {
       #High Detail
       next if $ExpandedString =~ /^The WinRM service is listening for WS-Management requests/ and $Detail < 10;
+   }
+
+   if ($System eq "NPS") {
+      #High Detail
+      next if $ExpandedString =~ /^A LDAP connection with domain controller .* for domain .* is established/ and $Detail < 10;
    }
 
    if ($System eq "Service Control Manager") {
