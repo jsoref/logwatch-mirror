@@ -93,6 +93,7 @@ $Config{'encode'} = "none"; #8.0
 $Config{'hostformat'} = "none"; #8.0
 $Config{'html_wrap'} = 80;
 $Config{'supress_ignores'} = 0;
+$Config{'hostlimit'} = "";
 
 if (-e "$ConfigDir/conf/html/header.html") {
    $Config{'html_header'} = "$ConfigDir/conf/html/header.html";
@@ -778,8 +779,8 @@ foreach $LogFile (@LogFileList) {
    my $FileText = "";
 
    foreach my $ThisFile (@FileList) {
-      #Existence check for files -mgt
-      next unless (-f $ThisFile);
+      #Existence check for files and character devices such as /dev/null
+      next unless (-f $ThisFile || -c $ThisFile );
       if ($ThisFile =~ /'/) {
          print "File $ThisFile has invalid embedded quotes.  File ignored.\n";
 	 next;
