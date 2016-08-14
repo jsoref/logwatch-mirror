@@ -155,7 +155,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Auth{$channel}{$dir}{"$bits $algo"}++;
    } elsif (my ($channel, $dir, $bits, $algo) = ($ThisLine =~ /^(Data Channel) (Encrypt|Decrypt): Using ([\d]+ bit) message hash '(\S+)' for HMAC authentication/)) {
       $Auth{$channel}{$dir}{"$bits $algo"}++;
-   } elsif (my ($channel, $proto, $cipher) = ($ThisLine =~ /^(Control Channel): (\w+), cipher (.+)/)) {
+   } elsif (my ($channel, $proto, $cipher) = ($ThisLine =~ /^(Control Channel): ([^,]+), cipher (.+)/)) {
       $Crypt{$channel}{$proto}{$cipher}++;
    } elsif (my ($channel, $dir, $algo, $bits) = ($ThisLine =~ /^(Data Channel) (Encrypt|Decrypt): Cipher '(\S+)' initialized with ([\d]+ bit) key/)) {
       $Crypt{$channel}{$dir}{"$bits $algo"}++;
