@@ -70,6 +70,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^Expected Remote Options/) or
       ($ThisLine =~ /^GID set to/) or
       ($ThisLine =~ /^IFCONFIG POOL/) or
+      ($ThisLine =~ /^ifconfig_pool_read/) or
+      ($ThisLine =~ /^do_ifconfig/) or
+      ($ThisLine =~ /^succeeded -> ifconfig_pool_set/) or
       ($ThisLine =~ /^IMPORTANT: OpenVPN's default port number is now 1194/) or
       ($ThisLine =~ /^Initialization Sequence Completed/) or
       ($ThisLine =~ /^Listening for incoming TCP connection on \S+:\d+/) or
@@ -79,6 +82,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^MULTI: multi_init called/) or
       ($ThisLine =~ /^MULTI: multi_create_instance called/) or
       ($ThisLine =~ /^MULTI: primary virtual IP for/) or
+      ($ThisLine =~ /^MULTI: primary virtual IPv6 for/) or
       ($ThisLine =~ /^MULTI: TCP INIT maxclients=\d+ maxevents=\d+/) or
       ($ThisLine =~ /^MULTI: bad source address from client .*, packet dropped/) or
       ($ThisLine =~ /^MULTI_sva: pool returned IPv4=/) or
