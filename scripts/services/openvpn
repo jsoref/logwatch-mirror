@@ -48,6 +48,10 @@ if ( $Debug >= 5 ) {
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
 
+   if ($ThisLine =~ /^([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+) TLS Auth Error: Auth Username\/Password verification failed for peer/) {
+      $IncorrectPassword{$1}++;
+   }
+
    # normalise - this could possibly be used for more detailed per host statistics
    # further down
    $ThisLine =~ s/^([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+) //;
