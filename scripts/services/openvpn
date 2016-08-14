@@ -147,6 +147,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $MaxClients++;
    } elsif ($ThisLine =~ m/^OpenVPN [\d.]+ [\w-]+ [\[\]\w ]+ built on [\w]+ +[\d]+ [\d]+$/) {
       $VersionInfo{$ThisLine} = 1;
+   } elsif ($ThisLine =~ m/^library versions: /) {
+      $VersionInfo{$ThisLine} = 1;
    } elsif (my ($config, $peer, $port) = ($ThisLine =~ m/^\[([\S]+)\] Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)/)) {
       push (@{$Connections{$config}{$peer}}, $port) unless grep(/^$port$/,@{$Connections{$config}{$peer}});
    } elsif (my ($peer, $port) = ($ThisLine =~ m/^Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)/)) {
