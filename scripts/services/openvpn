@@ -102,6 +102,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^send_push_reply/) or
       ($ThisLine =~ /^SENT CONTROL/) or
       ($ThisLine =~ /^SIGTERM\[hard,[^\]]*\] received, process exiting/) or
+      ($ThisLine =~ /^SIGTERM\[soft,[^\]]*\] received, client-instance exiting/) or
       ($ThisLine =~ /^SIGUSR1\[soft,(connection-reset|ping-restart)\] received, (process|client-instance) restarting/) or
       ($ThisLine =~ /Socket Buffers: R=\[[0-9]+->[0-9]+\] S=\[[0-9]+->[0-9]+\]/) or
       ($ThisLine =~ /^TCP\/UDP: Closing socket/) or
