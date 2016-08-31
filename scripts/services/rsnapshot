@@ -1,0 +1,105 @@
+# rsnapshot backup tool log parsing script
+
+###########################################################################
+## Copyright (c) 2016 Hayden Lau
+## Covered under the included MIT/X-Consortium License:
+##    http://www.opensource.org/licenses/mit-license.php
+## Permission is hereby granted, free of charge, to any person obtaining a
+## copy of this software and associated documentation files (the "Software"),
+## to deal in the Software without restriction, including without limitation
+## the rights to use, copy, modify, merge, publish, distribute, sublicense,
+## and/or sell copies of the Software, and to permit persons to whom the
+## Software is furnished to do so, subject to the following conditions:
+##
+## The above copyright notice and this permission notice shall be included
+## in all copies or substantial portions of the Software.
+##
+## THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+## OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+## MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+## IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+## CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+## TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+## SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+############################################################################
+
+use strict;
+my $Debug = $ENV{'LOGWATCH_DEBUG'} || 0;
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %Error;
+my %Warning;
+my %Started;
+my %Successful;
+my %OtherList;
+my %Commands;
+
+while (defined(my $ThisLine = <STDIN>)) {
+   chomp($ThisLine);
+   if ($Debug) {
+      print "$ThisLine\n";
+   }
+   if ($ThisLine =~ /ERROR: (\N+)/) {
+      $Error{$1}++;
+   } elsif ($ThisLine =~ /WARNING: (\N+)/) {
+      $Warning{$1}++;
+   } elsif ($ThisLine =~ / (\S+): started/) {
+      $Started{$1}++;
+   } elsif ($ThisLine =~ / (\S+): completed successfully/) {
+      $Successful{$1}++;
+   } elsif ($ThisLine =~ /^(?:\/usr|\/bin|mv|rm|rsync|echo|mkdir|touch)(?:\/| )/) {
+      $Commands{$ThisLine}++;
+   } else {
+      $OtherList{$ThisLine}++;
+   }
+}
+
+if (keys %Error) {
+   print "ERRORS:\n";
+   foreach my $line (sort {$a cmp $b} keys %Error) {
+      print "    $line: $Error{$line} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Warning) {
+   print "Warnings:\n";
+   foreach my $line (sort {$a cmp $b} keys %Warning) {
+      print "    $line: $Warning{$line} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (($Detail > 5) and keys %Started) {
+   print "Started:\n";
+   foreach my $retain (sort { $Started{$b} <=> $Started{$a} } keys %Started) {
+      print "    $retain: $Started{$retain} Time(s)\n";
+   }
+   print "\n";
+}
+
+if ($Detail and keys %Successful) {
+   print "Completed Successfully:\n";
+   foreach my $retain (sort { $Successful{$b} <=> $Successful{$a} } keys %Successful) {
+      print "    $retain: $Successful{$retain} Time(s)\n";
+   }
+   print "\n";
+}
+
+if ($Detail > 5 and keys %Commands) {
+   print "Commands:\n";
+   foreach my $cmd (sort { $Commands{$b} <=> $Commands{$a} } keys %Commands) {
+      printf "    %3d Time(s): %s\n", $Commands{$cmd}, $cmd;
+   }
+   print "\n";
+}
+
+if (keys %OtherList) {
+   print "\n**Unmatched Entries**\n";
+   foreach my $line (sort {$a cmp $b} keys %OtherList) {
+      print "    $line: $OtherList{$line} Time(s)\n";
+   }
+   print "\n";
+}
+
+exit(0);
+
