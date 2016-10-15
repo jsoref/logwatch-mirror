@@ -190,16 +190,16 @@ while (defined($ThisLine = <STDIN>)) {
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): [^:]+: msgid=.*: saved mail to (.*)/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\((?:\d+, )?(.*?)\): [^:]+:(?:\d+:)? msgid=.*: saved mail to (.*)/ ) ) {
     # dovecot: [ID 583609 mail.info] lmtp(12782, cloyce@headgear.org): jBt1EfjCMk3uMQAAm9eMBA: msgid=<4D32DB1F.3080707@c-dot.co.uk>: saved mail to INBOX
       $Deliver{$User}{$Mailbox}++;
 
 # LMTP-based Sieve delivery
-    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\(\d+, (.*)\): .*: sieve: msgid=.*: stored mail into mailbox '(.*)'/ ) ) {
+    } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag lmtp\((?:\d+, )?(.*?)\): .*: sieve: msgid=.*: stored mail into mailbox '(.*)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
 
 # sieve forward
-    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\((?:\d+, )?(.*)\): sieve: msgid=.* forwarded to \<(.*)\>/)) {
+    } elsif (($User, $Recip) = ($ThisLine =~ /^$dovecottag (?:lda|deliver|lmtp)\((?:\d+, )?(.*?)\):(?: [^:]+:)? sieve: msgid=.* forwarded to \<(.*)\>/)) {
       $Forwarded{$User}{$Recip}++;
 
 # sieve vacation
@@ -263,6 +263,8 @@ while (defined($ThisLine = <STDIN>)) {
       $Disconnected{$Reason}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top|in)=.*/) ) {
       $Disconnected{$Reason}++;
+   } elsif ($ThisLine =~ /Logged out (bytes|top|in)=.*/) {
+      $Disconnected{"Logged out"}++;
    } elsif (($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
       $Disconnected{$Reason}++;
    } elsif ($ThisLine =~ /Disconnected (bytes|top)=.*/) {
