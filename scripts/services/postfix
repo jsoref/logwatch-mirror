@@ -66,7 +66,7 @@ my $re_QID_s   = qr/[A-Z\d]+/;
 my $re_QID_l   = qr/(?:NOQUEUE|[bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ\d]+)/;
 our $re_QID;
 
-our $re_DSN     = qr/(?:(?:\d{3})?(?: ?\d\.\d\.\d)?)/;
+our $re_DSN     = qr/(?:(?:\d{3})?(?: ?\d\.\d\.\d+)?)/;
 our $re_DDD     = qr/(?:(?:conn_use=\d+ )?delay=-?[\d.]+(?:, delays=[\d\/.]+)?(?:, dsn=[\d.]+)?)/;
 
 #MODULE: ../Logreporters/Utils.pm
