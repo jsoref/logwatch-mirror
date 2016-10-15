@@ -101,7 +101,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $UnalignedErrors{$1}++;
    } elsif ($ThisLine =~ /([^(]*)\(\d+\): floating-point assist fault at ip/) {
       $FPAssists{$1}++;
-   } elsif ($ThisLine =~ /Out of memory: Killed process \d+ \((.*)\)/) {
+   } elsif ($ThisLine =~ /Out of memory: (?:[KK]illed|[Kk]ill) process \d+ \((.*)\)/) {
       $OOM{$1}++;
    } elsif ($ThisLine =~ /(\S+) invoked oom-killer/) {
       $OOM{$1}++;
@@ -234,7 +234,7 @@ if (keys %FPAssists) {
 }
 
 if (keys %OOM) {
-   print "\nWARNING:  Out of memory killer killed these executables\n";
+   print "\nWARNING:  Out of memory killer killed these executables or their children\n";
    foreach my $Thisone ( sort {$a cmp $b} keys %OOM ) {
       print "   $Thisone :  $OOM{$Thisone} Time(s)\n";
    }
