@@ -120,7 +120,7 @@ sub hostName {
       if (defined $host) {
          my $iaddrcheck = gethostbyname($host);
          if (defined $iaddrcheck) {
-            if ($iaddr == $iaddrcheck) {
+            if ($iaddr eq $iaddrcheck) {
                $rdns{ $ipaddr } = $host;
             }
          }
