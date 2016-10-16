@@ -1162,9 +1162,9 @@ sub initprint {
          }
          #Config{output} html
          if ( $Config{'format'} eq "html" ) {
-            $out_mime .= "Content-Type: text/html; charset=\"iso-8859-1\"\n\n";
+            $out_mime .= "Content-Type: text/html; charset=\"UTF-8\"\n\n";
          } else {
-            $out_mime .= "Content-Type: text/plain; charset=\"iso-8859-1\"\n\n";
+            $out_mime .= "Content-Type: text/plain; charset=\"UTF-8\"\n\n";
          }
 
          if ($Config{'hostformat'} eq "split") { #8.0 check hostlimit also? or ne none?
