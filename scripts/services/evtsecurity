@@ -25,13 +25,26 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $SuccessAudits = 0;
 my %SuccessAuditUsers;
 my %FailureAudits;
+my %SuccessAudits;
 my %ClockSkew;
 my %UnknownUser;
 my %UnknownClient;
 my %BadPasswords;
 my %TicketExpired;
+my %AccountChanged;
+my %AccountCreated;
+my %AccountDeleted;
+my %AccountDisabled;
+my %AccountEnabled;
 my %AccountLocked;
+my %AuditPolicyChanged;
 my %ExpiredPassword;
+my %PasswordChanged;
+my %Logon;
+my %PrivilegedLogon;
+my %Logoff;
+my %WorkstationLocked;
+my %WorkstationUnlocked;
 my %OtherList;
 
 while (defined(my $ThisLine = <STDIN>)) {
@@ -52,14 +65,54 @@ while (defined(my $ThisLine = <STDIN>)) {
    }
    my $url = URI::URL->new("https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=$EventID");
    if ($EventLogType eq "Success Audit") {
-      $SuccessAudits++;
-      $SuccessAuditUsers{$UserName}++;
+      if ($EventID == 4608    # Windows is starting up. (startups logged by evtsystem)
+          or $EventID == 4673 # An operation was attempted on a privileged object.
+          or $EventID == 4674 # An operation was attempted on a privileged object.
+                              # These are basically noise 
+                              # https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4674
+          or $EventID == 4688 # A new process has been created.
+          or $EventID == 4689 # A process has exited.
+         ) {
+         # Ignore
+      } elsif ($EventID == 4624 or $EventID == 4648) {
+         $Logon{"$Hostname $UserName"}++;
+      } elsif ($EventID == 4634 or $EventID == 4647) {
+         $Logoff{"$Hostname $UserName"}++;
+      } elsif ($EventID == 4672) {
+         $PrivilegedLogon{"$Hostname $UserName"}++;
+      } elsif ($EventID == 4719) {
+         $AuditPolicyChanged{$Hostname}++;
+      } elsif ($EventID == 4720) {
+         $AccountCreated{$UserName}++;
+      } elsif ($EventID == 4722) {
+         $AccountEnabled{$UserName}++;
+      } elsif ($EventID == 4723) {
+         $PasswordChanged{$UserName}++;
+      } elsif ($EventID == 4725) {
+         $AccountDisabled{$UserName}++;
+      } elsif ($EventID == 4726) {
+         $AccountDeleted{$UserName}++;
+      } elsif ($EventID == 4738 or $EventID == 4742) {
+         $AccountChanged{$UserName}++;
+      } elsif ($EventID == 4800) {
+         $WorkstationLocked{"$Hostname $UserName"}++;
+      } elsif ($EventID == 4801) {
+         $WorkstationUnlocked{"$Hostname $UserName"}++;
+      } else {
+         $SuccessAudits++;
+         $SuccessAuditUsers{$UserName}++;
+         $SuccessAudits{"$Hostname $ExpandedString\n$url"}++;
+      }
    }
    elsif ($EventLogType eq "Failure Audit") {
       if (my ($account,$domain,$reason) = ($ExpandedString =~ /^An account failed to log on\..*Account For Which Logon Failed:.*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Failure Reason:\s+(.+)\s+Status:.*Sub Status:/)) {
          $FailureAudits{"$Hostname Log On Failure for $domain\\$account: $reason"}++;
       } elsif (my ($account,$domain,$process) = ($ExpandedString =~ /^A privileged service was called\..*Account Name:\s+(\S+)\s+Account Domain:\s+(\S+).*Process Name:\s+(.+)\sService/)) {
          $FailureAudits{"$Hostname Privileged service called for $domain\\$account: $process"}++ if $Detail;
+      } elsif ($EventID == 4674) {
+         # These are basically noise 
+         # https://www.ultimatewindowssecurity.com/securitylog/encyclopedia/event.aspx?eventID=4674
+         # An operation was attempted on a privileged object.
       } elsif ($EventID == 4768) {
          # A Kerberos authentication ticket (TGT) was requested
          my ($Account,$Realm,$Client,$FailureCode) = $ExpandedString =~ /Account Name:\s+(\S*)\s.*Supplied Realm Name:\s+(\S*)\s.*Client Address:\s+(\S+)\s.*Result Code:\s+(\w+)/;
@@ -102,17 +155,17 @@ while (defined(my $ThisLine = <STDIN>)) {
          }
       } elsif ($EventID == 4776) {
          # The domain controller attempted to validate the credentials for an account
-         my ($Account,$Client,$FailureCode) = $ExpandedString =~ /Logon Account:\s+(\S+)\s+Source Workstation:\s+(\S+)\s.*Error Code:\s+(\w+)/;
-         if ($FailureCode eq "0xc0000064") {
+         my ($Account,$Client,$FailureCode) = $ExpandedString =~ /Logon Account:\s+(\S+)\s+Source Workstation:\s+(\S*)\s.*Error Code:\s+(\w+)/;
+         if (lc($FailureCode) eq "0xc0000064") {
             # user name does not exist
             $UnknownUser{"$Account $Client"}++;
-         } elsif ($FailureCode eq "0xc000006a") {
+         } elsif (lc($FailureCode) eq "0xc000006a") {
             # user name is correct but the password is wrong
             $BadPasswords{"$Account $Client"}++;
-         } elsif ($FailureCode eq "0xc0000071") {
+         } elsif (lc($FailureCode) eq "0xc0000071") {
             # expired password
             $ExpiredPassword{"$Account $Client"}++;
-         } elsif ($FailureCode eq "0xc0000234") {
+         } elsif (lc($FailureCode) eq "0xc0000234") {
             # account locked
             $AccountLocked{"$UserName $Client"}++;
          } else {
@@ -133,6 +186,48 @@ if (keys %ClockSkew) {
    print "\nClock skew too great\n";
    foreach my $Client (sort keys %ClockSkew) {
       print "    $Client : $ClockSkew{$Client} Times\n";
+   }
+}
+
+if (keys %AccountCreated) {
+   print "\nAccount Created\n";
+   foreach my $Account (sort keys %AccountCreated) {
+      print "    $Account : $AccountCreated{$Account} Times\n";
+   }
+}
+
+if (keys %AccountDeleted) {
+   print "\nAccount Deleted\n";
+   foreach my $Account (sort keys %AccountDeleted) {
+      print "    $Account : $AccountDeleted{$Account} Times\n";
+   }
+}
+
+if (keys %AccountDisabled) {
+   print "\nAccount Disabled\n";
+   foreach my $Account (sort keys %AccountDisabled) {
+      print "    $Account : $AccountDisabled{$Account} Times\n";
+   }
+}
+
+if (keys %AccountEnabled) {
+   print "\nAccount Enabled\n";
+   foreach my $Account (sort keys %AccountEnabled) {
+      print "    $Account : $AccountEnabled{$Account} Times\n";
+   }
+}
+
+if (keys %AccountChanged) {
+   print "\nAccount Changed\n";
+   foreach my $Account (sort keys %AccountChanged) {
+      print "    $Account : $AccountChanged{$Account} Times\n";
+   }
+}
+
+if (keys %PasswordChanged) {
+   print "\nPassword Changed\n";
+   foreach my $Account (sort keys %PasswordChanged) {
+      print "    $Account : $PasswordChanged{$Account} Times\n";
    }
 }
 
@@ -185,10 +280,58 @@ if (keys %FailureAudits) {
    }
 }
 
-if ($SuccessAudits and ($Detail >=0) ) {
+if (keys %AuditPolicyChanged) {
+   print "\nAudit Policy Changed\n";
+   foreach my $Hostname (sort keys %AuditPolicyChanged) {
+      print "    $Hostname : $AuditPolicyChanged{$Hostname} Times\n";
+   }
+}
+
+if ((keys %PrivilegedLogon) and ($Detail > 0)) {
+   print "\nPrivileged Logons\n";
+   foreach my $User (sort keys %PrivilegedLogon) {
+      print "    $User : $PrivilegedLogon{$User} Times\n";
+   }
+}
+
+if (keys %Logon and ($Detail >= 5)) {
+   print "\nLogons\n";
+   foreach my $User (sort keys %Logon) {
+      print "    $User : $Logon{$User} Times\n";
+   }
+}
+
+if (keys %Logoff and ($Detail >= 5)) {
+   print "\nLogoffs\n";
+   foreach my $User (sort keys %Logoff) {
+      print "    $User : $Logoff{$User} Times\n";
+   }
+}
+
+if (keys %WorkstationLocked and ($Detail >= 10)) {
+   print "\nWorkstaion Locked\n";
+   foreach my $User (sort keys %WorkstationLocked) {
+      print "    $User : $WorkstationLocked{$User} Times\n";
+   }
+}
+
+if (keys %WorkstationUnlocked and ($Detail >= 10)) {
+   print "\nWorkstaion Unlocked\n";
+   foreach my $User (sort keys %WorkstationUnlocked) {
+      print "    $User : $WorkstationUnlocked{$User} Times\n";
+   }
+}
+
+if ($SuccessAudits and ($Detail >= 5) ) {
    print "\nSuccess Audits " . $SuccessAudits . " Time(s)\n";
    foreach my $User (keys %SuccessAuditUsers) {
       print "    $User : $SuccessAuditUsers{$User} Times\n";
+   }
+   if ($Detail >= 10) {
+      print "\nSuccess Audits\n";
+      foreach my $Error (sort keys %SuccessAudits) {
+         print "    $Error : $SuccessAudits{$Error} Times\n";
+      }
    }
 }
 
