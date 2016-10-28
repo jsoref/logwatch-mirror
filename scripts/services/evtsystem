@@ -30,9 +30,17 @@
 ## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
-my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+use strict;
 
-while (defined($ThisLine = <STDIN>)) {
+my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %Errors;
+my %RestartRequired;
+my %Systems;
+my %Updates;
+my %UpdatesInstalled;
+my %UpdatesReadyForInstall;
+
+while (defined(my $ThisLine = <STDIN>)) {
    my ($Hostname,$Criticality,$SourceName,$DateTime,$EventID,$System,$UserName,$SIDType,$EventLogType,$CategoryString,$DataString,$ExpandedString,$Extra);
    #Determine format
    if ($ThisLine =~ /MSWinEventLog\[/) {  # Snare 4
@@ -64,7 +72,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    if ($System =~ "EventLog") {
       #Ignore these
-      next if $ExpandedString =~ /Microsoft \(R\) Windows \(R\) \d+\.\d+\. \d+ Service Pack \d/;
+      next if $ExpandedString =~ /Microsoft \(R\) Windows \(R\) \d+\.\d+\. \d+ +(Multiprocessor Free|Service Pack \d)/;
       next if $ExpandedString =~ /^The Event log service was started./;
       next if $ExpandedString =~ /^The Event log service was stopped./;
       next if $ExpandedString =~ /^The system uptime is \d+ seconds/;
@@ -97,6 +105,14 @@ while (defined($ThisLine = <STDIN>)) {
       next if $ExpandedString =~ /^Isatap interface .* is no longer active\.$/ and $Detail < 10;
    }
 
+   if ($System eq "Microsoft-Windows-Kernel-Boot") {
+      #High Detail
+      next if $ExpandedString =~ /^The boot type was/ and $Detail < 10;
+      next if $ExpandedString =~ /^The bootmgr spent .* waiting for user input/ and $Detail < 10;
+      next if $ExpandedString =~ /^The last shutdown's success status was true. The last boot's success status was true\.$/ and $Detail < 10;
+      next if $ExpandedString =~ /^There are .* boot options on this system/ and $Detail < 10;
+   }
+
    if ($System eq "Microsoft-Windows-Kernel-General") {
       #High Detail
       next if $ExpandedString =~ /^The operating system started at system time/ and $Detail < 10;
@@ -118,7 +134,7 @@ while (defined($ThisLine = <STDIN>)) {
 
    if ($System eq "Microsoft-Windows-Kernel-Processor-Power") {
       #Ignore these
-      next if $ExpandedString =~ /^Processor \d+ in group \d+ exposes the following:/;
+      next if $ExpandedString =~ /^Processor \d+ in group \d+ exposes the following/;
    }
 
    if ($System eq "Microsoft-Windows-GroupPolicy") {
@@ -152,20 +168,38 @@ while (defined($ThisLine = <STDIN>)) {
        $System eq "Windows Update Agent") {
       #High Detail
       next if $ExpandedString =~ /^Automatic Updates is now paused\.$/ and $Detail < 10;
+      next if $ExpandedString =~ /^Windows Update started downloading an update\.$/ and $Detail < 10;
       
       #Updates
-      if (($InstallDateTime, $Updates) = $ExpandedString =~ /^Installation Ready: The following updates are downloaded and ready for installation. This computer is currently scheduled to install these updates on (.*):  - (.*)$/) {
-          $UpdatesReadyForInstall{$Hostname}->{$InstallDateTime} = $Updates;
+      if (my ($InstallDateTime, $Updates) = $ExpandedString =~ /^Installation Ready: The following updates are downloaded and ready for installation(?:\. )?(?:This computer is currently scheduled to install these updates on (.*)|To install the updates, an administrator should log on.*|):  - (.*)$/) {
+          $InstallDateTime =~ s/\?//g;
+          foreach my $Update (split(" - ",$Updates)) {
+              $InstallDateTime = "Now" if $InstallDateTime eq "";
+              $UpdatesReadyForInstall{$Hostname}->{$Update} = $InstallDateTime;
+          }
           next;
       }
-      if (($Update) = $ExpandedString =~ /^Installation Successful: Windows successfully installed the following update: (.*)$/) {
+      if (my ($Update) = $ExpandedString =~ /^Installation Successful: Windows successfully installed the following update: (.*)$/) {
+          delete($UpdatesReadyForInstall{$Hostname}->{$Update});
           push(@{$UpdatesInstalled{$Hostname}},$Update);
+          next;
+      }
+      if ($ExpandedString =~ /^Installation Failure:/) {
+          $Errors{$System}->{"$Hostname $ExpandedString"}++;
+          next;
+      }
+      if ($ExpandedString =~ /^Installation Started:/) {
           next;
       }
       if ($ExpandedString =~ /^Restart Required:/) {
           $RestartRequired{$Hostname} = 1;
           next;
       }
+   }
+
+   if ($System eq "Microsoft-Windows-WHEA-Logger") {
+      $Errors{$System}->{"$Hostname $ExpandedString"}++;
+      next;
    }
 
    if ($System eq "Microsoft-Windows-Winlogon") {
@@ -220,6 +254,7 @@ while (defined($ThisLine = <STDIN>)) {
    next if $ExpandedString =~ /Module has (?:started|stopped)/ and $Detail < 10;
    next if $ExpandedString =~ /Driver initialized successfully\.$/ and $Detail < 10;
    next if $ExpandedString =~ /Network controller configured for .* link\.$/ and $Detail < 10;
+   next if $ExpandedString =~ /Network link has been established/ and $Detail < 10;
    next if $ExpandedString =~ /^The driver package installation has succeeded\.$/ and $Detail < 10;
    next if $ExpandedString =~ /^The .* service entered the .* state/ and $Detail < 10;
    next if $ExpandedString =~ /^The process .* has initiated the (?:power off|restart|shutdown) of computer .* on behalf of user .* for the following reason/ and $Detail < 5;
@@ -231,20 +266,31 @@ while (defined($ThisLine = <STDIN>)) {
 }
 
 # Handle high priority errors first
-$System = "Microsoft-Windows-WER-SystemErrorReporting";
+my $System = "Microsoft-Windows-WER-SystemErrorReporting";
 if (defined($Systems{$System})) {
    print "\nSYSTEM ERRORS!:\n";
-   foreach $Error (sort(keys %{$Systems{$System}})) {
+   foreach my $Error (sort(keys %{$Systems{$System}})) {
       print "    $Error : $Systems{$System}->{$Error} Times\n";
    }
    delete($Systems{$System});
 }
 print "\n";
 
+# Next output items marked as errors
+if (keys %Errors) {
+   print "\nERRORS:";
+   foreach my $System (sort(keys %Errors)) {
+      print "\n    $System\n";
+      foreach my $Error (sort(keys %{$Errors{$System}})) {
+         print "        $Error : $Errors{$System}->{$Error} Times\n";
+      }
+   }
+}
+
 if (keys %Systems) {
-   foreach $System (sort(keys %Systems)) {
+   foreach my $System (sort(keys %Systems)) {
       print "\n$System\n";
-      foreach $Error (sort(keys %{$Systems{$System}})) {
+      foreach my $Error (sort(keys %{$Systems{$System}})) {
          print "    $Error : $Systems{$System}->{$Error} Times\n";
       }
    }
@@ -252,20 +298,24 @@ if (keys %Systems) {
 
 if (keys %UpdatesReadyForInstall or keys %UpdatesInstalled) {
    print "\nWindows Update Summary:\n";
-   foreach $Hostname (sort(keys %UpdatesReadyForInstall)) {
-      foreach $InstallDateTime (sort(keys %{$UpdatesReadyForInstall{$Hostname}})) {
-         print "    Updates ready for install on $Hostname on $InstallDateTime:\n"; 
-         print "        $UpdatesReadyForInstall{$Hostname}->{$InstallDateTime}\n";
+   foreach my $Hostname (sort(keys %UpdatesReadyForInstall)) {
+      # We may have removed all updates from this list when installed
+      if (keys %{$UpdatesReadyForInstall{$Hostname}}) {
+         print "    Updates ready for install on $Hostname:\n"; 
+         foreach my $Update (sort(keys %{$UpdatesReadyForInstall{$Hostname}})) {
+            print "        $Update at $UpdatesReadyForInstall{$Hostname}->{$Update}\n";
+         }
       }
    }
-   foreach $Hostname (sort(keys %UpdatesInstalled)) {
+   print "\n" if keys %UpdatesReadyForInstall;
+   foreach my $Hostname (sort(keys %UpdatesInstalled)) {
       print "    Updates successfully installed on $Hostname:\n";
-      foreach $Update (@{$UpdatesInstalled{$Hostname}}) {
+      foreach my $Update (@{$UpdatesInstalled{$Hostname}}) {
           print "        $Update\n";
       }
    }
-   print "    Restart required on hosts: " if keys %RestartRequired;
-   foreach $Hostname (sort(keys %RestartRequired)) {
+   print "\n    Restart required on hosts: " if keys %RestartRequired;
+   foreach my $Hostname (sort(keys %RestartRequired)) {
       print "$Hostname ";
    }
    print "\n";
