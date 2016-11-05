@@ -534,7 +534,7 @@ if ( ( $Detail >= 10 ) and (keys %AuthTimedOut)) {
       print "\n   User: $User (IPs: ";
       print join(", ",sort(keys %{$AuthTimedOut{$User}}));
       my $Total = 0;
-      foreach my $IP (keys $AuthTimedOut{$User}) { 
+      foreach my $IP (keys %{$AuthTimedOut{$User}}) { 
          $Total += $AuthTimedOut{$User}{$IP};
       }
       print ") $Total Time(s)";
@@ -600,9 +600,9 @@ if (keys %MUAList) {
    print "\n\nIMAP Mail User Agent Strings:";
    foreach my $MUA (sort(keys %MUAList)) {
       print "\n   $MUA: (Users: ";
-      print join(", ",sort(keys $MUAList{$MUA}));
+      print join(", ",sort(keys %{$MUAList{$MUA}}));
       my $Total = 0;
-      foreach my $User (keys $MUAList{$MUA}) { 
+      foreach my $User (keys %{$MUAList{$MUA}}) { 
          $Total += $MUAList{$MUA}{$User};
       }
       print ") $Total Time(s)";
