@@ -80,7 +80,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        # https://bugzilla.redhat.com/show_bug.cgi?id=1072368
        $ThisLine =~ /^Received SIGRTMIN\+24 from PID \d+ \(kill\)\.$/ or
        $ThisLine =~ /^Removed slice / or
-       $ThisLine =~ /^pam_unix\(systemd-user:session\): session (?:opened|closed) for user/
+       $ThisLine =~ /^pam_unix\(systemd-user:session\): session (?:opened|closed) for user/ or
+       $ThisLine =~ /Adding .* random time\.$/
    ) {
       # Ignore these
    } elsif (my ($service) = ($ThisLine =~ /^Unit (.*) entered failed state\.$/)) {
