@@ -74,7 +74,9 @@ while (my $line = <STDIN>) {
       ) {
       # Ignore these lines
    } elsif ($line =~ s/Listening on\s+//) {
-      $data{'DHCP Server Listening On'}{$line}++;
+      if ($Detail >= 5) {
+         $data{'DHCP Server Listening On'}{$line}++;
+      }
    } elsif (
       ($line =~ /^you want, please write a subnet declaration/) or
       ($line =~ /^in your dhcpd.conf file for the network segment/) or
@@ -121,6 +123,8 @@ while (my $line = <STDIN>) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ s/Not searching LDAP\s+.*$/No support for LDAP configured/) {
       $data{'Config error'}{$line}++;
+   } elsif ($line =~ /host unknown/) {
+      $data{'Config error'}{$line}++;
    } elsif ($line =~ s/^DHCPOFFER on ([\d\.]+) to ([a-f\d:]+) via (\S+)\s*$/$1 -> $2 ($3)/) {
       if ($Detail >= 5) {
          $data{'Addresses Leased'}{$line}++;
@@ -129,14 +133,16 @@ while (my $line = <STDIN>) {
       if ($Detail >= 5) {
          $data{'Addresses Leased'}{$line}++;
       }
+   } elsif ($line =~ /malformed option/) {
+      if ($Detail >= 5) {
+         $data{'Warnings'}{$line}++;
+      }
    } elsif ($line =~ s/^DHCPOFFER on ([\d\.]+) to ("")(?: \(([^)]+)\))? via (\S+)\s*$/$1 -> $2 [$3] ($4)/) {
       if ($Detail >= 5) {
          $data{'Warnings'}{$line}++;
       }
-   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) (?:\(([^)]+)\) )?via ([\d\.]+).*$/$1 -> $2 [$3] ($4)/) {
-      if ($Detail >= 5) {
-         $data{'Addresses Declined'}{$line}++;
-      }
+   } elsif ($line =~ s/^DHCPDECLINE of ([\d\.]+) from ([\w:]+) (?:\(([^)]+)\) )?via ([\d\.]+|\w+)(?:: (.*))?.*$/$1 -> $2 [$3$5] ($4)/) {
+      $data{'Addresses Declined'}{$line}++;
    } elsif ( ($line =~ s/^BOOTREPLY for ([\d\.]+) to ([a-zA-Z\d_-]+) \(([a-f\d:]+)\) via (\S+)\s*$/$1 -> $3 [$2] ($4\/bootp)/)
       or ($line =~ s/^BOOTREPLY on ([\d\.]+) to ([a-f\d:]+) via (\S+)\s*$/$1 -> $2 [] ($3\/bootp)/) ) {
 
