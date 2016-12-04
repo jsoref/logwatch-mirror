@@ -94,6 +94,9 @@ $Config{'hostformat'} = "none"; #8.0
 $Config{'html_wrap'} = 80;
 $Config{'supress_ignores'} = 0;
 $Config{'hostlimit'} = "";
+$Config{'appendvaradmtologdirs'} = 1;
+$Config{'appendvarlogtologdirs'} = 1;
+$Config{'appendcwdtologdirs'} = 1;
 
 if (-e "$ConfigDir/conf/html/header.html") {
    $Config{'html_header'} = "$ConfigDir/conf/html/header.html";
@@ -174,6 +177,11 @@ for (my $i = 0; $i <= $#ReadConfigNames; $i++) {
       $Config{$ReadConfigNames[$i]} = $ReadConfigValues[$i];
    }
 }
+
+my @LogDirs=("$Config{'logdir'}/");
+push @LogDirs, "/var/adm/" if $Config{'appendvaradmtologdirs'};
+push @LogDirs, "/var/log/" if $Config{'appendvarlogtologdirs'};
+push @LogDirs, "" if $Config{'appendcwdtologdirs'};
 
 &CleanVars();
 
@@ -434,7 +442,7 @@ for $ThisFile (@logfiles) {
                   @{$LogFileData{$ThisLogFile}{'logfiles'}} = ();
                } else {
                   if ($ReadConfigValues[$i] !~ m=^/=) {
-                     foreach my $dir ("$Config{'logdir'}/", "/var/adm/", "/var/log/", "") {
+                     foreach my $dir (@LogDirs) {
                         # We glob to obtain filenames.  We reverse in case
                         # we use the decimal suffix (.0, .1, etc.) in filenames
                         #@TempLogFileList = reverse(glob($dir . $ReadConfigValues[$i]));
@@ -473,7 +481,7 @@ for $ThisFile (@logfiles) {
                   @{$LogFileData{$ThisLogFile}{'archives'}} = ();
                } else {
                   if ($ReadConfigValues[$i] !~ m=^/=) {
-                     foreach my $dir ("$Config{'logdir'}/", "/var/adm/", "/var/log/", "") {
+                     foreach my $dir (@LogDirs) {
                         # We glob to obtain filenames.  We reverse in case
                         # we use the decimal suffix (.0, .1, etc.) in filenames
                         #@TempLogFileList = reverse(glob($dir . $ReadConfigValues[$i]));
