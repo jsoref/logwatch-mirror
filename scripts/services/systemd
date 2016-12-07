@@ -42,8 +42,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ / failed\.$/ or
        $ThisLine =~ /: (control|main) process exited, code=(exited|killed),? status=/ or
        # Informational
-       $ThisLine =~ /^Closed .* socket\.$/ or
+       $ThisLine =~ /^Closed .* [Ss]ocket\.$/ or
        $ThisLine =~ /^Closed udev / or
+       $ThisLine =~ /^Deactivated / or
        $ThisLine =~ /^Detected (architecture|virtualization) / or
        $ThisLine =~ /^Found device / or
        $ThisLine =~ /^Got automount request for \/proc\// or
