@@ -21,6 +21,7 @@ my %Failed;
 my $Reexecuted = 0;
 my %Reloaded;
 my %Slice;
+my %Slow;
 my %Started;
 my %Target;
 my $TimeChanged = 0;
@@ -104,6 +105,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $TimeChanged++;
    } elsif (my ($slice) = ($ThisLine =~ /^Created slice (.*)\.$/)) {
       $Slice{$slice}++;
+   } elsif (my ($pidfile) = ($ThisLine =~ /^PID file (.*) not readable \(yet\?\) after start\.$/)) {
+      $Slow{$pidfile}++;
    } else {
       $OtherList{$ThisLine}++;
    }
@@ -146,6 +149,14 @@ if (keys %Activated && $Detail > 3) {
    print "Activated:\n";
    foreach my $item (sort {$a cmp $b} keys %Activated) {
       print "    $item: $Activated{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Slow && $Detail > 3) {
+   print "Slow to start:\n";
+   foreach my $pidfile (sort {$a cmp $b} keys %Slow) {
+      print "    $pidfile: $Slow{$pidfile} Time(s)\n";
    }
    print "\n";
 }
