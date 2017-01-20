@@ -24,10 +24,11 @@ my %OtherList;
 # Lines are of the form:
 # sssd[service]: 
 while (defined(my $ThisLine = <STDIN>)) {
+   next unless $ThisLine =~ /^sssd/;
    chomp($ThisLine);
 
    # Strip off and record the service, set to Daemon if none
-   $ThisLine =~ s/sssd\[([^:]+)\]: //;
+   $ThisLine =~ s/^sssd\[([^:]+)\]: //;
    my $Service = defined($1) ? $1 : "Daemon";
     
    if ($ThisLine =~ /^Starting up/) {
