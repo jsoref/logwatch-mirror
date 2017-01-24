@@ -17,6 +17,7 @@
 use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my %Errors;
+my $Service;
 my %Starts;
 my %Stops;
 my %OtherList;
@@ -28,8 +29,11 @@ while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
 
    # Strip off and record the service, set to Daemon if none
-   $ThisLine =~ s/^sssd\[([^:]+)\]: //;
-   my $Service = defined($1) ? $1 : "Daemon";
+   if ($ThisLine =~ s/^sssd\[([^:]+)\]: // or $ThisLine =~ s/^sssd_([^:]+): //) {
+     $Service = $1;
+   } elsif ($ThisLine =~ s/^sssd: //) {
+     $Service = "Daemon";
+   }
     
    if ($ThisLine =~ /^Starting up/) {
       $Starts{$Service}++;
