@@ -57,7 +57,7 @@ my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $CmdsThresh = $ENV{'command_run_threshold'} || 0;
 my %IgnoreCmds;
 
-my ($user, $error, $tty, $dir, $euser, $cmd, $args);
+my ($user, $error, $tty, $dir, $euser, $egroup, $cmd, $args);
 my (%ConFailed);
 my $contlines = 0;
 my $argsprinted = 0;
@@ -84,9 +84,12 @@ while (defined(my $ThisLine = <STDIN>)) {
      # Ignore
    } elsif ($ThisLine =~ /(.+): conversation failed/) {
      $ConFailed{$1}++;
-   } elsif ( ($user, $error, $tty, $dir, $euser, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ; COMMAND=(\S+)( ?.*)/) {
+   } elsif ( ($user, $error, $tty, $dir, $euser, $egroup, $cmd, $args) = $ThisLine =~ m/^\s*(\S+) : (.*; )?TTY=(\S+) ; PWD=(.*?) ; USER=(\S+) ;(?: GROUP=(\S+) ;)? COMMAND=(\S+)( ?.*)/) {
       next if (defined($IgnoreCmds{$user}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{$user}{$euser}}));
       next if (defined($IgnoreCmds{'any'}{$euser}) && $cmd =~ join("|",@{$IgnoreCmds{'any'}{$euser}}));
+      if ($egroup) {
+         $euser .= ":${egroup}";
+      }
       push @{$byUser{$user}{$euser}}, [$error . $cmd, $args, $dir, $tty];
       $byUserSum{$user}{$euser}{$cmd} += 1;
    } elsif ( ($user,$euser) = $ThisLine =~ /^\s*(\S+) : no passwd entry for (\S+)\!$/) {
