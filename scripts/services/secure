@@ -264,8 +264,12 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /polkit-grant-helper\[\d+\]: granted authorization for [^ ]* to uid [0-9]* \[auth=.*\]/) or
       ( $ThisLine =~ /polkit-grant-helper\[\d+\]: granted authorization for [^ ]* to session .* \[uid=[0-9]*\]/) or
       ( $ThisLine =~ /polkit-grant-helper-pam\[\d+\]: pam_thinkfinger\(polkit:auth\): conversation failed/) or
-      ( $ThisLine =~ /polkitd\(authority=.*\): (Unr|R)egistered Authentication Agent/) or
-      ( $ThisLine =~ /polkitd\(authority=.*\): Operator of unix-session:/) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: (Unr|R)egistered Authentication Agent/) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Operator of unix-session:/) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Acquired the name [^ ]* on the system bus$/) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Lost the name [^ ]* - exiting$/) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Loading rules from directory /) or
+      ( $ThisLine =~ /polkitd(\(authority=.*\)|\[\d+\])?: Finished loading, compiling and executing \d+ rules$/) or
       ( $ThisLine =~ /(gdm-session-worker|gdm-password|gnome-screensaver-dialog)\[\d+\]: gkr-pam: no password is available for user/) or
       ( $ThisLine =~ /gkr-pam: the password for the login keyring was invalid/) or
       ( $ThisLine =~ /groupadd\[\d+\]: group added to /) or    # Details in other messages
@@ -274,6 +278,7 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /pkexec: pam_systemd(.*): /) or
       ( $ThisLine =~ /pkexec: \S+: Executing command /) or
       ( $ThisLine =~ /su: pam_systemd(.*): Failed to parse message: /) or
+      ( $ThisLine =~ /pam_systemd\(su:session\): Cannot create session: Already (running in|occupied by) a session/) or
       ( $ThisLine =~ /systemd-logind\[\d+\]: (New|Removed) session/)
    ) {
       # Ignore these entries
@@ -844,8 +849,13 @@ if (keys %Executed_app) {
    print "\nUserhelper executed applications:\n";
    foreach (keys %Executed_app) {
      ($longapp,$asuser,$user) = split ",";
+     $longapp_orig = $longapp;
+     $i = index($longapp, " ");
+     if ($i > 0) {
+        $longapp = substr($longapp, 0, $i);
+     }
      $app = substr($longapp,rindex($longapp,"/")+1);
-     print "   $user -> $app as $asuser:  ".$Executed_app{"$longapp,$asuser,$user"}." Time(s)\n";
+     print "   $user -> $app as $asuser:  ".$Executed_app{"$longapp_orig,$asuser,$user"}." Time(s)\n";
    }
 }
 

@@ -188,7 +188,7 @@ my $DebugCounter = 0;
 
 # No sense in running if 'sshd' doesn't even exist on this system...
 #unless (( -f "/usr/sbin/sshd" ) or ( -f "/usr/local/sbin/sshd") or ( -f "/usr/lib/ssh/sshd")) {
-#	exit (0);
+#       exit (0);
 #}
 
 my %Users = ();
@@ -201,6 +201,7 @@ my %BadLogins = ();
 my %NoRevMap = ();
 my %RefusedConnections = ();
 my %RefusedAuthentication = ();
+my %NegotiationFailed = ();
 my %DisconnectReceived = ();
 my %RootLogin = ();
 my %PamReleaseFail = ();
@@ -223,7 +224,6 @@ my %MisMatch = ();
 my %KrbAutFail = ();
 my %KrbAutErr = ();
 my %KrbErr = ();
-my @BadRSA = ();
 my @Scanned = ();
 my %OtherList = ();
 my %ChmodErr = ();
@@ -273,7 +273,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^channel_lookup: -?\d+: bad id/) or
        ($ThisLine =~ m/^error: channel \d+: chan_read_failed for istate/) or
        # Result of setting PermitRootLogin to forced-commands-only
-       ($ThisLine =~ m/^Root login accepted for forced command.$/) or
+       ($ThisLine =~ m/^Root login accepted for forced command\.( \[preauth\])?$/) or
        # usually followed by a session opened for user
        ($ThisLine =~ m/^pam_krb5\[\d+\]: authentication succeeds for /) or
        ($ThisLine =~ m/^nss_ldap: reconnect/) or
@@ -283,11 +283,13 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ m/^\(pam_unix\) .*/) or
        ($ThisLine =~ m/^pam_unix\(.*:.*\)/) or
        ($ThisLine =~ m/^pam_unix_auth:/) or
+       ($ThisLine =~ m/^pam_sepermit\(.*:.*\)/) or
        ($ThisLine =~ /pam_krb5: authentication succeeds for `([^ ]*)'/) or
        ($ThisLine =~ /pam_succeed_if\(.*:.*\): error retrieving information about user [a-zA-Z]*/ ) or
        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* granted access/) or
        ($ThisLine =~ /pam_winbind\(sshd:account\): user .* OK/) or
        ($ThisLine =~ /pam_systemd\(sshd:session\): Moving/) or
+       ($ThisLine =~ /pam_systemd\(sshd:session\): .*: Connection reset by peer/) or
        ($ThisLine =~ /PAM \d+ more authentication failures?;/) or
        ($ThisLine =~ /^PAM service\(sshd\) ignoring max retries;/) or
        ($ThisLine =~ /^Failed keyboard-interactive for <invalid username> from/ ) or
@@ -297,7 +299,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Starting session: (forced-command|subsystem|shell|command)/ ) or
        ($ThisLine =~ /Found matching \w+ key:/ ) or
        ($ThisLine =~ /User child is on pid \d/ ) or
-       ($ThisLine =~ /Nasty PTR record .* is set up for [\da-fA-F.:]+, ignoring/)
+       ($ThisLine =~ /Nasty PTR record .* is set up for [\da-fA-F.:]+, ignoring/) or
+       ($ThisLine =~ /Disconnected from [\da-fA-F.:]* port \d*/ )
    ) {
       # Ignore these
    } elsif ( my ($Method,$User,$Host,$Port,$Key) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+) port (\d+) ssh[12](?:: (\w+))?/) ) {
@@ -315,6 +318,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $IllegalUsers{$Host}{$User}++;
    } elsif ( my ($User) = ( $ThisLine =~ /Disconnecting: Too many authentication failures for ([^ ]+)/)) {
       $TooManyFailures{$User}++;
+   } elsif ( my ($User) = ( $ThisLine =~ /error: maximum authentication attempts exceeded for ([^ ]+) from [^ ]+ port \d+ ssh2 \[preauth\]/)) {
+      $TooManyFailures{$User}++;
+   } elsif ( $ThisLine =~ /Disconnecting: Too many authentication failures \[preauth\]/ ) {
+      # Ignore these - should be covered by other messages
    } elsif ( $ThisLine =~ m/^(fatal: )?Did not receive ident(ification)? string from (.+)/ ) { # ssh/openssh
       my $name = LookupIP($3);
       $NoIdent{$name}++;
@@ -329,6 +336,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ m/^fatal: Write failed: Network is unreachable/ ) or
       ($ThisLine =~ m/^fatal: Write failed: Broken pipe/) or
       ($ThisLine =~ m/^fatal: Write failed: Connection reset by peer/) or
+      ($ThisLine =~ m/^Connection reset by/) or
       ($ThisLine =~ m/^channel \d+: open failed: (?:connect failed: Channel open failed\.|administratively prohibited: open failed)/) or
       ($ThisLine =~ m/^session_input_channel_req: no session \d+ req window-change/) or
       ($ThisLine =~ m/^error: chan_shutdown_read failed for .+/)
@@ -387,9 +395,20 @@ while (defined(my $ThisLine = <STDIN>)) {
       $RefusedConnections{$1}++;
    } elsif ( my ($Reason) = ($ThisLine =~ /^Authentication refused: (.*)$/ ) ) {
       $RefusedAuthentication{$Reason}++;
-   } elsif ( my ($Host,$Reason) = ($ThisLine =~ /^Received disconnect from ([^ ]*)(?: port [^ ]*)?: (.*)$/)) {
+   } elsif ( my ($Host,$Port,$Reason,$Offer) = ($ThisLine =~ /^fatal: Unable to negotiate with ([^ ]+)( port \d+)?: (.*)\. Their offer: (.*) \[preauth\]$/) ) {
+      $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+   } elsif ( my ($Reason,$Host,$Offer) = ($ThisLine =~ /^(Protocol major versions differ) for ([^ ]+): (.*)$/) ) {
+      $NegotiationFailed{$Reason}{$Host}{$Offer}++;
+   } elsif ( my ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*) \[preauth\]$/)) {
+      if ($Code == 11) {
+      # Reason 11 (SSH_DISCONNECT_BY_APPLICATION) in [preauth] sounds suspicious
+         $DisconnectReceived{"$Reason [preauth]"}{$Host}++;
+      } else {
+         $DisconnectReceived{$Reason}{$Host}++;
+      }
+   } elsif ( my ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*)$/)) {
       # Reason 11 (SSH_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
-      if ($Reason != 11) {$DisconnectReceived{$Reason}{$Host}++;}
+      if ($Code != 11) {$DisconnectReceived{$Reason}{$Host}++;}
    } elsif ( my ($Host) = ($ThisLine =~ /^ROOT LOGIN REFUSED FROM ([^ ]*)$/)) {
       $RootLogin{$Host}++;
    } elsif ( my ($Error) = ($ThisLine =~ /^Cannot release PAM authentication\[\d\]: (.*)$/)) {
@@ -440,6 +459,9 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ( my (undef,$User,$Host) = ($ThisLine =~ m/^(Illegal|Invalid) user (.*) from ([^ ]+)/ )) {
       $PotentialIllegalUsers{$Host}{$User}++;
    } elsif ( my (undef,$User) = ($ThisLine =~ /^input_userauth_request: (illegal|invalid) user (.*)$/ )) {
+      if ($User =~ m/(.*) \[preauth\]/) {
+        $User = $1;
+      }
       $PotentialIllegalUsers{"undef"}{$User}++;
    } elsif (my ($File,$Perm,$Why) = ($ThisLine =~ /error: chmod (.*) (.*) failed: (.*)/)) {
       $ChmodErr{"$File,$Perm,$Why"}++;
@@ -506,7 +528,7 @@ if (keys %RootLogin) {
 if (keys %BindFailed) {
    print "\nFailed to bind:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %BindFailed) {
-	   print "   $ThisOne : $BindFailed{$ThisOne} Time(s)\n";
+           print "   $ThisOne : $BindFailed{$ThisOne} Time(s)\n";
    }
 }
 
@@ -531,10 +553,35 @@ if ($Detail >= 10) {
    }
 }
 
-if ($#BadRSA >= 0) {
-   print "\nReceived a bad response to RSA challenge from:\n";
-   foreach my $ThisOne (@BadRSA) {
-      print "   $ThisOne\n";
+if (keys %NegotiationFailed) {
+   print "\nNegotiation failed:\n";
+   foreach my $Reason (sort {$a cmp $b} keys %NegotiationFailed) {
+      my $Total = 0;
+      print "   $Reason";
+      foreach my $Host (sort {$a cmp $b} keys %{$NegotiationFailed{$Reason}}) {
+        my $HostTotal = 0;
+        foreach my $Offer (sort {$a cmp $b} keys %{$NegotiationFailed{$Reason}{$Host}}) {
+           $HostTotal += $NegotiationFailed{$Reason}{$Host}{$Offer};
+        }
+        $Total += $HostTotal;
+        if ( $Detail > 0 ) {
+           my $plural = ($HostTotal > 1) ? "s" : "";
+           print "\n      $Host: $HostTotal time$plural";
+        }
+        if ( $Detail > 5 ) {
+           foreach my $Offer (sort {$a cmp $b} keys %{$NegotiationFailed{$Reason}{$Host}}) {
+                 my $tot = $NegotiationFailed{$Reason}{$Host}{$Offer};
+                 my $plural = ($tot > 1) ? "s" : "";
+                 print "\n        $Offer: $tot time$plural";
+           }
+        }
+      }
+      if( $Detail > 0 ) {
+         print "\n";
+      } else {
+         my $plural = ($Total > 1) ? "s" : "";
+         print ": $Total time$plural\n";
+      }
    }
 }
 
@@ -685,7 +732,7 @@ if (keys %Users) {
 }
 
 if (keys %RefusedAuthentication) {
-   print "\n\nAuthentication refused:\n";
+   print "\nAuthentication refused:\n";
    foreach my $Reason (sort {$a cmp $b} keys %RefusedAuthentication) {
       print "   $Reason : $RefusedAuthentication{$Reason} Time(s)\n";
    }
@@ -715,7 +762,7 @@ if (keys %KrbErr) {
 
 
 if (keys %DisconnectReceived) {
-   print "\n\nReceived disconnect:\n";
+   print "\nReceived disconnect:\n";
    foreach my $Reason (sort {$a cmp $b} keys %DisconnectReceived) {
       my $Total = 0;
       print "   $Reason";

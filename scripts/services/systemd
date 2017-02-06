@@ -16,8 +16,10 @@
 
 use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my %ConfigError;
 my %Activated;
 my %Failed;
+my %Deactivated;
 my $Reexecuted = 0;
 my %Reloaded;
 my %Slice;
@@ -40,20 +42,26 @@ while (defined(my $ThisLine = <STDIN>)) {
    if ($ThisLine =~ /^(Activating|Deactivating|Mounting|Unmounting|Starting|Stopping) / or
        # These events will be caught with the Unit X entered failed state message
        $ThisLine =~ /^Failed to start / or
+       $ThisLine =~ /: Failed with result / or
        $ThisLine =~ / failed\.$/ or
-       $ThisLine =~ /: (control|main) process exited, code=(exited|killed),? status=/ or
+       $ThisLine =~ /([Cc]ontrol|[Mm]ain|[Mm]ount) process exited, code=(exited|killed|dumped),? status=/ or
        # Informational
        $ThisLine =~ /^Closed .* [Ss]ocket\.$/ or
+       $ThisLine =~ /^Closed .* [Ss]ockets?\.$/ or
+       $ThisLine =~ /^Closed .* [Ss]cheduler\.$/ or
+       $ThisLine =~ /^Closed .* [Ww]atch\.$/ or
        $ThisLine =~ /^Closed udev / or
+       $ThisLine =~ /^Received SIGINT\./ or
        $ThisLine =~ /^Deactivated / or
        $ThisLine =~ /^Detected (architecture|virtualization) / or
        $ThisLine =~ /^Found device / or
-       $ThisLine =~ /^Got automount request for \/proc\// or
+       $ThisLine =~ /Got automount request for \/proc\// or
        $ThisLine =~ /^Inserted module / or
        $ThisLine =~ /^Listening on / or
        $ThisLine =~ /^Mounted / or
        $ThisLine =~ /^Relabelled / or
        $ThisLine =~ /^Reloading\.$/ or         # Happens on each boot at switch root
+       $ThisLine =~ /^RTC configured in / or
        $ThisLine =~ /^Running in initial RAM disk\.$/ or
        $ThisLine =~ /^Set hostname to / or
        $ThisLine =~ /^Shutting down\.$/ or
@@ -62,22 +70,29 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /^Switching root\.$/ or
        $ThisLine =~ /^Successfully loaded SELinux policy in / or
        $ThisLine =~ /: Supervising process .* which is not our child\. We'll most likely not notice when it exits\.$/ or
+       $ThisLine =~ /: Got notification message from PID \d+, but reception is disabled\./ or
+       $ThisLine =~ /: Got notification message from PID \d+, but reception only permitted for main PID \d+/ or
        $ThisLine =~ /^systemd (\d+) running in system mode/ or
+       $ThisLine =~ /Transaction is destructive\./ or
        $ThisLine =~ /^Unit .* is bound to inactive unit .*\. Stopping, too\./ or
-       $ThisLine =~ /^Unit .* is not needed anymore\. Stopping\./ or
+       $ThisLine =~ /Unit (.* is )?not needed anymore\. Stopping\./ or
+       $ThisLine =~ /State '(stop-sigterm|stop-final-sigterm)' timed out\. Killing\./ or
+       $ThisLine =~ /Stopping timed out\. Killing\./ or
+       $ThisLine =~ /Processes still around after .*SIGKILL\./ or
        $ThisLine =~ /^Unmounted / or
+       $ThisLine =~ /[Hh]ardware watchdog / or
+       $ThisLine =~ /PID file .* not readable \(yet\?\) after start/ or
        # Units can depend on files that do not exist
-       $ThisLine =~ /^Cannot add dependency job for unit .*, ignoring: Unit (:?.* failed to load: No such file or directory|not found)\.$/ or
+       $ThisLine =~ /Cannot add dependency job( for unit .*)?, ignoring: Unit .* failed to load: No such file or directory\.$/ or
        # https://bugs.freedesktop.org/show_bug.cgi?id=90386
-       $ThisLine =~ /^Device .* appeared twice with different sysfs paths .* and / or
+       $ThisLine =~ /Dev(ice)? .* appeared twice with different sysfs paths .* and / or
        # Inactive units are sometimes reloaded
        $ThisLine =~ /^Unit .* cannot be reloaded because it is inactive\.$/ or
-       # https://bugzilla.redhat.com/show_bug.cgi?id=1293941
-       $ThisLine =~ /^Configuration file \/usr\/lib\/systemd\/system\/auditd\.service is marked world-inaccessible/ or
-       # https://bugzilla.redhat.com/show_bug.cgi?id=1301182
-       $ThisLine =~ /^Configuration file \/usr\/lib\/systemd\/system\/wpa_supplicant\.service is marked executable/ or
+       $ThisLine =~ /^.*: Unit cannot be reloaded because it is inactive\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1306452 
-       $ThisLine =~ /^tmp\.mount: Directory \/tmp to mount over is not empty, mounting anyway\.$/ or
+       $ThisLine =~ /^[^ ]*\.mount: Directory \/[^ ]* to mount over is not empty, mounting anyway\.$/ or
+       # A known issue - reported by multiple distributions
+       $ThisLine =~ /^user\@\d+\.service: Failed at step CGROUP spawning \/usr\/lib\/systemd\/systemd: No such file or directory$/ or
        $ThisLine =~ /^Received SIGRTMIN\+2[01] from PID \d+ \(plymouthd\)\.$/ or
        # https://bugzilla.redhat.com/show_bug.cgi?id=1072368
        $ThisLine =~ /^Received SIGRTMIN\+24 from PID \d+ \(kill\)\.$/ or
@@ -86,7 +101,19 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /Adding .* random time\.$/
    ) {
       # Ignore these
+   } elsif (my ($service,$reason) = ($ThisLine =~ /^Configuration file ([^ ]*) is ([^.]*)\./)) {
+      $ConfigError{$reason}{$service}++;
+   } elsif (my ($service,$reason) = ($ThisLine =~ /^\[(.*)\] (Support for option .* has been removed) and it is ignored/)) {
+      $ConfigError{$reason}{$service}++;
    } elsif (my ($service) = ($ThisLine =~ /^Unit (.*) entered failed state\.$/)) {
+      $Failed{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^(.*): Unit entered failed state\.$/)) {
+      $Failed{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^(.*) failed with error code \d+\.$/)) {
+      $Failed{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^Failed (unmounting .*)\.$/)) {
+      $Failed{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^Failed to (listen on .*)\.$/)) {
       $Failed{$service}++;
    } elsif (my ($target) = ($ThisLine =~ /^Reached target (.*)\.$/)) {
       $Target{$target}++;
@@ -99,6 +126,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Started{$service}++;
    } elsif (my ($service) = ($ThisLine =~ /^Reloaded (.*)\.$/)) {
       $Reloaded{$service}++;
+   } elsif (my ($service) = ($ThisLine =~ /^Deactivated (.*)\.$/)) {
+      $Deactivated{$service}++;
    } elsif ($ThisLine eq "Reexecuting.") {
       $Reexecuted++;
    } elsif ($ThisLine =~ /^Time has been changed$/) {
@@ -110,6 +139,25 @@ while (defined(my $ThisLine = <STDIN>)) {
    } else {
       $OtherList{$ThisLine}++;
    }
+}
+
+if (keys %ConfigError) {
+    print "Configuration errors:\n";
+    foreach my $reason (sort {$a cmp $b} keys %ConfigError) {
+	my $tot = 0;
+	print "   $reason";
+	foreach my $service (sort {$a cmp $b} keys %{$ConfigError{$reason}}) {
+	    $tot += $ConfigError{$reason}{$service};
+	    if ($Detail >= 10) {
+		print "\n      $service: $ConfigError{$reason}{$service} Time(s)";
+	    }
+	}
+	if ($Detail < 10) {
+	    print ": $tot Time(s)"
+	}
+	print "\n";
+    }
+    print "\n";
 }
 
 if (keys %Failed) {
@@ -165,6 +213,14 @@ if (keys %Reloaded && $Detail > 5) {
    print "Reloaded:\n";
    foreach my $item (sort {$a cmp $b} keys %Reloaded) {
       print "    $item: $Reloaded{$item} Time(s)\n";
+   }
+   print "\n";
+}
+
+if (keys %Deactivated && $Detail > 5) {
+   print "Deactivated:\n";
+   foreach my $item (sort {$a cmp $b} keys %Deactivated) {
+      print "    $item: $Deactivated{$item} Time(s)\n";
    }
    print "\n";
 }

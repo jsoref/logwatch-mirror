@@ -27,12 +27,15 @@ my $IgnoreUnmatched = $ENV{'clamav_ignoreunmatched'} || 0;
 
 while (defined($ThisLine = <STDIN>)) {
 
+   chomp($ThisLine);
    if (
        ( $ThisLine =~ /^clamav-milter (startup|shutdown) succeeded$/ ) or
+       ( $ThisLine =~ /^clamav-milter started at/i ) or
+       ( $ThisLine =~ /^(WARNING: )?No clamd server appears to be available/i ) or
        ( $ThisLine =~ /^Database has changed, loading updated database/ ) or
        ( $ThisLine =~ /^Quarantined infected mail as/ ) or
        ( $ThisLine =~ /^\w+ quarantined as/ ) or
-       ( $ThisLine =~ /^ClamAv: mi_stop/ ) or
+       ( $ThisLine =~ /^ClamAv: mi_stop/i ) or
        ( $ThisLine =~ m#^\/tmp\/clamav-.* .* FOUND# ) or
        # These two go along with "max-children limit" so we ignore them
        ( $ThisLine =~ /n_children \d+: waiting \d+ seconds for some to exit/ ) or

@@ -42,10 +42,13 @@ while (my $line = <STDIN>) {
       ($line =~ /^Please contribute if you find this software useful/) or
       ($line =~ /^For info, please visit/) or
       # Other lines to ignore
-      ($line =~ /^Wrote .* to leases file\./) or
+      ($line =~ /^Wrote .* to lease(s)? file\./) or
       ($line =~ /^already acking lease/) or
       ($line =~ /^dhcpd shutdown .*succeeded/) or
       ($line =~ /^dhcpd startup .*succeeded/) or
+      ($line =~ /^Server starting service\./) or
+      ($line =~ /^Source compiled to use binary-leases/) or
+      ($line =~ /^WARNING: authoring-byte-order not in the lease file/) or
       ($line =~ /^Sending on/) or
       ($line =~ /^Dynamic and static leases present for/) or
       # backup server pool balancing
@@ -70,13 +73,16 @@ while (my $line = <STDIN>) {
       ($line =~ /^Not searching LDAP since ldap-server, ldap-port and ldap-base-dn were not specified in the config file/) or
       ($line =~ /^Solicit message from/) or
       ($line =~ /^Sending Advertise to/) or
-      ($line =~ /^pool [0-9a-f]+ /)
+      ($line =~ /^pool [0-9a-f]+ /) or
+      ($line =~ /^[^ ]* file: /)
       ) {
       # Ignore these lines
    } elsif ($line =~ s/Listening on\s+//) {
       if ($Detail >= 5) {
          $data{'DHCP Server Listening On'}{$line}++;
       }
+   } elsif ($line =~ s/Bound to\s+//) {
+      $data{'DHCP Server Listening On'}{$line}++;
    } elsif (
       ($line =~ /^you want, please write a subnet declaration/) or
       ($line =~ /^in your dhcpd.conf file for the network segment/) or
@@ -125,6 +131,8 @@ while (my $line = <STDIN>) {
       $data{'Config error'}{$line}++;
    } elsif ($line =~ /host unknown/) {
       $data{'Config error'}{$line}++;
+   } elsif ($line =~ s/^ldap_gssapi_principal is not set,//) {
+      $data{'Config error'}{$line}++;
    } elsif ($line =~ s/^DHCPOFFER on ([\d\.]+) to ([a-f\d:]+) via (\S+)\s*$/$1 -> $2 ($3)/) {
       if ($Detail >= 5) {
          $data{'Addresses Leased'}{$line}++;
@@ -159,6 +167,8 @@ while (my $line = <STDIN>) {
       } elsif (($Detail >= 10) and ($clientrequest =~ /Rebind|Renew/)) {
          $data{"Addresses $clientrequest"}{$line}++;
       }
+   } elsif ($line =~ s/^(Advertise|Reply) ([TN]A): address ([0-9a-fA-F:]+) to client with duid ([0-9a-fA-F:]+) iaid = [-\d]+( static)?/$3 ($2$5) -> DUID $4/) {
+         $data{"Addresses $1"}{$line}++;
    } elsif ($line =~ /^Client ([0-9a-fA-F:]+) releases address ([0-9a-fA-F:]+), which is not leased to it.$/) {
       if ($Detail >= 5) {
          $data{'Warnings'}{$line}++;
