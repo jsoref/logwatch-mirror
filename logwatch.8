@@ -109,6 +109,22 @@ if HostLimit is set in the logwatch.conf configuration file (see
 then only logs from this hostname will be processed (where appropriate).
 .IP "\fB--html_wrap\fR num-characters"
 Number of characters that html output should be wrapped to. Default is 80.
+.IP "\fB--hostformat\fR split"
+Use
+.I split
+approach when formatting report for multiple hosts - none [default], split, splitmail.
+.IP "\fB--output\fR output-type"
+Report using
+.I output-type
+- stdout [default], mail, file.
+.IP "\fB--format\fR format"
+Format report using
+.I format
+- text [default], html.
+.IP "\fB--encode\fR encoding"
+Encode report using
+.I encoding
+- none [default], base64.
 .IP "\fB--numeric\fR"
 Inhibits additional name lookups, displaying IP addresses numerically.
 .IP "\fB--usage\fR"
