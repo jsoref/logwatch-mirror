@@ -48,6 +48,10 @@ if ( $Debug >= 5 ) {
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
 
+   if ($ThisLine =~ /^([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+) TLS Auth Error: Auth Username\/Password verification failed for peer/) {
+      $IncorrectPassword{$1}++;
+   }
+
    # normalise - this could possibly be used for more detailed per host statistics
    # further down
    $ThisLine =~ s/^([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+) //;
@@ -70,6 +74,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^Expected Remote Options/) or
       ($ThisLine =~ /^GID set to/) or
       ($ThisLine =~ /^IFCONFIG POOL/) or
+      ($ThisLine =~ /^ifconfig_pool_read/) or
+      ($ThisLine =~ /^do_ifconfig/) or
+      ($ThisLine =~ /^succeeded -> ifconfig_pool_set/) or
       ($ThisLine =~ /^IMPORTANT: OpenVPN's default port number is now 1194/) or
       ($ThisLine =~ /^Initialization Sequence Completed/) or
       ($ThisLine =~ /^Listening for incoming TCP connection on \S+:\d+/) or
@@ -79,6 +86,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^MULTI: multi_init called/) or
       ($ThisLine =~ /^MULTI: multi_create_instance called/) or
       ($ThisLine =~ /^MULTI: primary virtual IP for/) or
+      ($ThisLine =~ /^MULTI: primary virtual IPv6 for/) or
       ($ThisLine =~ /^MULTI: TCP INIT maxclients=\d+ maxevents=\d+/) or
       ($ThisLine =~ /^MULTI: bad source address from client .*, packet dropped/) or
       ($ThisLine =~ /^MULTI_sva: pool returned IPv4=/) or
@@ -98,6 +106,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^send_push_reply/) or
       ($ThisLine =~ /^SENT CONTROL/) or
       ($ThisLine =~ /^SIGTERM\[hard,[^\]]*\] received, process exiting/) or
+      ($ThisLine =~ /^SIGTERM\[soft,[^\]]*\] received, client-instance exiting/) or
       ($ThisLine =~ /^SIGUSR1\[soft,(connection-reset|ping-restart)\] received, (process|client-instance) restarting/) or
       ($ThisLine =~ /Socket Buffers: R=\[[0-9]+->[0-9]+\] S=\[[0-9]+->[0-9]+\]/) or
       ($ThisLine =~ /^TCP\/UDP: Closing socket/) or
@@ -143,6 +152,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $MaxClients++;
    } elsif ($ThisLine =~ m/^OpenVPN [\d.]+ [\w-]+ [\[\]\w ]+ built on [\w]+ +[\d]+ [\d]+$/) {
       $VersionInfo{$ThisLine} = 1;
+   } elsif ($ThisLine =~ m/^library versions: /) {
+      $VersionInfo{$ThisLine} = 1;
    } elsif (my ($config, $peer, $port) = ($ThisLine =~ m/^\[([\S]+)\] Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)/)) {
       push (@{$Connections{$config}{$peer}}, $port) unless grep(/^$port$/,@{$Connections{$config}{$peer}});
    } elsif (my ($peer, $port) = ($ThisLine =~ m/^Peer Connection Initiated with [^\d]*([\d]+\.[\d]+\.[\d]+\.[\d]+)\:([\d]+)/)) {
@@ -151,7 +162,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Auth{$channel}{$dir}{"$bits $algo"}++;
    } elsif (my ($channel, $dir, $bits, $algo) = ($ThisLine =~ /^(Data Channel) (Encrypt|Decrypt): Using ([\d]+ bit) message hash '(\S+)' for HMAC authentication/)) {
       $Auth{$channel}{$dir}{"$bits $algo"}++;
-   } elsif (my ($channel, $proto, $cipher) = ($ThisLine =~ /^(Control Channel): (\w+), cipher (.+)/)) {
+   } elsif (my ($channel, $proto, $cipher) = ($ThisLine =~ /^(Control Channel): ([^,]+), cipher (.+)/)) {
       $Crypt{$channel}{$proto}{$cipher}++;
    } elsif (my ($channel, $dir, $algo, $bits) = ($ThisLine =~ /^(Data Channel) (Encrypt|Decrypt): Cipher '(\S+)' initialized with ([\d]+ bit) key/)) {
       $Crypt{$channel}{$dir}{"$bits $algo"}++;
