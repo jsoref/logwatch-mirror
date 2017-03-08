@@ -144,7 +144,7 @@
 # Added another blackhole line to catch 553 rejects with no relay tag -mgt
 #
 # Revision 1.53  2005/05/26 22:20:45  mike
-# Added blackholethreshold to supress very noisy blackhole lists -mgt
+# Added blackholethreshold to suppress very noisy blackhole lists -mgt
 #
 # Revision 1.52  2005/05/21 22:51:24  bjorn
 # Cleaned up code to print headers only when something to report.  Basic

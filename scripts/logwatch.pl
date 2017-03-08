@@ -92,7 +92,7 @@ $Config{'format'} = "text"; #8.0
 $Config{'encode'} = "none"; #8.0
 $Config{'hostformat'} = "none"; #8.0
 $Config{'html_wrap'} = 80;
-$Config{'supress_ignores'} = 0;
+$Config{'suppress_ignores'} = 0;
 $Config{'hostlimit'} = "";
 $Config{'appendvaradmtologdirs'} = 1;
 $Config{'appendvarlogtologdirs'} = 1;
@@ -1408,10 +1408,10 @@ sub parselogs {
 
          if ($has_output and $ServiceData{$Service}{'title'}) {
             if ( $Config{'format'} eq "html" ) {
-                if ( ($Ignored > 0) && ($Config{'supress_ignores'} == 0) ) {  &output( $index_par, "\n $Ignored Ignored Lines\n", "header"); };
+                if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) {  &output( $index_par, "\n $Ignored Ignored Lines\n", "header"); };
                 #&output( $index_par,  "\n <h3><font color=\"blue\">$ServiceData{$Service}{'title'} End </font></h3>\n", "header");
             } else {
-                if ( ($Ignored > 0) && ($Config{'supress_ignores'} == 0) ) { &output( $index_par, "\n $Ignored Ignored Lines\n", "line"); };
+                if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) { &output( $index_par, "\n $Ignored Ignored Lines\n", "line"); };
                 &output( $index_par,  "\n ---------------------- $ServiceData{$Service}{'title'} End ------------------------- \n\n", "line");
             }
             &output( $index_par, "\n", "stop");
