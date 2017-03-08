@@ -458,7 +458,7 @@ displayed at higher detail levels.  Here is a guide on how you should
 use the detail setting:
 
 0 (Low): Display only errors and security-related issues
-5 (Med): Display anything that a typical administator would be interested in
+5 (Med): Display anything that a typical administrator would be interested in
 10 (High): Display anything that a paranoid administrator would want to see
 
 In some cases, you can use a security setting higher than 10.  This would be
