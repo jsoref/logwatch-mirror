@@ -5257,7 +5257,7 @@ sub expand_bare_reject_limiters()
   # don't reorder the list of limiters.  This breaks --nodetail followed by a
   # bare reject such as --limit rejectrbl=10.  Reordering is no longer necessary
   # since process_limiters was instituted and using the special __none__ pseudo-
-  # limiter to indicate the position at which --nodefailt was found on the command
+  # limiter to indicate the position at which --nodetail was found on the command
   # line.
   # my ($limiter, @reject_limiters, @non_reject_limiters);
    my ($limiter, @new_list);
