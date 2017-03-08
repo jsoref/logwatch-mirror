@@ -20,7 +20,7 @@ use strict;
 ## copyright please contact logwatch-devel@lists.sourceforge.net.
 #########################################################
 
-# This feature concieved by mark@winksmith.com
+# This feature conceived by mark@winksmith.com
 my $hostname = $ENV{'LOGWATCH_ONLY_HOSTNAME'};
 
 #Clean hostname it could be a comma list from hostlimit
