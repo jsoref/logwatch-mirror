@@ -284,7 +284,7 @@ sub LookupIP {
 
    # for 99% of the uses of this function, assuming package 'main' would
    # be sufficient, but a good perl hacker designs so that the other 1%
-   # isn't in for a nasty suprise.
+   # isn't in for a nasty surprise.
    my $pkg = (caller)[0];
 
    if ($ENV{'LOGWATCH_NUMERIC'} == 1 )
