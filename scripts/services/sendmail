@@ -565,7 +565,7 @@ next unless $ThisLine;
       ( $ThisLine =~ /^STARTTLS: write error=syscall error \(-1\), errno=${\Errno::ECONNRESET}/ ) or
       # file=srvsmtp.c, LogLevel>5, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=server, error: accept failed=-1, reason=unknown, SSL_error=5, errno=${\Errno::ECONNRESET}, retry=/ ) or
-      # and yet another sympton of a connection shut down (EPIPE refers to "Broken pipe")
+      # and yet another symptom of a connection shut down (EPIPE refers to "Broken pipe")
       # file=srvsmtp.c, LogLevel>5, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=server, error: accept failed=-1, reason=unknown, SSL_error=5, errno=${\Errno::EPIPE}, retry=/ ) or
       # the following is a log message introduced in 8.13.6
