@@ -243,7 +243,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( $ThisLine =~ m/reload_interfaces: No subnets to listen to. Shutting down.../) {
       $SubnetFail{"No subnets to listen to. Shutting down."}++;
    } elsif ( $ThisLine =~ s/process_get_backup_list_request\([0-9]+\)  process_get_backup_list_request: (.*)/$1/) {
-      $GetBacupList{$ThisLine}++;
+      $GetBackupList{$ThisLine}++;
    } elsif ( ($Error) = ($ThisLine =~ /brl_init\([0-9]+\)  (Failed to open byte range locking database)$/)) {
       $LockDbError{$Error}++;
    } elsif ( ($Error) = ($ThisLine =~ /locking_init\([0-9]+\)  ERROR: (Failed to initialise locking database)$/)) {
@@ -445,10 +445,10 @@ if ($GetDomainMasterStatusFail > 0) {
 	print "\nFailed to get Domain Master node name: $GetDomainMasterStatusFail Time(s)\n";
 }
 
-if (keys %GetBacupList) {
+if (keys %GetBackupList) {
    print "\nBackup list requests:\n";
-   foreach $Request (sort {$a cmp $b} keys %GetBacupList) {
-      print "   $Request : $GetBacupList{$Request} Time(s)\n";
+   foreach $Request (sort {$a cmp $b} keys %GetBackupList) {
+      print "   $Request : $GetBackupList{$Request} Time(s)\n";
    }
 }
 
