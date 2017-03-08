@@ -636,7 +636,7 @@ sub get_options($) {
    my $pass_through = shift;
    #$SIG{__WARN__} = sub { print "*** $_[0]*** options error\n" };
    # ensure we're called after %Opts is initialized
-   die "get_options: program error: %Opts is emtpy" unless exists $Opts{'debug'};
+   die "get_options: program error: %Opts is empty" unless exists $Opts{'debug'};
 
    my $p = new Getopt::Long::Parser;
 
