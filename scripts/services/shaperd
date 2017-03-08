@@ -96,7 +96,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Delay) = ( $ThisLine =~ /^Decreasing delay to ([0-9]*) seconds$/) ) {
       $DecreasingDelay{$Delay}++;
       $DelayDecCount++;
-   } elsif ( $ThisLine =~ m/^It seems that iproute2 did'nt work correctly. Please upgrade your iproute2 and\/or kernel./) {
+   } elsif ( $ThisLine =~ m/^It seems that iproute2 didn't work correctly. Please upgrade your iproute2 and\/or kernel./) {
       $TooOldSoft++;
    } else {
       $OtherList{$ThisLine}++;
