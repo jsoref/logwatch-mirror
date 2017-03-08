@@ -246,7 +246,7 @@ if (keys %loginFailByAccount) {
 	printLevel2("Windows Failed Logins by Account, Host", \%loginFailByAccount);
 }
 if (keys %loginFailByHost) {
-	printLevel2("Windwos Failed Logins by Host, Account", \%loginFailByHost);
+	printLevel2("Windows Failed Logins by Host, Account", \%loginFailByHost);
 }
 
 if (keys %krbAuthFailByAccount) {
