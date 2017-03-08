@@ -2469,7 +2469,7 @@ sub postfix_policydweight($) {
       }
    }
    elsif ($line =~ /^err/) {
-      # coerrce policyd-weight err's into general warnings
+      # coerce policyd-weight err's into general warnings
       $Totals{'startuperror'}++;
       $Counts{'startuperror'}{'Service: policyd-weight'}{$line}++    if ($Logreporters::TreeData::Collecting{'startuperror'});
       return;
