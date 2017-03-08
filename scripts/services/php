@@ -46,7 +46,7 @@ my %month2num = ( Jan => 0, Feb => 1, Mar => 2, Apr => 3,
 		  Sep => 8, Oct => 9, Nov => 10, Dec => 11 );
 
 # array of message categories (we do not use a hash to keep the order)
-# first element: catorory name
+# first element: category name
 # second element: matching regexp ($1 should contain the message)
 # third element: anonymous hash ref (stores message  counts)
 my @message_categories = (['Fatal errors', qr/\] PHP Fatal error: (.*)$/o, {}],
