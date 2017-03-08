@@ -3269,7 +3269,7 @@ sys     0m3.005s
          $SizeByQid{$qid}          = $bytes;
          # ...but only when the smtpd "client=..." line has been seen too.
          # This under-counts when the smtpd "client=..." connection log entry and the
-         # qmgr "from=..." log entry span differnt periods (as fed to postfix-logwatch).
+         # qmgr "from=..." log entry span different periods (as fed to postfix-logwatch).
          next if (! exists $AcceptedByQid{$qid});
 
          $Totals{'bytesaccepted'} += $bytes;
