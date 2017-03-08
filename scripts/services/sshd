@@ -856,7 +856,7 @@ if (keys %ChownErr) {
 }
 
 if ( ($Detail == 7 && keys %Krb_relm > 1) || ($Detail > 8 && keys %Krb_relm) ){
-  print "\nSucessfull Kerberos Authentication from ",(scalar keys %Krb_relm)," relm:\n";
+  print "\nSuccessful Kerberos Authentication from ",(scalar keys %Krb_relm)," relm:\n";
   foreach my $relm (keys %Krb_relm) { 
     if($Detail > 9){
       print "   ",$relm,":\n";
