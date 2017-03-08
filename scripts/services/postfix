@@ -4610,7 +4610,7 @@ sub postfix_warning($) {
    } elsif ($warning =~ /^(Unable to look up \S+ host) (.+)$/) {
       #TDsd warning: Unable to look up MX host for example.com: Host not found
       #TDsd warning: Unable to look up MX host mail.example.com for Sender address from@example.com: hostname nor servname provided, or not known
-      #TDsd warning: Unable to look up NS host ns1.example.logal for Sender address bounce@example.local: No address associated with hostname
+      #TDsd warning: Unable to look up NS host ns1.example.local for Sender address bounce@example.local: No address associated with hostname
       $Totals{'dnserror'}++; return unless ($Collecting{'dnserror'});
 
       my ($problem,$target,$reason) = ($1, split(/: /,$2));
