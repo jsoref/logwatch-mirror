@@ -1089,7 +1089,7 @@ sub ReadConfigFile {
 sub Usage () {
    # Show usage for this program
    print "\nUsage: $0 [--detail <level>] [--logfile <name>] [--output <output_type>]\n" .
-      "   [--format <format_type>] [--encode <enconding>] [--numeric]\n" .
+      "   [--format <format_type>] [--encode <encoding>] [--numeric]\n" .
       "   [--mailto <addr>] [--archives] [--range <range>] [--debug <level>]\n" .
       "   [--filename <filename>] [--help|--usage] [--version] [--service <name>]\n" .
       "   [--hostformat <host_format type>] [--hostlimit <host1,host2>] [--html_wrap <num_characters>]\n\n";
@@ -1099,7 +1099,7 @@ sub Usage () {
    print "--service <name>: *Name of a service definition to report on.\n";
    print "--output <output type>: Report Output - stdout [default], mail, file.\n"; #8.0
    print "--format <formatting>: Report Format - text [default], html.\n"; #8.0
-   print "--encode <encoding>: Enconding to use - none [default], base64.\n"; #8.0
+   print "--encode <encoding>: Encoding to use - none [default], base64.\n"; #8.0
    print "--mailto <addr>: Mail report to <addr>.\n";
    print "--archives: Use archived log files too.\n";
    print "--filename <filename>: Used to specify they filename to save to. --filename <filename> [Forces output to file].\n";
