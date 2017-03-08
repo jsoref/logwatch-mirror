@@ -105,7 +105,7 @@ if (keys %PackageRemovedFromProfile) {
 }
 
 if ($RHNRegistration) {
-   print "\nSystem registred to rhn " . $RHNRegistration . " time(s)\n";
+   print "\nSystem registered to rhn " . $RHNRegistration . " time(s)\n";
 }
 
 if ($#OtherList >= 0) {
