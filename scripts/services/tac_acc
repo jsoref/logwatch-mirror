@@ -94,7 +94,7 @@ if ((keys %isdn) and ($Detail >= 5)) {
    foreach my $host ( sort keys %isdn ) {
       print "\nISDN on $host:\n";
       foreach my $number ( sort keys %{$isdn{$host}} ) {
-         print "Number: $number dailed total $isdn{$host}->{$number}->{'seconds'} seconds";
+         print "Number: $number dialed total $isdn{$host}->{$number}->{'seconds'} seconds";
          if ($isdn{$host}->{$number}->{'start'}) {
            print " started $isdn{$host}->{$number}->{'start'} times\n";
          } else {
