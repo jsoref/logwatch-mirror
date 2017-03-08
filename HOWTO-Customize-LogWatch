@@ -474,7 +474,7 @@ The way to call commands is:
 
 Logwatch will search for the command in /usr/share/logwatch/scripts/shared/ and
 /etc/logwatch/scripts/shared/. The command name is case insensitiv and can be
-used in logfile and service group configuratin files. Everything after the
+used in logfile and service group configuration files. Everything after the
 equal sign will be passed as arguments to the command.
 The following shared scripts are shipped with logwatch (they don't accept any
 arguments unless otherwise mentioned):
