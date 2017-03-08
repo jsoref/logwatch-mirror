@@ -156,7 +156,7 @@ while (defined($ThisLine = <STDIN>)) {
       $MailScan_Spam_Virus++;
       $Spam_Virus_Found{$1}++;
    } elsif ( $ThisLine =~ m/infected message .+ came from (.*)/i) {
-      $MailScan_VirualHost = $MailScan_VirualHost + 1;
+      $MailScan_VirtualHost = $MailScan_VirtualHost + 1;
       $Hostlist{$1}++;
    } elsif ( $ThisLine =~ m/Other Checks: Found ([0-9]+) problems/) {
       $MailScan_Other = $MailScan_Other + $1;
@@ -500,7 +500,7 @@ if (keys %Spam_Virus_Found) {
 }
 
 if (keys %Hostlist) {
-   print "\nVirus Sender Report: (Total Seen = $MailScan_VirualHost)\n";
+   print "\nVirus Sender Report: (Total Seen = $MailScan_VirtualHost)\n";
    foreach $ThisOne (sort keys %Hostlist) {
       print '    ' . $ThisOne . ': ' . $Hostlist{$ThisOne} . " Time(s)\n";
    }
