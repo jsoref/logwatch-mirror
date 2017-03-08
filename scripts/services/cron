@@ -270,7 +270,7 @@ if ((%INCRONDSTCr) || (%INCRONDUTCr)) {
     print "    system table " . $key . " created " . $INCRONDSTCr{$key} . ": time(s)\n";
   }
   for $key (keys %INCRONDUTCr) {
-    print "    table for user " . $key . " ceated " . $INCRONDUTCr{$key}. ": time(s)\n";
+    print "    table for user " . $key . " created " . $INCRONDUTCr{$key}. ": time(s)\n";
   }
 }
 
