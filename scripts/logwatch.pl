@@ -147,7 +147,7 @@ if ($Config{'debug'} > 8) {
 # For each of the configuration sets (logwatch.conf here, and
 # logfiles,and services later), we do the following:
 #  1. read the different configuration files
-#  2. for each parameter, if it is cummulative, check if
+#  2. for each parameter, if it is cumulative, check if
 #     it the special case empty string
 #  3. check to see if duplicate
 

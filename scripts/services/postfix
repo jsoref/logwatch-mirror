@@ -1116,7 +1116,7 @@ sub bycount {
 #           TOTAL:     an integer: which is the subtotal of this item's children
 #           LEVEL:     an integer > 0: representing this entry's level in the tree
 #           CHILDREF:  a listref: references a list consisting of this node's children
-#    Total: The cummulative total of items found for a given invocation
+#    Total: The cumulative total of items found for a given invocation
 #
 # Use the special key variable $END_KEY, which is "\a\a" (two ASCII bell's) to end a,
 # nested hash early, or the empty string '' may be used as the last key.

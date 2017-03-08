@@ -1097,7 +1097,7 @@ sub bycount {
 #           TOTAL:     an integer: which is the subtotal of this item's children
 #           LEVEL:     an integer > 0: representing this entry's level in the tree
 #           CHILDREF:  a listref: references a list consisting of this node's children
-#    Total: The cummulative total of items found for a given invocation
+#    Total: The cumulative total of items found for a given invocation
 #
 # Use the special key variable $END_KEY, which is "\a\a" (two ASCII bell's) to end a,
 # nested hash early, or the empty string '' may be used as the last key.
@@ -3677,7 +3677,7 @@ sub printTimingsReport($$$$) {
    map {$time_total_actual += $_} @$totalsref;
 
    # cutoff value used to limit the number of rows of output
-   #   positive cutoff is a percentage of cummulative time
+   #   positive cutoff is a percentage of cumulative time
    #   negative cutoff limits number of rows
    if ($cutoff >= 0) {
       $max_pcnt = $cutoff != 100 ? $cutoff : 150;  # 150% avoids roundoff errors
