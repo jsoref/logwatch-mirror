@@ -2618,7 +2618,7 @@ sub milter_common;
 my @ignore_list = ();
 
 # The Sections table drives Summary and Detail reports.  For each entry in the
-# table, if there is data avaialable, a line will be output in the Summary report.
+# table, if there is data available, a line will be output in the Summary report.
 # Additionally, a sub-section will be output in the Detail report if both the
 # global --detail, and the section's limiter variable, are sufficiently high (a
 # non-existent section limiter variable is considered to be sufficiently high).
