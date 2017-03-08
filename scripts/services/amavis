@@ -996,7 +996,7 @@ which would be interpreted as follows:
 
 a = show level a detail
 b = show at most b items at this level
-c = minimun count that will be shown
+c = minimum count that will be shown
 =cut
 
 sub printTree($ $ $ $ $) {
