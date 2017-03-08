@@ -309,14 +309,14 @@ if (keys %Logoff and ($Detail >= 5)) {
 }
 
 if (keys %WorkstationLocked and ($Detail >= 10)) {
-   print "\nWorkstaion Locked\n";
+   print "\nWorkstation Locked\n";
    foreach my $User (sort keys %WorkstationLocked) {
       print "    $User : $WorkstationLocked{$User} Times\n";
    }
 }
 
 if (keys %WorkstationUnlocked and ($Detail >= 10)) {
-   print "\nWorkstaion Unlocked\n";
+   print "\nWorkstation Unlocked\n";
    foreach my $User (sort keys %WorkstationUnlocked) {
       print "    $User : $WorkstationUnlocked{$User} Times\n";
    }
