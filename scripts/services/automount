@@ -44,7 +44,7 @@ while (defined($ThisLine = <STDIN>)) {
    }
    elsif ( ($ThisMount) = ($ThisLine =~ /^attempting to mount entry (.*)$/) ) {
       # store Mount
-      #$Mount = $ThisMount; somthing is wrong with this -mgt
+      #$Mount = $ThisMount; something is wrong with this -mgt
       $MountAttempts++;
    }
    elsif ($ThisLine =~ /^mount\(nfs\): nfs: mount failure .*:.* on (.*)$/) {
