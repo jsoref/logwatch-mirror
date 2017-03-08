@@ -337,7 +337,7 @@ look at the current logfile group config files for examples.
 Finally, if the directory /usr/share/logwatch/scripts/logfiles/<logfile_group_name>/
 exists, any scripts in that directory will be executed.  All of these
 scripts take the contents of all the specified logfiles in through STDIN and
-output the modified logfile trought STDOUT.
+output the modified logfile through STDOUT.
 
 
 B. Service Filter Configuration File
