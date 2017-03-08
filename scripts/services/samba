@@ -37,7 +37,7 @@
 # Removed ignore for connect -mgt
 #
 # Revision 1.7  2005/02/21 03:28:44  mgt
-# Added patch from Anssi Kolehmained for host connections -mgt
+# Added patch from Anssi Kolehmainen for host connections -mgt
 #
 # Revision 1.6  2005/02/16 00:43:28  mgt
 # Added #vi tag to everything, updated ignore.conf with comments, added emerge and netopia to the tree from Laurent -mgt
