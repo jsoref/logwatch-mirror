@@ -1201,7 +1201,7 @@ if (keys %SMTPserverHELO or keys %SMTPserverEval) {
          print_doubleline();
       }
    }
-## add connecitons
+## add connections
    print_asterisks();
    print_hash(\%SMTPserverFROM, "Envelope senders");
    print_hash(\%SMTPserverRCPT, "Recipients");
