@@ -141,7 +141,7 @@ if (keys %SSLInit and $Detail >= 7) {
 }
 
 if (keys %NSSCiphers and $Detail >= 7) {
-   print "\nNSS Cipers:\n";
+   print "\nNSS Ciphers:\n";
    foreach my $Cipher (sort {$a cmp $b} keys %NSSCiphers) {
       print "    $Cipher: $NSSCiphers{$Cipher}\n";
    }
