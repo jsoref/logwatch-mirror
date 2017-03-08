@@ -177,7 +177,7 @@ while (defined($ThisLine = <STDIN>)) {
       #$MboxSize{$User} = $LeftSize;
    } elsif ( ($Host,$Iface) = ( $ThisLine =~ /^listeners_post_select: client \[\d\](.*)\/.*: connected to local address (.*:\d+)$/ ) ) {
       $Connection{$Host}++;
-      $Conect{$Iface}{$Host}++;
+      $Connect{$Iface}{$Host}++;
    } elsif ( ($Listen) = ( $ThisLine =~ /^parse_listeners: listening on address (.*)$/ ) ) {
       $ListenOn{$Listen}++;
    } elsif ($ThisLine =~ /^net_loop: tpop3d version \d+\.\d+\.\d+ successfully started$/ ) {
@@ -376,12 +376,12 @@ if ( ( $Detail >= 5 ) and ( $WriteSocketError > 0 ) ) {
    print "Socket Write Error $WriteSocketError Time(s)\n";
 }
 
-if (keys %Conect) {
+if (keys %Connect) {
    print "\nConnection to interface:\n";
-   foreach $Iface (sort {$a cmp $b} keys %Conect) {
+   foreach $Iface (sort {$a cmp $b} keys %Connect) {
       print "   $Iface:\n";
-      foreach $Host (sort {$a cmp $b} keys %{$Conect{$Iface}}) {
-         print "      $Host: $Conect{$Iface}{$Host} Time(s)\n";
+      foreach $Host (sort {$a cmp $b} keys %{$Connect{$Iface}}) {
+         print "      $Host: $Connect{$Iface}{$Host} Time(s)\n";
       }
    }
 }
