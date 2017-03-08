@@ -80,7 +80,7 @@ if (keys %Rejected) {
 }
 
 if (keys %NotFound) {
-   print "\nAttemts to mount nonexisting files or directories:\n";
+   print "\nAttempts to mount nonexisting files or directories:\n";
    foreach $ThisOne (keys %NotFound) {
       print "   " . $ThisOne .":" . $NotFound{$ThisOne} . " Time(s)\n";
    }
