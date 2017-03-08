@@ -3692,7 +3692,7 @@ for my $code (@RejectKeys) {
 $Totals{'totalacceptplusreject'} = $Totals{'msgsaccepted'} + $Totals{'totalrejects'};
 
 # Print the Summary report if any key has non-zero data.
-# Note: must explicitely check for any non-zero data,
+# Note: must explicitly check for any non-zero data,
 # as Totals always has some keys extant.
 #
 if ($Opts{'summary'}) {

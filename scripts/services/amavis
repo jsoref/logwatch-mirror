@@ -3345,7 +3345,7 @@ $Totals{'totalmsgs'} += $Totals{$_} foreach (
    qw(totalmalware totalbanned totalunchecked totalspam totalham totalother));
 
 # Print the summary report if any key has non-zero data.
-# Note: must explicitely check for any non-zero data,
+# Note: must explicitly check for any non-zero data,
 # as Totals always has some keys extant.
 #
 if ($Opts{'summary'}) {

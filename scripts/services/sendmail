@@ -1354,7 +1354,7 @@ if (($SendmailStarts or $BytesTransferred or $MsgsSent or $AddrRcpts) and
       print "\n\nSendmail was started $SendmailStarts time(s)";
    }
    printf("\n\nMessages To Recipients:%11d", $MsgsSent);
-   # Each explicitely addressed recipient in an email is counted as an
+   # Each explicitly addressed recipient in an email is counted as an
    # "Addressed Recipient"
    printf("\nAddressed Recipients:%13d", $AddrRcpts);
    printf("\nBytes Transferred:%16d", $BytesTransferred);
