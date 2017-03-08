@@ -2687,7 +2687,7 @@ while (<>) {
    elsif ($p1 =~ /^mangling (.*)$/) {
       $p1 = $1;
       if ($p1 =~ /^by (.+?) failed: (.+?), mail will pass unmodified$/) {
-         #TD mangling by altermine failed: SomeText, mail will pass unmodified
+         #TD mangling by altermime failed: SomeText, mail will pass unmodified
          $Totals{'defangerror'}++;        next unless ($Collecting{'defangerror'});
          $Counts{'defangerror'}{$1}{$2}++;
       }
