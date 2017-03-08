@@ -63,7 +63,7 @@ while(<>) {
     my $line = $_;
     # skipping messages that are not within the requested range
     # the last part of the regex matches optionally occurring specification
-    # of timezones, either in Continent/City or abbrevations like UTC
+    # of timezones, either in Continent/City or abbreviations like UTC
     next unless $line =~ /^\[($filter)(?: \w+(?:\/\w+)?)?\]/o;
     $1 =~ /(\d+)-(\w+)-(\d+) (\d+):(\d+):(\d+)/;
     my $time;
