@@ -164,8 +164,8 @@ if ( ( $Detail >= 5 ) and (keys %Connection)) {
       $CountSpaceLength = 12 - $CountLength;
       $SSLLength = length("$SSL");
       $SSLSpaceLength = 9 - $SSLLength;
-      $TotalLenght = length("$Total");
-      $TotalSpaceLength = 10 - $TotalLenght;
+      $TotalLength = length("$Total");
+      $TotalSpaceLength = 10 - $TotalLength;
       print "\n" ." " x $HostSpaceLength . $Host . " |" . " " x $CountSpaceLength .  $Conns .
             " |" . " " x $SSLSpaceLength . $SSL . " |" . " " x $TotalSpaceLength . $Total;
       $NonSSLCount += $Conns;
