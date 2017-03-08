@@ -4,7 +4,7 @@
 #
 #  Barracuda Spam Firewall parser
 #  Written by Hugo van der Kooij <hugo@vanderkooij.org> (HvdK)
-#  Based on existing code of logwatch and the docuemntation on:
+#  Based on existing code of logwatch and the documentation on:
 #  http://www.barracudanetworks.com/ns/downloads/BarracudaSyslog.pdf
 #
 # Revision 0.9  2007/08/27 HvdK
