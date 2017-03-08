@@ -2575,7 +2575,7 @@ Usage: $progname [ ARGUMENTS ] [logfile ...]
                                           to group rejects to R1, [R2 ...],
                                           where patterns are [45][.0-9][.0-9]
                                           or "Warn" (default: 5.. 4.. Warn)
-   Supplimental reports
+   Supplemental reports
    --[no]delays                           [do not] show msg delays percentiles report
    --delays_percentiles "P1 [P2 ...]"     set delays report percentiles to
                                           P1 [P2 ...] (range: 0...100)
@@ -5222,7 +5222,7 @@ sub init_defaults() {
       # these take affect if no env present (eg. nothing in conf file)
       # 0 to 4 nodelays
 
-      if ($Opts{'detail'} < 5) {          # detail 0 to 4, disable all supplimental reports
+      if ($Opts{'detail'} < 5) {          # detail 0 to 4, disable all supplemental reports
          $Opts{'delays'}            = 0;
          $Opts{'postgrey_delays'}   = 0;
       }
