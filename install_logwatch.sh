@@ -234,7 +234,7 @@ touch $CONFIGDIR/conf/override.conf
 
 #TEMP
 #Using sanity check incase someone uses /tmp.
-#The install would destory the perms on /tmp
+#The install would destroy the perms on /tmp
 if [ ! -d $TEMPDIR ]; then
    #Should this be 0700 -d $TEMPDIR ??
    install -m 0755 -d $TEMPDIR
