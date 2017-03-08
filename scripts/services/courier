@@ -386,7 +386,7 @@ while (defined($ThisLine = <STDIN>)) {
    chomp $ThisLine;
    my $Size2 = 0;
    my $Size  = 0;
-   #TODO: Make this more accurrate (expand to \d+ times)
+   #TODO: Make this more accurate (expand to \d+ times)
    if ( $ThisLine =~ /^... .. ..:..:.. \S+ last message repeated \d+ times/ ) {
       $ThisLine = $LastLine;
    } else {
