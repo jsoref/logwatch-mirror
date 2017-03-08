@@ -369,7 +369,7 @@ if (keys %RefConnect) {
 if (keys %CrFile) {
   print "\nCreated files\n";
   foreach $Line (keys %CrFile) {
-     print "   file $Line did not exist. File succesfully created: $CrFile{$Line} Time(s)\n";
+     print "   file $Line did not exist. File successfully created: $CrFile{$Line} Time(s)\n";
   }
 }
 

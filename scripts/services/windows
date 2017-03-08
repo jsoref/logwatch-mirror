@@ -17,7 +17,7 @@
 ##########################################################################
 # This is a logwatch script that looks at a log file composed of windows auth
 # security logs counts the number of times a user failed to login and
-# optionally the number times they succesfully logged in and some other account
+# optionally the number times they successfully logged in and some other account
 # creation/modification audits.
 #
 # See the following sites for event id documentation:
