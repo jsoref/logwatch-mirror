@@ -21,14 +21,17 @@
 #########################################################
 
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Reason;
+my %DaemonActions;
 
 while (defined($ThisLine = <STDIN>)) {
    chomp($ThisLine);
-   if ($ThisLine =~ /^.*] start$/) {
-      $Starts++;
+   if (($Reason) = ($ThisLine =~ /^ ?\[origin software=\"rsyslogd\" .*\] (.*)/)) {
+      $DaemonActions{$Reason}++;
    }
-   elsif ($ThisLine =~ /^.*rsyslogd was HUPed$/) {
-      $HUPs++;
+   elsif
+      ($ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/) {
+      # Ignore these lines
    }
    else {
       # Report any unmatched entries...
@@ -36,12 +39,11 @@ while (defined($ThisLine = <STDIN>)) {
    }
 }
 
-if ($Starts and ($Detail >=10) ) {
-    print "\nrsyslogd started " . $Starts . " Time(s)\n";
-}
-
-if ($HUPs and ($Detail >=10) ) {
-    print "\nrsyslogd closed files " . $HUPs. " Time(s)\n";
+if (($Detail >=10) and (keys %DaemonActions) ) {
+    print "Rsyslogd Actions:\n";
+    foreach $Reason (sort keys %DaemonActions) {
+        print "   $Reason: $DaemonActions{$Reason} Times\n";
+    }
 }
 
 if (keys %OtherList) {
