@@ -810,7 +810,7 @@ if (keys %RSPSlaveDown) {
 }
 
 if (keys %RSPSlaveChange) {
-   print "\nHigh-Availability Redundancy Feature, Card is manually reset, Slave is changinf state on device :\n";
+   print "\nHigh-Availability Redundancy Feature, Card is manually reset, Slave is changing state on device :\n";
    foreach $ThisOne (sort keys %RSPSlaveChange) {
       print "   " . $ThisOne . ":\n";
       foreach $ThatOne (sort keys %{$RSPSlaveChange{$ThisOne}}) {
@@ -970,7 +970,7 @@ if (keys %SYSModuleReset) {
 }
 
 if (keys %SYSWaitOnline) {
-   print "\nSupervisor engine in the process on beeing online on device :\n";
+   print "\nSupervisor engine in the process on being online on device :\n";
    foreach $ThisOne (sort keys %SYSWaitOnline) {
       print "   " . $ThisOne . ":\n";
       foreach $ThatOne (sort keys %{$SYSWaitOnline{$ThisOne}}) {

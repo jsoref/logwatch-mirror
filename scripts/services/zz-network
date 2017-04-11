@@ -141,7 +141,7 @@ sub routingState ()
                 	while (<FILE1>)
                 	{
                          if (/ipv(\d+)-forwarding .*default=(\S+) current=(\S+)/) {
-			     print "IPv$1 fowarding is $3 (normal state is $2)\n";
+			     print "IPv$1 forwarding is $3 (normal state is $2)\n";
 			 }
                 	}
                 	close(FILE1) || die "can't close $!";

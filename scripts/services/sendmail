@@ -144,7 +144,7 @@
 # Added another blackhole line to catch 553 rejects with no relay tag -mgt
 #
 # Revision 1.53  2005/05/26 22:20:45  mike
-# Added blackholethreshold to supress very noisy blackhole lists -mgt
+# Added blackholethreshold to suppress very noisy blackhole lists -mgt
 #
 # Revision 1.52  2005/05/21 22:51:24  bjorn
 # Cleaned up code to print headers only when something to report.  Basic
@@ -565,7 +565,7 @@ next unless $ThisLine;
       ( $ThisLine =~ /^STARTTLS: write error=syscall error \(-1\), errno=${\Errno::ECONNRESET}/ ) or
       # file=srvsmtp.c, LogLevel>5, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=server, error: accept failed=-1, reason=unknown, SSL_error=5, errno=${\Errno::ECONNRESET}, retry=/ ) or
-      # and yet another sympton of a connection shut down (EPIPE refers to "Broken pipe")
+      # and yet another symptom of a connection shut down (EPIPE refers to "Broken pipe")
       # file=srvsmtp.c, LogLevel>5, LOG_WARNING
       ( $ThisLine =~ /^STARTTLS=server, error: accept failed=-1, reason=unknown, SSL_error=5, errno=${\Errno::EPIPE}, retry=/ ) or
       # the following is a log message introduced in 8.13.6
@@ -1354,7 +1354,7 @@ if (($SendmailStarts or $BytesTransferred or $MsgsSent or $AddrRcpts) and
       print "\n\nSendmail was started $SendmailStarts time(s)";
    }
    printf("\n\nMessages To Recipients:%11d", $MsgsSent);
-   # Each explicitely addressed recipient in an email is counted as an
+   # Each explicitly addressed recipient in an email is counted as an
    # "Addressed Recipient"
    printf("\nAddressed Recipients:%13d", $AddrRcpts);
    printf("\nBytes Transferred:%16d", $BytesTransferred);

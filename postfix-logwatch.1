@@ -193,7 +193,7 @@ options may re-enable one or more sections to create specific reports.
 .IP "\fB--[no]summary\fR"
 .IP "\fB--show_summary\fR"
 Enables (disables) displaying of the the \fBSummary\fR section of the report.
-The variable Posfix_Show_Summary in used in a configuration file.
+The variable postfix_Show_Summary in used in a configuration file.
 .IP "\fB--recipient_delimiter \fIdelimiter\fR"
 Split email delivery addresses using the recipient delimiter character \fIdelimiter\fR.
 This should generally match
@@ -201,7 +201,7 @@ the \fBrecipient_delimiter\fR specified in the Postfix parameter
 file \fBmain.cf\fR, or the default value indicated in
 \fBpostconf -d recipient_delimiter\fR.
 This is very useful for obtaining per-alias statistics
-when a recipient delimeter is used for mail delivery.
+when a recipient delimiter is used for mail delivery.
 .IP "\fB--reject_reply_patterns \fIr1 [r2 ...]\fR"
 Specifies the list of reject reply patterns used to create reject groups.
 Each entry in the list \fIr1 [r2 ...]\fR must be either a three character
@@ -340,7 +340,7 @@ Number of messages handed-off to a delivery agent such as local or virtual.
 .IP "\fBDiscarded"
 Messages that triggered access, header_checks or body_checks DISCARD action.
 .IP "\fBDNSError"
-Any one of several errors encounted during DNS lookups.
+Any one of several errors encountered during DNS lookups.
 .IP "\fBEnvelopeSenderDomains"
 List of sending domains.  (2 levels: envelope sender domain, localpart)
 .IP "\fBEnvelopeSenders"
@@ -472,7 +472,7 @@ Connections to \fBsmtpd\fR that timed out.
 .IP "\fBTlsClientConnect"
 TLS client connections.
 .IP "\fBTlsOffered"
-TLS communication offerred.
+TLS communication offered.
 .IP "\fBTlsServerConnect"
 TLS server connections.
 .IP "\fBTlsUnverified"

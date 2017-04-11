@@ -50,8 +50,8 @@ $Detail       = $ENV{'LOGWATCH_DETAIL_LEVEL'}  || 0;
 $LvlBadFormat    = $ENV{'exim_misformat'}     || 0;
 $LvlRestarts     = $ENV{'exim_restart'}       || 5;
 $LvlVirus        = $ENV{'exim_virus'}         || 0;
-$LvlProtocl      = $ENV{'exim_protocol'}      || 0;
-$LvlProtoclLines = $ENV{'exim_protocol_lines'}|| 5;
+$LvlProtocol      = $ENV{'exim_protocol'}      || 0;
+$LvlProtocolLines = $ENV{'exim_protocol_lines'}|| 5;
 $LvlDontAccept   = $ENV{'exim_dontaccept'}    || 0;
 $LvlDontAcceptLines = $ENV{'exim_dontaccept_lines'}    || 0;
 $LvlVerify       = $ENV{'exim_verify'}        || 0;
@@ -508,7 +508,7 @@ if ($Detail >= $LvlDontAccept) {
    }
 }
 
-if ($Detail >= $LvlProtocl) {
+if ($Detail >= $LvlProtocol) {
 # Print Protocol Violations
    if (%Proto) {
       my (%spam);
@@ -623,7 +623,7 @@ if ($Detail >= $LvlProtocl) {
          }
       }
       foreach $ThisOne (sort(keys %spam)) {
-         if ($Detail >= $LvlProtoclLines) {
+         if ($Detail >= $LvlProtocolLines) {
             print " $ThisOne:\n";
             foreach $aa ( sort( split /,/, $spam{$ThisOne} )) {
                print "    $aa\n";
@@ -647,7 +647,7 @@ if ($Detail >= $LvlProtocl) {
          print "\n--- Failed Reverse Lookups \n";
          print "--- $ReverseLookup  Time(s)\n\n";
 
-         if ($Detail >= $LvlProtoclLines) {
+         if ($Detail >= $LvlProtocolLines) {
             foreach $ThisOne (@ReverseLookupH) {
                print "   $ThisOne\n";
             }
@@ -658,7 +658,7 @@ if ($Detail >= $LvlProtocl) {
          print "\n--- Failed Reverse Lookups \n";
          print "--- (eg. spam try): $Lookup  Time(s)\n\n";
 
-         if ($Detail >= $LvlProtoclLines) {
+         if ($Detail >= $LvlProtocolLines) {
             foreach $ThisOne (@LookupH) {
                print "$ThisOne\n";
             }

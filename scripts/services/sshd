@@ -207,6 +207,7 @@ my %RootLogin = ();
 my %PamReleaseFail = ();
 my %PamError = ();
 my %PamChroot = ();
+my %PamDeny = ();
 my %ShadowInfo = ();
 my %TTYModesFail = ();
 my %LoginLock = ();
@@ -303,7 +304,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Disconnected from [\da-fA-F.:]* port \d*/ )
    ) {
       # Ignore these
-   } elsif ( my ($Method,$User,$Host,$Port,$Key) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+) port (\d+) ssh[12](?:: (\w+))?/) ) {
+   } elsif ( my ($Method,$User,$Host,$Port,$Key) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+)(?:%\w+)? port (\d+) ssh[12](?:: (.+))?/) ) {
       if ($Debug >= 5) {
          print STDERR "DEBUG: Found -$User logged in from $Host using $Method ($Key)\n";
       }
@@ -442,6 +443,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $NoShellUsers{$User}++;
    } elsif ( ($User) = ($ThisLine =~ /^User ([^ ]*) not allowed because shell (\S+) is not executable/)) {
       $ShellNotExecutableUsers{$User}++;
+   } elsif ( ($User) = ($ThisLine =~ /^fatal: Access denied for user ([^ ]+) by PAM account configuration \[preauth\]/)) {
+      $PamDeny{$User}++;
    } elsif ( my ($IP) = ($ThisLine =~ /^scanned from ([^ ]*)/) ) {
       push @Scanned, $IP;
    } elsif ( my ($Line,$Option) = ($ThisLine =~ /^rexec line (\d+): Deprecated option (.*)$/)) {
@@ -467,7 +470,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ChmodErr{"$File,$Perm,$Why"}++;
    } elsif (my ($File,$From,$To,$Why) = ($ThisLine =~ /error: chown (.*) (.*) (.*) failed: (.*)/)) {
       $ChownErr{"$File,$From,$To,$Why"}++;
-   } elsif (my ($user,$relm) = ($ThisLine =~ /Authorized to ([^ ]+), krb5 principal \1@([^ ]+) \(krb5_kuserok\)/)) {
+   } elsif (my ($user,$relm) = ($ThisLine =~ /Authorized to ([^ ]+), krb5 principal \1@([^ ]+) \((?:krb5_kuserok|ssh_gssapi_krb5_cmdok)\)/)) {
       $Krb_relm{$relm}{$user}++;  
    } else {
       # Report any unmatched entries...
@@ -669,6 +672,13 @@ if (keys %DenyGroups) {
    }
 }
 
+if (keys %PamDeny) {
+   print "\nLogin attempted when denied by PAM configuration:\n";
+   foreach my $User (sort {$a cmp $b} keys %PamDeny) {
+      print "   $User : $PamDeny{$User} Time(s)\n";
+   }
+}
+
 if (keys %NoGroups) {
    print "\nLogin attempted when user is in no group:\n";
    foreach my $User (sort {$a cmp $b} keys %NoGroups) {
@@ -856,7 +866,7 @@ if (keys %ChownErr) {
 }
 
 if ( ($Detail == 7 && keys %Krb_relm > 1) || ($Detail > 8 && keys %Krb_relm) ){
-  print "\nSucessfull Kerberos Authentication from ",(scalar keys %Krb_relm)," relm:\n";
+  print "\nSuccessful Kerberos Authentication from ",(scalar keys %Krb_relm)," relm:\n";
   foreach my $relm (keys %Krb_relm) { 
     if($Detail > 9){
       print "   ",$relm,":\n";

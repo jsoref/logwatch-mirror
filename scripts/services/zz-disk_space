@@ -29,7 +29,7 @@ my $home_dir = $ENV{'home_dir'} || 0;
 my $show_mail_dir_sizes = $ENV{'show_mail_dir_sizes'} || 0;
 my $mail_dir = $ENV{'mail_dir'} || 0;
 my $show_disk_usage = $ENV{'show_disk_usage'} || 0;
-my $diskfull_threshhold = $ENV{'diskfull_threshold'} || 90;
+my $diskfull_threshold = $ENV{'diskfull_threshold'} || 90;
 my $diskfull_exclude_dirs = $ENV{'diskfull_exclude_dirs'} || '$';
 my $local_disks_only = $ENV{'local_disks_only'} || 0;
 
@@ -133,7 +133,7 @@ sub DiskFull {
 		my @fields = split(' ', $row);
 		my $use = $fields[4];
 		$use =~ s/%//;
-		if (($use > $diskfull_threshhold) &&
+		if (($use > $diskfull_threshold) &&
                     ($fields[0] !~ /\/dev\/scd/ ) &&
                     ($fields[0] !~ /\/dev\/sr/ ) &&
                     ($fields[0] !~ /\/dev\/loop./) &&
@@ -204,7 +204,7 @@ if (($Detail > 10) || ($show_mail_dir_sizes == 1)) { #set in zz-disk_space.conf 
 	MailDirectorySizes($mail_dir);
 }
 
-if ($diskfull_threshhold > 0) {
+if ($diskfull_threshold > 0) {
 	DiskFull();
 }
 

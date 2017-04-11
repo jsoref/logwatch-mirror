@@ -284,7 +284,7 @@ sub LookupIP {
 
    # for 99% of the uses of this function, assuming package 'main' would
    # be sufficient, but a good perl hacker designs so that the other 1%
-   # isn't in for a nasty suprise.
+   # isn't in for a nasty surprise.
    my $pkg = (caller)[0];
 
    if ($ENV{'LOGWATCH_NUMERIC'} == 1 )
@@ -409,7 +409,7 @@ Examples:
 (The last entry might be used by someone debugging a log or filter.)
 
 A caution about efficiency: a range of \"yesterday for those hours\"
-will search for log entries for the last 24 hours, and is innefficient
+will search for log entries for the last 24 hours, and is inefficient
 because it searches for individual matches for each hour.  A range of
 \"yesterday\" will search for log entries for the previous day, and
 it searches for a single date match.

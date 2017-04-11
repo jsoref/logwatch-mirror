@@ -135,7 +135,7 @@
 # More init corrections -mgt
 #
 # Revision 1.11  2005/02/13 02:27:02  mgt
-# fixed uninitalized value -mgt
+# fixed uninitialized value -mgt
 #
 # Revision 1.10  2004/10/15 19:24:07  mgt
 #  added per service flooring -mgt

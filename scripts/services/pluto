@@ -46,7 +46,7 @@
 # Please CC suggestions to mcr@freeswan.org and/or design@lists.freeswan.org
 
 # the vendorID hash maps vendor IDs to products. VendorIDs are hashs of
-# internal stuff from each vendor. Grow this table as you encouter new
+# internal stuff from each vendor. Grow this table as you encounter new
 # products.
 
 #######################################################

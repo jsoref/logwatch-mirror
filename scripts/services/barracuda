@@ -4,7 +4,7 @@
 #
 #  Barracuda Spam Firewall parser
 #  Written by Hugo van der Kooij <hugo@vanderkooij.org> (HvdK)
-#  Based on existing code of logwatch and the docuemntation on:
+#  Based on existing code of logwatch and the documentation on:
 #  http://www.barracudanetworks.com/ns/downloads/BarracudaSyslog.pdf
 #
 # Revision 0.9  2007/08/27 HvdK
@@ -80,7 +80,7 @@ $Reason[21] = "Bad Address Syntax";
 $Reason[22] = "RCPT TO Syntax Error";
 $Reason[23] = "Send EHLO/HELO First";
 $Reason[24] = "Need MAIL Command";
-$Reason[25] = "Nested MAIL Comand";
+$Reason[25] = "Nested MAIL Command";
 $Reason[26] = "UNKNOWN (26)";
 $Reason[27] = "EHLO/HELO Syntax Error";
 $Reason[28] = "UNKNOWN (28)";
@@ -99,7 +99,7 @@ $Reason[40] = "SPF/Caller-ID";
 $Reason[41] = "Client Host Rejected";
 $Reason[42] = "UNKNOWN (42)";
 $Reason[43] = "UNKNOWN (43)";
-$Reason[44] = "Authentication Not Enabed";
+$Reason[44] = "Authentication Not Enabled";
 $Reason[45] = "Allowed Message Size Exceeded";
 $Reason[46] = "Too Many Recipients";
 $Reason[47] = "Need RCPT Command";
@@ -112,7 +112,7 @@ $Reason[53] = "UNKNOWN (53)";
 $Reason[54] = "UNKNOWN (54)";
 $Reason[55] = "Invalid Parameter Syntax";
 $Reason[56] = "STARTTLS Syntax Error";
-$Reason[57] = "TLS Allready Active";
+$Reason[57] = "TLS Already Active";
 $Reason[58] = "Too Many Errors";
 $Reason[59] = "Need STARTTLS First";
 $Reason[60] = "Spam Fingerprint Found";

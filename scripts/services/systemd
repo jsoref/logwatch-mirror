@@ -31,7 +31,7 @@ my $LastTarget;
 my %UserSession;
 my %OtherList;
 
-# Failue will generate multiple messages like:
+# Failure will generate multiple messages like:
 # Feb  5 16:37:50 hostname systemd: ansible-pull.service: main process exited, code=exited, status=2/INVALIDARGUMENT
 # Feb  5 16:37:50 hostname systemd: Failed to start Run ansible-pull on boot.
 # Feb  5 16:37:50 hostname systemd: Unit ansible-pull.service entered failed state.

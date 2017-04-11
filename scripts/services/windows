@@ -17,7 +17,7 @@
 ##########################################################################
 # This is a logwatch script that looks at a log file composed of windows auth
 # security logs counts the number of times a user failed to login and
-# optionally the number times they succesfully logged in and some other account
+# optionally the number times they successfully logged in and some other account
 # creation/modification audits.
 #
 # See the following sites for event id documentation:
@@ -100,7 +100,7 @@ while (defined($line = <STDIN>)) {
 		#	$logonFailure{$1}{$2}{$3}++;
 		#}
 
-		elsif ($eventid == 861) { # The Windows Firewall has detected an application listenin for incomming traffic.
+		elsif ($eventid == 861) { # The Windows Firewall has detected an application listenin for incoming traffic.
 			$msg =~ /Path:\s*(\S+)\s+.+User account:\s*(\S+)\s+.+IP protocol:(\S+)\s+Port number:\s*(\S+)\s+Allowed:\s*(\S+)/;
 			#print "DEBUG Server Application Firewalled: path:$1 account:$2 port:$3 $4 allowed:$5\n";
 			$firewall{$host}{$2}{$1}{$3}{$4}{$5}++;
@@ -246,7 +246,7 @@ if (keys %loginFailByAccount) {
 	printLevel2("Windows Failed Logins by Account, Host", \%loginFailByAccount);
 }
 if (keys %loginFailByHost) {
-	printLevel2("Windwos Failed Logins by Host, Account", \%loginFailByHost);
+	printLevel2("Windows Failed Logins by Host, Account", \%loginFailByHost);
 }
 
 if (keys %krbAuthFailByAccount) {

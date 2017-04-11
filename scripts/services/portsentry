@@ -139,7 +139,7 @@ if ( ($Detail >= 10) and (keys %Exclude) ) {
 }
 
 if ( ($Detail >= 5) and (keys %Unknown) ) {
-   print "\n**Unmached entries**\n";
+   print "\n**Unmatched entries**\n";
    foreach $ThisOne (sort {$a cmp $b} keys %Unknown) {
       print $Unknown{$ThisOne} . " Time(s): " . $ThisOne . "\n";
    }

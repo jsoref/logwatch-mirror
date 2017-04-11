@@ -92,7 +92,7 @@ $Config{'format'} = "text"; #8.0
 $Config{'encode'} = "none"; #8.0
 $Config{'hostformat'} = "none"; #8.0
 $Config{'html_wrap'} = 80;
-$Config{'supress_ignores'} = 0;
+$Config{'suppress_ignores'} = 0;
 $Config{'hostlimit'} = "";
 $Config{'appendvaradmtologdirs'} = 1;
 $Config{'appendvarlogtologdirs'} = 1;
@@ -147,7 +147,7 @@ if ($Config{'debug'} > 8) {
 # For each of the configuration sets (logwatch.conf here, and
 # logfiles,and services later), we do the following:
 #  1. read the different configuration files
-#  2. for each parameter, if it is cummulative, check if
+#  2. for each parameter, if it is cumulative, check if
 #     it the special case empty string
 #  3. check to see if duplicate
 
@@ -1089,7 +1089,7 @@ sub ReadConfigFile {
 sub Usage () {
    # Show usage for this program
    print "\nUsage: $0 [--detail <level>] [--logfile <name>] [--output <output_type>]\n" .
-      "   [--format <format_type>] [--encode <enconding>] [--numeric]\n" .
+      "   [--format <format_type>] [--encode <encoding>] [--numeric]\n" .
       "   [--mailto <addr>] [--archives] [--range <range>] [--debug <level>]\n" .
       "   [--filename <filename>] [--help|--usage] [--version] [--service <name>]\n" .
       "   [--hostformat <host_format type>] [--hostlimit <host1,host2>] [--html_wrap <num_characters>]\n\n";
@@ -1099,7 +1099,7 @@ sub Usage () {
    print "--service <name>: *Name of a service definition to report on.\n";
    print "--output <output type>: Report Output - stdout [default], mail, file.\n"; #8.0
    print "--format <formatting>: Report Format - text [default], html.\n"; #8.0
-   print "--encode <encoding>: Enconding to use - none [default], base64.\n"; #8.0
+   print "--encode <encoding>: Encoding to use - none [default], base64.\n"; #8.0
    print "--mailto <addr>: Mail report to <addr>.\n";
    print "--archives: Use archived log files too.\n";
    print "--filename <filename>: Used to specify they filename to save to. --filename <filename> [Forces output to file].\n";
@@ -1408,10 +1408,10 @@ sub parselogs {
 
          if ($has_output and $ServiceData{$Service}{'title'}) {
             if ( $Config{'format'} eq "html" ) {
-                if ( ($Ignored > 0) && ($Config{'supress_ignores'} == 0) ) {  &output( $index_par, "\n $Ignored Ignored Lines\n", "header"); };
+                if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) {  &output( $index_par, "\n $Ignored Ignored Lines\n", "header"); };
                 #&output( $index_par,  "\n <h3><font color=\"blue\">$ServiceData{$Service}{'title'} End </font></h3>\n", "header");
             } else {
-                if ( ($Ignored > 0) && ($Config{'supress_ignores'} == 0) ) { &output( $index_par, "\n $Ignored Ignored Lines\n", "line"); };
+                if ( ($Ignored > 0) && ($Config{'suppress_ignores'} == 0) ) { &output( $index_par, "\n $Ignored Ignored Lines\n", "line"); };
                 &output( $index_par,  "\n ---------------------- $ServiceData{$Service}{'title'} End ------------------------- \n\n", "line");
             }
             &output( $index_par, "\n", "stop");

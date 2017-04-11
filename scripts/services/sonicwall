@@ -555,7 +555,7 @@ if (keys %SyslogFacility) {
 }
 
 if (keys %SyslogHost) {
-   print "\nDevice where Syslog have been mail succesfully :\n";
+   print "\nDevice where Syslog have been mail successfully :\n";
    foreach $ThisOne (keys %SyslogHost) {
       print "   " . $ThisOne . ":\n";
       foreach $ThatOne (keys %{$SyslogHost{$ThisOne}}) {

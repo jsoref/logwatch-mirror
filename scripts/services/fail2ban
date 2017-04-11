@@ -119,7 +119,7 @@ while (defined(my $ThisLine = <STDIN>)) {
         $ServicesFound{$Service}{$Host}++;
     } elsif ( my ($Service,$Host) = ($ThisLine =~ /INFO\s+\[(.*)\] Ignore (.*)/)) {
         $ServicesIgnored{$Service}{$Host}++;
-    # Generice messages
+    # Generic messages
     } elsif ( my ($Message) = ($ThisLine =~ / ERROR (.*)$/)) {
         $ErrorList{$Message}++;
     } elsif ( my ($Message) = ($ThisLine =~ / WARNING (.*)$/)) {

@@ -337,7 +337,7 @@ look at the current logfile group config files for examples.
 Finally, if the directory /usr/share/logwatch/scripts/logfiles/<logfile_group_name>/
 exists, any scripts in that directory will be executed.  All of these
 scripts take the contents of all the specified logfiles in through STDIN and
-output the modified logfile trought STDOUT.
+output the modified logfile through STDOUT.
 
 
 B. Service Filter Configuration File
@@ -458,7 +458,7 @@ displayed at higher detail levels.  Here is a guide on how you should
 use the detail setting:
 
 0 (Low): Display only errors and security-related issues
-5 (Med): Display anything that a typical administator would be interested in
+5 (Med): Display anything that a typical administrator would be interested in
 10 (High): Display anything that a paranoid administrator would want to see
 
 In some cases, you can use a security setting higher than 10.  This would be
@@ -473,8 +473,8 @@ The way to call commands is:
 *SharedScriptCommand [= Arguments]
 
 Logwatch will search for the command in /usr/share/logwatch/scripts/shared/ and
-/etc/logwatch/scripts/shared/. The command name is case insensitiv and can be
-used in logfile and service group configuratin files. Everything after the
+/etc/logwatch/scripts/shared/. The command name is case insensitive and can be
+used in logfile and service group configuration files. Everything after the
 equal sign will be passed as arguments to the command.
 The following shared scripts are shipped with logwatch (they don't accept any
 arguments unless otherwise mentioned):

@@ -619,7 +619,7 @@ sub get_options($) {
    my $pass_through = shift;
    #$SIG{__WARN__} = sub { print "*** $_[0]*** options error\n" };
    # ensure we're called after %Opts is initialized
-   die "get_options: program error: %Opts is emtpy" unless exists $Opts{'debug'};
+   die "get_options: program error: %Opts is empty" unless exists $Opts{'debug'};
 
    my $p = new Getopt::Long::Parser;
 
@@ -996,7 +996,7 @@ which would be interpreted as follows:
 
 a = show level a detail
 b = show at most b items at this level
-c = minimun count that will be shown
+c = minimum count that will be shown
 =cut
 
 sub printTree($ $ $ $ $) {
@@ -1097,7 +1097,7 @@ sub bycount {
 #           TOTAL:     an integer: which is the subtotal of this item's children
 #           LEVEL:     an integer > 0: representing this entry's level in the tree
 #           CHILDREF:  a listref: references a list consisting of this node's children
-#    Total: The cummulative total of items found for a given invocation
+#    Total: The cumulative total of items found for a given invocation
 #
 # Use the special key variable $END_KEY, which is "\a\a" (two ASCII bell's) to end a,
 # nested hash early, or the empty string '' may be used as the last key.
@@ -1736,7 +1736,7 @@ sub check_ignore_list($ \@);
 my @ignore_list_final = ();
 
 # The Sections table drives Summary and Detail reports.  For each entry in the
-# table, if there is data avaialable, a line will be output in the Summary report.
+# table, if there is data available, a line will be output in the Summary report.
 # Additionally, a sub-section will be output in the Detail report if both the
 # global --detail, and the section's limiter variable, are sufficiently high (a
 # non-existent section limiter variable is considered to be sufficiently high).
@@ -2687,7 +2687,7 @@ while (<>) {
    elsif ($p1 =~ /^mangling (.*)$/) {
       $p1 = $1;
       if ($p1 =~ /^by (.+?) failed: (.+?), mail will pass unmodified$/) {
-         #TD mangling by altermine failed: SomeText, mail will pass unmodified
+         #TD mangling by altermime failed: SomeText, mail will pass unmodified
          $Totals{'defangerror'}++;        next unless ($Collecting{'defangerror'});
          $Counts{'defangerror'}{$1}{$2}++;
       }
@@ -3345,7 +3345,7 @@ $Totals{'totalmsgs'} += $Totals{$_} foreach (
    qw(totalmalware totalbanned totalunchecked totalspam totalham totalother));
 
 # Print the summary report if any key has non-zero data.
-# Note: must explicitely check for any non-zero data,
+# Note: must explicitly check for any non-zero data,
 # as Totals always has some keys extant.
 #
 if ($Opts{'summary'}) {
@@ -3677,7 +3677,7 @@ sub printTimingsReport($$$$) {
    map {$time_total_actual += $_} @$totalsref;
 
    # cutoff value used to limit the number of rows of output
-   #   positive cutoff is a percentage of cummulative time
+   #   positive cutoff is a percentage of cumulative time
    #   negative cutoff limits number of rows
    if ($cutoff >= 0) {
       $max_pcnt = $cutoff != 100 ? $cutoff : 150;  # 150% avoids roundoff errors
@@ -3989,7 +3989,7 @@ sub init_defaults() {
       #  5 to 9 nostartinfo, timings=95,  sarules = 20 20,  score_frequencies=defaults, score_percentiles=defaults, autolearn
       # 10 +    startinfo,   timings=100, sarules = all all score_frequencies=defaults, score_percentiles=defaults, autolearn
 
-      if ($Opts{'detail'} < 5) {          # detail 0 to 4, disable all supplimental reports
+      if ($Opts{'detail'} < 5) {          # detail 0 to 4, disable all supplemental reports
          $Opts{'autolearn'}         = 0;
          #$Opts{'p0f'}               = 0;
          $Opts{'timings'}           = 0;

@@ -407,7 +407,7 @@ if (keys %VPNDown) {
 if ($Detail >= 15) {
 
 if (keys %InitAggMode) {
-   print "\nDevice initiating phase 1 aggresive mode:\n";
+   print "\nDevice initiating phase 1 aggressive mode:\n";
    foreach $ThisOne (keys %InitAggMode) {
       print "   " . $ThisOne . ":\n";
       foreach $ThatOne (keys %{$InitAggMode{$ThisOne}}) {

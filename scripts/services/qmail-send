@@ -469,7 +469,7 @@ if ( (keys %TripleBounce) )
 	print "$ct times\n";
 }
 
-if (($#OtherList >= 0) and (not $IngoreUnmatched))
+if (($#OtherList >= 0) and (not $IgnoreUnmatched))
 {
 	print "\n**Unmatched Entries**\n";
 	print @OtherList;

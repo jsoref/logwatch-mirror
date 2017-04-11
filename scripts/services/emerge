@@ -76,7 +76,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( $ThisLine =~ s/^Dep Installed: ([^ ]+)/$1 / ) {
       $PackageDepInstalled{$ThisLine}++;
    } elsif ( $ThisLine =~ /exiting unsuccessfully with status \'(\d)\'/ ) {
-      $ExitUnsuccessfull{$1}++;
+      $ExitUnsuccessful{$1}++;
    } else {
       # Report any unmatched entries...
       push @OtherList,$ThisLine;
@@ -116,10 +116,10 @@ if (keys %PackageUpdated) {
        print "   ". $ThisOne;
    }
 }
-if (keys %ExitUnsuccessfull) {
+if (keys %ExitUnsuccessful) {
    print "\nUnsuccessfull exit with:\n";
-   foreach $ThisOne (keys %ExitUnsuccessfull) {
-       print "   Status $ThisOne : $ExitUnsuccessfull{$ThisOne} Time(s)\n";
+   foreach $ThisOne (keys %ExitUnsuccessful) {
+       print "   Status $ThisOne : $ExitUnsuccessful{$ThisOne} Time(s)\n";
    }
 }
 

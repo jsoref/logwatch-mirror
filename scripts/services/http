@@ -236,7 +236,7 @@ my @exploits = (
 );
 
 #
-#  Define some useful RE paterns
+#  Define some useful RE patterns
 #
 
 my %re_pattern = (

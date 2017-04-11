@@ -29,7 +29,7 @@
 # - ignored some entries
 #
 # Revision 1.2  2004/01/06 10:57:33  blues
-# - delay decreating message
+# - delay decreasing message
 #
 # Revision 1.1  2003/12/25 20:07:15  blues
 # - shaperd support for logwatch
@@ -96,7 +96,7 @@ while (defined($ThisLine = <STDIN>)) {
    } elsif ( ($Delay) = ( $ThisLine =~ /^Decreasing delay to ([0-9]*) seconds$/) ) {
       $DecreasingDelay{$Delay}++;
       $DelayDecCount++;
-   } elsif ( $ThisLine =~ m/^It seems that iproute2 did'nt work correctly. Please upgrade your iproute2 and\/or kernel./) {
+   } elsif ( $ThisLine =~ m/^It seems that iproute2 didn't work correctly. Please upgrade your iproute2 and\/or kernel./) {
       $TooOldSoft++;
    } else {
       $OtherList{$ThisLine}++;
