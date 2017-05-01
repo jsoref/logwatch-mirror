@@ -76,7 +76,7 @@ if (keys %LogMessages) {
    foreach my $LogLevel (keys %LogMessages) {
       printf("\nLevel %-6s", $LogLevel);
       foreach my $ErrorCode (keys %{$LogMessages{$LogLevel}}) {
-         print "\n   Error Code: $ErrorCode" if $Detail >= 5;
+         print "\n   $LogLevel code: $ErrorCode" if $Detail >= 5;
          foreach my $Description (keys %{$LogMessages{$LogLevel}{$ErrorCode}}) {
             if ($Detail >= 9) {
                print "\n      $Description:  ";
