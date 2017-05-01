@@ -217,7 +217,8 @@ while (defined(my $ThisLine = <STDIN>)) {
 # 'lda' for dovecot 2.0, 'deliver' for earlier versions
    } elsif (my ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): msgid=.*: saved mail to (.*)/ ) ) {
       $Deliver{$User}{$Mailbox}++;
-
+   } elsif ( ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag service=lda, user=(.*), .* msgid=.*: saved mail to (.*)/ ) ) {
+      $Deliver{$User}{$Mailbox}++;
 # For Sieve-based delivery
    } elsif (my ($User, $Mailbox) = ( $ThisLine =~ /^$dovecottag (?:lda|deliver)\((.*)\): sieve: msgid=.*: stored mail into mailbox '(.*)'/ ) ) {
       $Deliver{$User}{$Mailbox}++;
@@ -277,7 +278,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Disconnected{$Reason}++;
    } elsif (my ($Reason) = ($ThisLine =~ /Disconnected: (.*) (bytes|top|in)=.*/) ) {
       $Disconnected{$Reason}++;
-   } elsif ($ThisLine =~ /Logged out (bytes|top|in)=.*/) {
+   } elsif ($ThisLine =~ /Logged out (rcvd|bytes|top|in)=.*/) {
       $Disconnected{"Logged out"}++;
    } elsif (my ($Reason) = ($ThisLine =~ /Disconnected \((.*)\):/) ) {
       $Reason =~ s/ in \d+ secs//;
