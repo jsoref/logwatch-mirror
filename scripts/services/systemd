@@ -16,6 +16,7 @@
 
 use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
+my $Ignore_failed = $ENV{'ignore_failed'} || "";
 my %ConfigError;
 my %Activated;
 my %Failed;
@@ -83,7 +84,7 @@ while (defined(my $ThisLine = <STDIN>)) {
        $ThisLine =~ /[Hh]ardware watchdog / or
        $ThisLine =~ /PID file .* not readable \(yet\?\) after start/ or
        # Units can depend on files that do not exist
-       $ThisLine =~ /Cannot add dependency job( for unit .*)?, ignoring: Unit .* failed to load: No such file or directory\.$/ or
+       $ThisLine =~ /Cannot add dependency job(:? for unit .*)?, ignoring: Unit (:?.* failed to load: No such file or directory|not found)\.$/ or
        # https://bugs.freedesktop.org/show_bug.cgi?id=90386
        $ThisLine =~ /Dev(ice)? .* appeared twice with different sysfs paths .* and / or
        # Inactive units are sometimes reloaded
@@ -158,6 +159,11 @@ if (keys %ConfigError) {
 	print "\n";
     }
     print "\n";
+}
+
+# Because we set Failed in multiple locations, cleanup once here
+foreach my $item (keys %Failed) {
+   delete $Failed{$item} if ($item =~ /^$Ignore_failed$/);
 }
 
 if (keys %Failed) {
