@@ -68,6 +68,7 @@ my %OOM = ();
 my %Errors = ();
 my %Kernel = ();
 my %EDACs = ();
+my %NFS = ();
 
 while (defined(my $ThisLine = <STDIN>)) {
    chomp($ThisLine);
@@ -136,6 +137,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $Errors{$errormsg}++ if ( (! $SkipError) || ($Detail > 8));
    } elsif ( ( my $errormsg ) = ( $ThisLine =~ /((BUG|WARNING|INFO):.{0,40})/ ) ) {
       $Errors{$errormsg}++;
+   } elsif ( ( my $host ) = ( $ThisLine =~ /^nfs: server (.*) not responding/ ) ) {
+      $NFS{$host}++;
    # OTHER
    } else {
       # XXX For now, going to ignore all other kernel messages as there
@@ -251,6 +254,13 @@ if (keys %EDACs) {
    print "\nWARNING:  Kernel EDAC Messages\n";
    foreach my $Thisone ( sort {$a cmp $b} keys %EDACs ) {
       print "   $Thisone ...:  $EDACs{$Thisone} Time(s)\n";
+   }
+}
+
+if (keys %NFS) {
+   print "\nWARNING:  NFS Sever Not Responding Messages\n";
+   foreach my $Thisone ( sort {$a cmp $b} keys %NFS ) {
+      print "   $Thisone ...:  $NFS{$Thisone} Time(s)\n";
    }
 }
 
