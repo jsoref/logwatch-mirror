@@ -18,6 +18,7 @@ use strict;
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'} || 0;
 my $PoolThreshold = $ENV{'pool_threshold'} || 0;
 my $PoolMetadataThreshold = $ENV{'pool_metadata_threshold'} || 0;
+my %Active;
 my %PoolUsed;
 my %PoolMetadataUsed;
 my $SnapshotThreshold = $ENV{'snapshot_threshold'} || 0;
@@ -38,6 +39,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $MonitoringOff{$1}++;
    } elsif ($ThisLine =~ /^Snapshot (\S+) is now (\d+)% full/) {
       $SnapshotUsed{$1} = $2 if $2 >= $SnapshotThreshold;
+   } elsif ($ThisLine =~ /^(\d+) logical volume\(s\) in volume group "(\S+)" monitored/) {
+      $MonitoringOn{$2}++;
+   } elsif ($ThisLine =~ /^(\d+) logical volume\(s\) in volume group "(\S+)" now active/) {
+      $Active{$2}=$1;
    } else {
       $OtherList{$ThisLine}++;
    }
@@ -63,6 +68,14 @@ if (keys %SnapshotUsed) {
    print "Snapshot Usage:\n";
    foreach my $Snapshot (sort {$a cmp $b} keys %SnapshotUsed) {
       print "    $Snapshot: $SnapshotUsed{$Snapshot}% full\n";
+   }
+   print "\n";
+}
+
+if (keys %Active and $Detail) {
+   print "LVM active:\n";
+   foreach my $VG (sort {$a cmp $b} keys %MonitoringOn) {
+      print "    $VG: $Active{$VG} logical volume(s)\n";
    }
    print "\n";
 }
