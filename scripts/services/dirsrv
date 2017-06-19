@@ -40,6 +40,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        or $ThisLine =~ /^SSL alert: Configured NSS Ciphers$/
        or $ThisLine =~ /^ldbm_back_.* - conn=/
        or $ThisLine =~ /^ldbm_usn_init - backend: /
+       # https://pagure.io/389-ds-base/issue/48973
+       or $ThisLine =~ /^default_mr_indexer_create: warning - plugin \[caseIgnoreIA5Match\] does not handle caseExactIA5Match/
       ) {
       #Ignore
    } elsif ($ThisLine =~ /error/i
