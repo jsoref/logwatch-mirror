@@ -31,6 +31,7 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (defined($Service)) {
       # Skip informational messages if needed
       next if (($Service == "Storage Service") and ($Message =~ /^The Patrol Read has (started|stopped)/) and ($Detail < 5));
+      next if (($Service == "Storage Service") and ($Message =~ /^The controller battery Learn cycle will start in (?:\d+) days\./) and ($Detail < 5));
       $ServiceMessage{$Service}->{$Message}++;
    } else {
       $OtherList{$ThisLine}++;
