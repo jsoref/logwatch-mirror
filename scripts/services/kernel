@@ -160,10 +160,10 @@ while (defined(my $ThisLine = <STDIN>)) {
 
 if (keys %SYNflood) {
    print "\nWarning: SYN flood on:\n";
-   foreach my $ThisOne (sort {$a cmp $b} keys %SYNflood) {
-      print "   " . $ThisOne . " from:\n";
-      foreach my $Next (sort {$a cmp $b} keys %{$SYNflood{$ThisOne}}) {
-         print "      " . $Next . ": $SYNflood{$ThisOne}{$Next} Time(s)\n";
+   foreach my $Thisone (sort {$a cmp $b} keys %SYNflood) {
+      print "   " . $Thisone . " from:\n";
+      foreach my $Next (sort {$a cmp $b} keys %{$SYNflood{$Thisone}}) {
+         print "      " . $Next . ": $SYNflood{$Thisone}{$Next} Time(s)\n";
       }
    }
 }
@@ -189,7 +189,7 @@ if (keys %DRBDErrors) {
 if (keys %SegFaults) {
    my $header_printed=0;
    foreach my $Thisone ( sort {$a cmp $b} keys %SegFaults ) {
-      if ($Ignore_faults =~ /\b\Q$Thisone\E\b/i) { next; }
+      if ($Thisone =~ /^$Ignore_faults$/) { next; }
       if (!$header_printed) {
          print "\nWARNING:  Segmentation Faults in these executables\n";
          $header_printed=1;
@@ -201,7 +201,7 @@ if (keys %SegFaults) {
 if (keys %GPFaults) {
    my $header_printed=0;
    foreach my $Thisone ( sort {$a cmp $b} keys %GPFaults ) {
-      if ($Ignore_faults =~ /\b\Q$Thisone\E\b/i) { next; }
+      if ($Thisone =~ /^$Ignore_faults$/) { next; }
       if (!$header_printed) {
          print "\nWARNING:  General Protection Faults in these executables\n";
          $header_printed=1;
@@ -267,8 +267,8 @@ if (keys %NFS) {
 # OTHER
 if ( ($Detail >= 5) and (keys %Kernel) ) {
    print "\n";
-   foreach my $ThisOne (sort {$a cmp $b} keys %Kernel) {
-      print $Kernel{$ThisOne} . " Time(s): " . $ThisOne . "\n";
+   foreach my $Thisone (sort {$a cmp $b} keys %Kernel) {
+      print $Kernel{$Thisone} . " Time(s): " . $Thisone . "\n";
    }
 }
 
