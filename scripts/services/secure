@@ -198,7 +198,7 @@ while (defined($ThisLine = <STDIN>)) {
    #Woody - specific, thanks to Michael Stovenour
    if ($ThisLine =~ /^PAM_unix[\[\]0-9]*:/i ) { next; }
 
-   if (( $ThisLine =~ /pam_succeed_if(\([a-zA-Z]*:[a-zA-Z]*\))?: requirement \"uid (<|>)=? 1000?\" (was|not) met by user /) or
+   if (( $ThisLine =~ /pam_succeed_if(\([a-zA-Z]*:[a-zA-Z]*\))?: requirement \"uid (<|>)=? (5|10)00?\" (was|not) met by user /) or
       ( $ThisLine =~ /pam_rhosts_auth\[\d+\]: allowed to [^ ]+ as \w+/) or
       ( $ThisLine =~ /pam_rhosts_auth\([^\)]+\): allowed to [^ ]+ as \w+/) or
       ( $ThisLine =~ /^(.*)\(pam_unix\)/) or
