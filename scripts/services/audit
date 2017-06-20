@@ -137,7 +137,7 @@ while ($ThisLine = <STDIN>) {
 	( $ThisLine =~ /^auditctl(?:\[[0-9]+\])?: No rules$/ )
     ) {
 	# Ignore these entries
-    } elsif ( $ThisLine =~ /audit\([0-9]{10}.[0-9]{3}:[0-9]\): initialized$/) {
+    } elsif ( $ThisLine =~ /audit\([0-9]{10}.[0-9]{3}:[0-9]\): (?:state=)?initialized/) {
       $NumberOfInits++;
     } elsif ( $ThisLine =~ /Init complete, audit pid set to: [0-9]+/) {
       $NumberOfDStartsPid++;
