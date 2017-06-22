@@ -148,7 +148,7 @@ else {
    print "      echo \"*RemoveHeaders\" >> /etc/logwatch/conf/logfiles/clam-update.conf\n";
 }
 
-if ($Status) {
+if ($Status and (($Detail > 0) or (keys %Errors) or (keys %Warnings))) {
    print "\n" . $Status;
 };
 

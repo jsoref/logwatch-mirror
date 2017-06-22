@@ -117,14 +117,14 @@ if (keys %VirusList) {
    }
 }
 
-if ((keys %SelfCheck) and ($Detail >=5)) {
+if ((keys %SelfCheck) and ($Detail >= 5)) {
    print "\nDaemon check list:\n";
    foreach my $Check (sort {$a cmp $b} keys %SelfCheck) {
       printf "   %-50s %5i Time(s)\n", $Check .":", $SelfCheck{$Check};
    }
 }
 
-if ($DatabaseReloads) {
+if ($DatabaseReloads and ($Detail > 0)) {
    print "\nVirus database reloaded $DatabaseReloads time(s) (last time with $DatabaseViruses viruses)\n";
 }
 
