@@ -41,6 +41,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $SnapshotUsed{$1} = $2 if $2 >= $SnapshotThreshold;
    } elsif ($ThisLine =~ /^(\d+) logical volume\(s\) in volume group "(\S+)" monitored/) {
       $MonitoringOn{$2}++;
+   } elsif ($ThisLine =~ /^(\d+) logical volume\(s\) in volume group "(\S+)" unmonitored/) {
+      $MonitoringOff{$2}++;
    } elsif ($ThisLine =~ /^(\d+) logical volume\(s\) in volume group "(\S+)" now active/) {
       $Active{$2}=$1;
    } else {
