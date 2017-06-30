@@ -231,12 +231,25 @@ my %ChmodErr = ();
 my %ChownErr = ();
 my %Krb_relm = ();
 my %ConnectFailed = ();
+my %Chroot = ();
+my %CloseDir = ();
+my %CloseFileReadWrite = ();
+my %OpenDir = ();
+my %OpenFile = ();
+my %RealPath = ();
+my %Session = ();
+my %SetModtime = ();
+my %Stat = ();
+my %ClientVers = ();
 
 my $sftpRequests = 0;
 my $NetworkErrors = 0;
 my $Kills = 0;
 my $Starts = 0;
 my $NetworkErrors = 0;
+my $StatusNoSuchFile = 0;
+my $BytesSent = 0;
+my $BytesReceived = 0;
 
 if ( $Debug >= 5 ) {
    print STDERR "\n\nDEBUG: Inside SSHD Filter \n\n";
@@ -473,6 +486,31 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ChownErr{"$File,$From,$To,$Why"}++;
    } elsif (my ($user,$relm) = ($ThisLine =~ /Authorized to ([^ ]+), krb5 principal \1@([^ ]+) \((?:krb5_kuserok|ssh_gssapi_krb5_cmdok)\)/)) {
       $Krb_relm{$relm}{$user}++;  
+   } elsif (my ($Action,$User) = ($ThisLine =~ /^session ((?:open|clos)ed) for local user (\S+) from /)) {
+      $Session{"Action,$User"}++;
+   } elsif ($ThisLine =~ /^sent status No such file$/) {
+      $StatusNoSuchFile++;
+   } elsif (my ($File,$Flags,$Mode) = ($ThisLine =~ /^open "(.*)" flags (\S+) mode (\d+)/ )) {
+      $OpenFile{"$File:$Flags:$Mode"}++;
+   } elsif (my ($File,$BytesRead,$BytesWritten) = ($ThisLine =~ /^close "(.*)" bytes read (\d+) written (\d+)/ )) {
+      $CloseFileReadWrite{"$File,$BytesRead,$BytesWritten"}++;
+   } elsif (my ($Sent,$Received) = ($ThisLine =~ /^Transferred: sent (\d+), received (\d+) bytes$/ )) {
+      $BytesSent += $Sent;
+      $BytesReceived += $Received;
+   } elsif (my ($File,$Modtime) = ($ThisLine =~ /^set "(.*)" modtime (\d+-\d+:\d+:\d+)$/ )) {
+      $SetModtime{"$Modtime,$File"}++;
+   } elsif (my ($Dir) = ($ThisLine =~ /^opendir "(.*)"$/ )) {
+      $OpenDir{$Dir}++;
+   } elsif (my ($Dir) = ($ThisLine =~ /^closedir "(.*)"$/ )) {
+      $CloseDir{$Dir}++;
+   } elsif (my ($File) = ($ThisLine =~ /^realpath "(.*)"$/ )) {
+      $RealPath{$File}++;
+   } elsif (my ($File) = ($ThisLine =~ /^stat name "(.*)"$/ )) {
+      $Stat{$File}++;
+   } elsif (my ($Dir) = ($ThisLine =~ /^Changed root directory to "(.*)"/ )) {
+      $Chroot{$Dir}++;
+   } elsif (my ($ClientVer) = ($ThisLine =~ /^received client version (\S+)/ )) {
+      $ClientVers{$ClientVer}++;
    } elsif (my ($Host,$Port) = ($ThisLine =~ /^error: connect_to (\S+) port (\d+): failed\.$/)) {
       $ConnectFailed{"$Host port $Port"}++;
    } else {
@@ -858,6 +896,67 @@ if (keys %TTYModesFail) {
 
 if ($sftpRequests > 0) {
    print "\nSFTP subsystem requests: $sftpRequests Time(s)\n";
+   if ($Detail >= 50) {
+      foreach my $root (sort {$a cmp $b} keys %Chroot) {
+         print "   Chroot: $root : $Chroot{$root} Time(s)\n";
+      }
+   }
+   if ($Detail >= 0) {
+      foreach my $dir (sort {$a cmp $b} keys %CloseDir) {
+         if ($CloseDir{$dir} != $OpenDir{$dir} || $Detail >= 40) {
+             print "   Directory $dir: opened/closed $OpenDir{$dir}/$CloseDir{$dir} Time(s)\n";
+             # Note: this number might not match if the open/closes span log windows..."
+         }
+      }
+   }
+   if ($Detail >= 30) {
+      foreach my $details (sort {$a cmp $b} keys %CloseFileReadWrite) {
+         if (my ($file,$read,$written) = ($details =~ /^(.*),(\d+),(\d+)$/)) {
+            if ($read || $written || $Detail >= 40) {
+               print "   Read/Wrote $read/$written byte(s) from file $file\n";
+            }
+         }
+      }
+   }
+   if ($Detail >= 60) {
+      foreach my $details (sort {$a cmp $b} keys %OpenFile) {
+         if (my ($file,$flags,$mode) = ($details =~ /^(.*):([^:]*):(\d+)$/)) {
+            print "   Opened (mode: $mode, flags: $flags) file $file\n";
+         }
+      }
+   }
+   if ($Detail >= 70) {
+      foreach my $path (sort {$a cmp $b} keys %RealPath) {
+         print "   Realpath $path\n";
+      }
+   }
+   if ($Detail >= 50) {
+      foreach my $details (sort {$a cmp $b} keys %SetModtime) {
+         if (my ($modtime,$file) = ($details =~ /^([^,]*),(.*)$/)) {
+            print "   Set modtime $modtime for file $file\n";
+         }
+      }
+   }
+   if ($Detail >= 70) {
+      foreach my $path (sort {$a cmp $b} keys %Stat) {
+         print "   Stat: $path : $Stat{$path} Time(s)\n";
+      }
+   }
+   if ($Detail >= 40) {
+      if ($StatusNoSuchFile) {
+         print "   Sent status No such file: $StatusNoSuchFile Time(s)\n";
+      }
+   }
+   if ($Detail >= 0) {
+      if ($BytesSent || $BytesReceived) {
+         print "   Transferred: sent/received $BytesSent/$BytesReceived byte(s)\n";
+      }
+   }
+   if ($Detail >= 50) {
+      foreach my $client (sort {$a cmp $b} keys %ClientVers) {
+         print "   Client version $client connected $ClientVers{$client} Time(s)\n";
+      }
+   }
 }
 
 if (keys %ChmodErr) {
