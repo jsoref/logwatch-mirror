@@ -230,6 +230,7 @@ my %OtherList = ();
 my %ChmodErr = ();
 my %ChownErr = ();
 my %Krb_relm = ();
+my %ConnectFailed = ();
 
 my $sftpRequests = 0;
 my $NetworkErrors = 0;
@@ -472,6 +473,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ChownErr{"$File,$From,$To,$Why"}++;
    } elsif (my ($user,$relm) = ($ThisLine =~ /Authorized to ([^ ]+), krb5 principal \1@([^ ]+) \((?:krb5_kuserok|ssh_gssapi_krb5_cmdok)\)/)) {
       $Krb_relm{$relm}{$user}++;  
+   } elsif (my ($Host,$Port) = ($ThisLine =~ /^error: connect_to (\S+) port (\d+): failed\.$/)) {
+      $ConnectFailed{"$Host port $Port"}++;
    } else {
       # Report any unmatched entries...
       unless ($ThisLine =~ /fwd X11 connect/) {
@@ -532,6 +535,14 @@ if (keys %BindFailed) {
    print "\nFailed to bind:\n";
    foreach my $ThisOne (sort {$a cmp $b} keys %BindFailed) {
            print "   $ThisOne : $BindFailed{$ThisOne} Time(s)\n";
+   }
+}
+
+if ($Detail >= 30 && keys %ConnectFailed) {
+   # SSH Socks Forwarding
+   print "\nFailed to connect to:\n";
+   foreach my $ThisOne (sort {$a cmp $b} keys %ConnectFailed) {
+           print "   $ThisOne : $ConnectFailed{$ThisOne} Time(s)\n";
    }
 }
 
