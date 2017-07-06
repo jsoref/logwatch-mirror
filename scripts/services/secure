@@ -279,7 +279,9 @@ while (defined($ThisLine = <STDIN>)) {
       ( $ThisLine =~ /pkexec: \S+: Executing command /) or
       ( $ThisLine =~ /su: pam_systemd(.*): Failed to parse message: /) or
       ( $ThisLine =~ /pam_systemd\(su:session\): Cannot create session: Already (running in|occupied by) a session/) or
-      ( $ThisLine =~ /systemd-logind\[\d+\]: (New|Removed) session/)
+      ( $ThisLine =~ /systemd-logind\[\d+\]: (New|Removed) session/) or
+      ( $ThisLine =~ /DIGEST-MD5 common mech free/) or
+      0 # This line prevents blame shifting as lines are added above
    ) {
       # Ignore these entries
    } elsif ($ThisLine =~ /^spop3d/ || $ThisLine =~ /^pop\(\w+\)\[\d+\]:/) {
