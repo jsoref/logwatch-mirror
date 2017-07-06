@@ -315,7 +315,9 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Found matching \w+ key:/ ) or
        ($ThisLine =~ /User child is on pid \d/ ) or
        ($ThisLine =~ /Nasty PTR record .* is set up for [\da-fA-F.:]+, ignoring/) or
-       ($ThisLine =~ /Disconnected from [\da-fA-F.:]* port \d*/ )
+       ($ThisLine =~ /Disconnected from [\da-fA-F.:]* port \d*/ ) or
+       ($ThisLine =~ m!Set /proc/self/oom_score_adj to 0! ) or
+       0 # This line prevents blame shifting as lines are added above
    ) {
       # Ignore these
    } elsif ( my ($Method,$User,$Host,$Port,$Key,$FingerP) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+)(?:%\w+)? port (\d+) ssh[12](?:: (\w+) (.+))?/) ) {
