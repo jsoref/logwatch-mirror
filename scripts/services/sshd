@@ -318,12 +318,14 @@ while (defined(my $ThisLine = <STDIN>)) {
        ($ThisLine =~ /Disconnected from [\da-fA-F.:]* port \d*/ )
    ) {
       # Ignore these
-   } elsif ( my ($Method,$User,$Host,$Port,$Key) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+)(?:%\w+)? port (\d+) ssh[12](?:: (.+))?/) ) {
+   } elsif ( my ($Method,$User,$Host,$Port,$Key,$FingerP) = ($ThisLine =~ /^Accepted (\S+) for ((?:invalid user )?\S+) from ([\d\.:a-f]+)(?:%\w+)? port (\d+) ssh[12](?:: (\w+) (.+))?/) ) {
       if ($Debug >= 5) {
          print STDERR "DEBUG: Found -$User logged in from $Host using $Method ($Key)\n";
       }
       if ($Detail >= 20) {
-         $Users{$User}{$Host}{$Method . ($Key ? " ($Key)" : "")}++;
+         $Users{$User}{$Host}{$Method . ($Key ?
+		"($Key" . (($Detail >= 30) ? " " . $FingerP : "") . ")" :
+		"")}++;
       } else {
          if ( $Host !~ /$IgnoreHost/ ) {
             $Users{$User}{$Host}{"(all)"}++;
@@ -414,16 +416,11 @@ while (defined(my $ThisLine = <STDIN>)) {
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
    } elsif ( my ($Reason,$Host,$Offer) = ($ThisLine =~ /^(Protocol major versions differ) for ([^ ]+): (.*)$/) ) {
       $NegotiationFailed{$Reason}{$Host}{$Offer}++;
-   } elsif ( my ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*) \[preauth\]$/)) {
-      if ($Code == 11) {
-      # Reason 11 (SSH_DISCONNECT_BY_APPLICATION) in [preauth] sounds suspicious
-         $DisconnectReceived{"$Reason [preauth]"}{$Host}++;
-      } else {
-         $DisconnectReceived{$Reason}{$Host}++;
-      }
    } elsif ( my ($Prio,$Host,$Port,$Code,$Reason) = ($ThisLine =~ /^(error: )?Received disconnect from ([^ ]*)( port \d+)?: ?(\d+): (.*)$/)) {
-      # Reason 11 (SSH_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
-      if ($Code != 11) {$DisconnectReceived{$Reason}{$Host}++;}
+      # Reason 11 ({SSH,SSH2}_DISCONNECT_BY_APPLICATION) is expected, and logged at severity level INFO
+      if (($Code != 11) || ($Detail >= 30)) {
+	$DisconnectReceived{$Reason}{$Host}++;
+      }
    } elsif ( my ($Host) = ($ThisLine =~ /^ROOT LOGIN REFUSED FROM ([^ ]*)$/)) {
       $RootLogin{$Host}++;
    } elsif ( my ($Error) = ($ThisLine =~ /^Cannot release PAM authentication\[\d\]: (.*)$/)) {
