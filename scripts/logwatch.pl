@@ -48,7 +48,9 @@ use POSIX qw(locale_h);
 setlocale(LC_ALL, "C");
 
 my $BaseDir = "/usr/share/logwatch";
+$BaseDir = "/Users/jsoref/code/logwatch-git";
 my $ConfigDir = "/etc/logwatch";
+$ConfigDir = "/Users/jsoref/code/logwatch-git";
 my $PerlVersion = "$^X";
 
 #############################################################################

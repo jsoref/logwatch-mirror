@@ -85,11 +85,19 @@ while (defined($ThisLine = <STDIN>)) {
     # pobierz dzisiejsza date z 2002-03-31 22:13:48 ...
     # Collect this line's date, e.g. 2002-03-31 22:13:48 ...
    do {
+      if ( $ThisLine =~ /^ Suggested action: use keep_environment./ ) {
+         $KeepEnv++ if $MatchedDate;
+         next;
+      }
       $BadFormat{$ThisLine}++;
       next;
    } unless ($year1,$month1,$day1,$h1,$m1,$s1) = ($ThisLine =~ /^(\d+)\-(\d+)\-(\d+)\s(\d+):(\d+):(\d+)\s.+/);
 
-   next unless $ThisLine =~ /^$SearchDate /o;
+   unless ($ThisLine =~ /^$SearchDate /o) {
+      $MatchedDate = 0;
+      next;
+   }
+   $MatchedDate = 1;
 
    if ( $ThisLine =~ /End queue run\:/ ) {
       $EndQueue++;
@@ -114,6 +122,9 @@ while (defined($ThisLine = <STDIN>)) {
    }
    elsif ( $ThisLine =~ /[Ss]ender verify fail/ ) {
       $SendVerify{$ThisLine}++;
+   }
+   elsif ( $ThisLine =~ /Warning: purging the environment./ ) {
+      $Purging++;
    }
    elsif ( $ThisLine =~ /fragments administratively prohib/ ) {
       $DontAccept{$ThisLine}++;
@@ -206,6 +217,9 @@ while (defined($ThisLine = <STDIN>)) {
       # Some hosts ask for TLS even when not offered (generalised to all cmds)
       $Proto{$ThisLine}++;
    }
+   elsif ( $ThisLine =~ /TLS error on connection from (\S+) \(([^)]*)\) \[(\S+)\]:(\d+) I=\[(\S+)\]:(\d+) \(send\): Error in the push function\./ ) {
+      # Ignore this, office 365 connector early disconnect.
+   }
    elsif ( $ThisLine =~ /Connection from .* too many connections from that IP address/ ) {
       # Some hosts make lots of simultaneous connections
 	  # this is an extra error message when logging is high
@@ -276,6 +290,13 @@ if ($Detail >= $LvlRestarts) {
          print "  $ThisOne\n";
       }
    }
+}
+
+if ($Purging) {
+   print "    Warning: purging the environment. : $Purging Time(s)\n";
+}
+if ($KeepEnv) {
+   print "    ... Suggested action: use keep_environment. : $KeepEnv Time(s)\n";
 }
 
 if ($Detail >= $LvlRuns) {
