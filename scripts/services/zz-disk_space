@@ -137,7 +137,7 @@ sub DiskFull {
                     ($fields[0] !~ /\/dev\/scd/ ) &&
                     ($fields[0] !~ /\/dev\/sr/ ) &&
                     ($fields[0] !~ /\/dev\/loop./) &&
-                    ($fields[5] !~ /^$diskfull_exclude_dirs/)) {
+                    ($fields[5] !~ /^$diskfull_exclude_dirs/i)) {
 			print "$fields[5] ($fields[0]) => $fields[4] Used. Warning. Disk Filling up.\n";
 		}
 	}
