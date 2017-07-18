@@ -40,6 +40,7 @@ my %ManagementConnections;
 my $MaxClients;
 my $MaxConn;
 my %OtherList;
+my %PIDERRs;
 my %PluginCallFailure;
 my %PluginCallOK;
 my %VerifyList;
@@ -189,6 +190,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ((my ($Err) = ($ThisLine =~ /(read UDPv4 \[ECONNREFUSED\]: Connection refused \(code=111\))/)) or
       (my ($Err) = ($ThisLine =~ /(read UDPv4 \[EHOSTUNREACH\]: No route to host \(code=113\))/))) {
       $Error{$Err}++;
+   } elsif (my ($PIDERR) = ($ThisLine =~ /^PID_ERR ([^[]+) \[/)) {
+      $PIDERRs{$PIDERR}++;
    } elsif (my ($Warning) = ($ThisLine =~ /^WARNING: (.*)/)) {
       $Warnings{$Warning}++;
    } elsif (my ($plugin,$call,$status) = ($ThisLine =~ /^PLUGIN_CALL: POST (.*)\/(PLUGIN_.*) status=(.*)/)) {
@@ -219,6 +222,13 @@ if (keys %Warnings) {
    print "\nWARNINGS:\n";
    foreach my $Warning (sort keys %Warnings) {
      print "   " . $Warning . ": " .$Warnings{$Warning}. " Time(s)\n";
+   }
+}
+
+if (keys %PIDERRs) {
+   print "\nPID_ERRs:\n";
+   foreach my $PIDERR (sort keys %PIDERRs) {
+     print "   " . $PIDERR . ": " .$PIDERRs{$PIDERR}. " Time(s)\n";
    }
 }
 
