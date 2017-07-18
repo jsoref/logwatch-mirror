@@ -27,12 +27,16 @@ use strict;
 my $Debug = $ENV{'LOGWATCH_DEBUG'};
 my $Detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
 my %Auth;
+my $Config;
+my %ConfigValues;
 my %ConnErrors;
 my %ConnectCauseDrop;
 my %Connections;
 my %Crypt;
 my %Error;
 my %IncorrectPassword;
+my %ManagementCommands;
+my %ManagementConnections;
 my $MaxClients;
 my $MaxConn;
 my %OtherList;
@@ -130,6 +134,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^VERIFY OK: nsCertType=\w+/) or
       ($ThisLine =~ /^chroot to /) or
       ($ThisLine =~ /^LDAP bind failed: Invalid credentials$/) or
+      ($ThisLine =~ /^MANAGEMENT: Client disconnected$/) or
+      ($ThisLine =~ /^MANAGEMENT: .* listening /) or
       ($ThisLine =~ /Authenticate\/Decrypt packet error: bad packet ID \(may be a replay\): \[ #.* \] -- see the man page entry for --no-replay and --replay-window for more info or silence this warning with --mute-replay-warnings/)
    ) {
       # Don't care about these...
@@ -172,6 +178,10 @@ while (defined(my $ThisLine = <STDIN>)) {
       $ConnErrors{$error}{"$proto"}++;
    } elsif (my ($name) = ($ThisLine =~ /MULTI: new connection by client '(.*)' will cause previous active sessions by this client to be dropped.  Remember to use the --duplicate-cn option if you want multiple clients using the same certificate or username to concurrently connect./)) {
       $ConnectCauseDrop{$name}++;
+   } elsif (my ($Command) = ($ThisLine =~ /^MANAGEMENT: CMD '(.*)'/)) {
+      $ManagementCommands{$Command}++;
+   } elsif (my ($Connection) = ($ThisLine =~ /^MANAGEMENT: Client connected from (.*)/)) {
+      $ManagementConnections{$Connection}++;
    } elsif ((my ($Err) = ($ThisLine =~ /(read UDPv4 \[ECONNREFUSED\]: Connection refused \(code=111\))/)) or
       (my ($Err) = ($ThisLine =~ /(read UDPv4 \[EHOSTUNREACH\]: No route to host \(code=113\))/))) {
       $Error{$Err}++;
@@ -181,6 +191,12 @@ while (defined(my $ThisLine = <STDIN>)) {
       } else {
          $PluginCallFailure{$plugin}{$call}++;
       }
+   } elsif ($ThisLine =~ /(Current Parameter Settings|Connection profiles \[.*\]):$/) {
+      $Config = $1;
+   } elsif ($ThisLine =~ /Connection profiles END$/) {
+      $Config = "";
+   } elsif (my ($ConfigValue) = ($ThisLine =~ /^  (.*)/)) {
+      $ConfigValues{$Config}->{$ConfigValue} = 1;
    } else {
       # Report any unmatched entries...
       # remove PID from named messages
@@ -305,6 +321,30 @@ if (keys %PluginCallOK and $Detail >= 5) {
       foreach my $call (sort keys %{$PluginCallOK{$plugin}}) {
          my $times = $PluginCallOK{$plugin}{$call};
          print "\n      $call succeeded $PluginCallOK{$plugin}{$call} Time(s)";
+      }
+      print "\n";
+   }
+}
+
+if (keys %ManagementConnections and $Detail) {
+   print "\nManagement Connections from:\n";
+   foreach my $Connection (sort keys %ManagementConnections) {
+     print "   " . $Connection . ": " .$ManagementConnections{$Connection}. " Time(s)\n";
+   }
+}
+
+if (keys %ManagementCommands and $Detail) {
+   print "\nManagement Commands:\n";
+   foreach my $Command (sort keys %ManagementCommands) {
+     print "   " . $Command . ": " .$ManagementCommands{$Command}. " Time(s)\n";
+   }
+}
+
+if (keys %ConfigValues and $Detail >= 10) {
+   foreach my $config (sort keys %ConfigValues) {
+      print "\n$config:";
+      foreach my $configvalue (sort keys %{$ConfigValues{$config}}) {
+         print "\n    $configvalue";
       }
       print "\n";
    }
