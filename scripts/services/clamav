@@ -69,7 +69,8 @@ while (defined(my $ThisLine = <STDIN>)) {
        ( $ThisLine =~ /^(?:LOCAL|TCP): Removing stale socket file/ ) or
        ( $ThisLine =~ /Listening daemon: PID: / ) or
        ( $ThisLine =~ /Bytecode: Security mode set to /) or
-       ( $ThisLine =~ /^No stats for Database check/ )) {
+       ( $ThisLine =~ /^No stats for Database check/ ) or
+       ( $ThisLine =~ /^Received \d+ file descriptor\(s\) from systemd\.$/ )) {
        # We do not care about these.
    } elsif (my ($Check) = ($ThisLine =~ /^SelfCheck: (.*?)\.?\s?\n/i)) {
       $SelfCheck{$Check}++;
@@ -87,6 +88,9 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif (($ThisLine =~ /LOCAL: Unix socket file ([^ \n]*)/)) {
       $SocketFile{$1}++;
    } elsif (($ThisLine =~ /TCP: Bound to address ([^ ]*) on port (\d+)/)) {
+      $BoundToIP{$1}++;
+      $BoundToPort{$1}=$2;
+   } elsif (($ThisLine =~ /TCP: Bound to \[([^ ]+)\]:(\d+)/)) {
       $BoundToIP{$1}++;
       $BoundToPort{$1}=$2;
    } elsif (my ($Limit,$Value) = ($ThisLine =~ /Limits: (.*) limit (?:set to|is) (.*)\./)) {
