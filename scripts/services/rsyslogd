@@ -30,7 +30,8 @@ while (defined($ThisLine = <STDIN>)) {
       $DaemonActions{$Reason}++;
    }
    elsif
-      ($ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/) {
+      ($ThisLine =~ /^rsyslogd\'s (groupid|userid) changed to/
+      or $ThisLine =~ /^imjournal: journal reloaded/) {
       # Ignore these lines
    }
    else {
