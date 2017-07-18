@@ -44,6 +44,7 @@ my %PluginCallFailure;
 my %PluginCallOK;
 my %VerifyList;
 my %VersionInfo;
+my %Warnings;
 
 if ( $Debug >= 5 ) {
     print STDERR "\n\nDEBUG \n\n";
@@ -85,7 +86,7 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^Initialization Sequence Completed/) or
       ($ThisLine =~ /^Listening for incoming TCP connection on \S+:\d+/) or
       ($ThisLine =~ /^LZO compression initialized/) or
-      ($ThisLine =~ /^Local Options hash/) or
+      ($ThisLine =~ /^Local Options (hash|String)/) or
       ($ThisLine =~ /^MULTI: Learn:/) or
       ($ThisLine =~ /^MULTI: multi_init called/) or
       ($ThisLine =~ /^MULTI: multi_create_instance called/) or
@@ -127,8 +128,9 @@ while (defined(my $ThisLine = <STDIN>)) {
       ($ThisLine =~ /^TLS: new session incoming connection from .*/) or
       ($ThisLine =~ /TLS Error: TLS object -> incoming plaintext read error/) or
       ($ThisLine =~ /TLS ERROR: received control packet with stale session-id=.*/) or
-      ($ThisLine =~ /^TUN\/TAP device \w+ opened/) or
+      ($ThisLine =~ /^TUN\/TAP device \S+ opened/) or
       ($ThisLine =~ /TUN\/TAP TX queue length set to [0-9]*/) or
+      ($ThisLine =~ /^TUN\/TAP device \S+ exists previously, keep at program end/) or
       ($ThisLine =~ /^UDPv4 link /) or
       ($ThisLine =~ /^UID set to/) or
       ($ThisLine =~ /^VERIFY OK: nsCertType=\w+/) or
@@ -185,6 +187,8 @@ while (defined(my $ThisLine = <STDIN>)) {
    } elsif ((my ($Err) = ($ThisLine =~ /(read UDPv4 \[ECONNREFUSED\]: Connection refused \(code=111\))/)) or
       (my ($Err) = ($ThisLine =~ /(read UDPv4 \[EHOSTUNREACH\]: No route to host \(code=113\))/))) {
       $Error{$Err}++;
+   } elsif (my ($Warning) = ($ThisLine =~ /^WARNING: (.*)/)) {
+      $Warnings{$Warning}++;
    } elsif (my ($plugin,$call,$status) = ($ThisLine =~ /^PLUGIN_CALL: POST (.*)\/(PLUGIN_.*) status=(.*)/)) {
       if ($status == 0) {
          $PluginCallOK{$plugin}{$call}++;
@@ -208,6 +212,13 @@ while (defined(my $ThisLine = <STDIN>)) {
 
 ################################################
 
+
+if (keys %Warnings) {
+   print "\nWARNINGS:\n";
+   foreach my $Warning (sort keys %Warnings) {
+     print "   " . $Warning . ": " .$Warnings{$Warning}. " Time(s)\n";
+   }
+}
 
 if(keys %ConnErrors) {
    print "Connection Errors:\n";
