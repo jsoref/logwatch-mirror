@@ -154,6 +154,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       $VerifyList{"CRL check status: $status DN: $dn"}++;
    } elsif ($ThisLine =~ /^TLS: Username\/Password authentication/) {
       $VerifyList{$ThisLine}++;
+   } elsif ($ThisLine =~ /^user '.*' authenticated/) {
+      # This will be handled by the above message
    } elsif ($ThisLine =~ /^Incorrect password supplied for .* "(.*)"/) {
       $IncorrectPassword{$1}++;
    } elsif ($ThisLine =~ m/^MULTI: new incoming connection would exceed maximum number of clients/) {
