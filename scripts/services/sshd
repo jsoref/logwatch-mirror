@@ -421,6 +421,8 @@ while (defined(my $ThisLine = <STDIN>)) {
       if (($Code != 11) || ($Detail >= 30)) {
 	$DisconnectReceived{$Reason}{$Host}++;
       }
+   } elsif ($ThisLine =~ /^Close session: user .* from [0-9.]* port [0-9]+ id 0$/) {
+      # annoying message closing session
    } elsif ( my ($Host) = ($ThisLine =~ /^ROOT LOGIN REFUSED FROM ([^ ]*)$/)) {
       $RootLogin{$Host}++;
    } elsif ( my ($Error) = ($ThisLine =~ /^Cannot release PAM authentication\[\d\]: (.*)$/)) {
